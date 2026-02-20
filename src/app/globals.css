@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,7 +49,7 @@
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
+    width: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -449,120 +451,6 @@ h6 {
   letter-spacing: -0.025em;
 }
 
-h1 {
-  font-size: 2.25rem;
-  /* text-4xl */
-}
-
-@media (min-width: 768px) {
-  h1 {
-    font-size: 3rem;
-    /* md:text-5xl */
-  }
-}
-
-@media (min-width: 1024px) {
-  h1 {
-    font-size: 3.75rem;
-    /* lg:text-6xl */
-  }
-}
-
-h2 {
-  font-size: 1.875rem;
-  /* text-3xl */
-}
-
-@media (min-width: 768px) {
-  h2 {
-    font-size: 2.25rem;
-    /* md:text-4xl */
-  }
-}
-
-@media (min-width: 1024px) {
-  h2 {
-    font-size: 3rem;
-    /* lg:text-5xl */
-  }
-}
-
-h3 {
-  font-size: 1.5rem;
-  /* text-2xl */
-}
-
-@media (min-width: 768px) {
-  h3 {
-    font-size: 1.875rem;
-    /* md:text-3xl */
-  }
-}
-
-@media (min-width: 1024px) {
-  h3 {
-    font-size: 2.25rem;
-    /* lg:text-4xl */
-  }
-}
-
-h4 {
-  font-size: 1.25rem;
-  /* text-xl */
-}
-
-@media (min-width: 768px) {
-  h4 {
-    font-size: 1.5rem;
-    /* md:text-2xl */
-  }
-}
-
-@media (min-width: 1024px) {
-  h4 {
-    font-size: 1.875rem;
-    /* lg:text-3xl */
-  }
-}
-
-h5 {
-  font-size: 1.125rem;
-  /* text-lg */
-}
-
-@media (min-width: 768px) {
-  h5 {
-    font-size: 1.25rem;
-    /* md:text-xl */
-  }
-}
-
-@media (min-width: 1024px) {
-  h5 {
-    font-size: 1.5rem;
-    /* lg:text-2xl */
-  }
-}
-
-h6 {
-  font-size: 1rem;
-  /* text-base */
-}
-
-@media (min-width: 768px) {
-  h6 {
-    font-size: 1.125rem;
-    /* md:text-lg */
-  }
-}
-
-@media (min-width: 1024px) {
-  h6 {
-    font-size: 1.25rem;
-    /* lg:text-xl */
-  }
-}
-
 /* Custom utility for aspect ratios */
 .aspect-video {
   aspect-ratio: 16 / 9;
@@ -570,4 +458,56 @@ h6 {
 
 .aspect-square {
   aspect-ratio: 1 / 1;
+}
+
+/* Homepage Custom Styles */
+@layer components {
+  .host-card {
+    border: 1px solid #00ff9d;
+    box-shadow: 0 0 25px rgba(0, 255, 157, 0.2);
+    backdrop-filter: blur(12px);
+    background: linear-gradient(160deg, rgba(0, 255, 157, 0.05) 0%, rgba(10, 16, 31, 0.9) 100%);
+  }
+
+  .join-card {
+    border: 1px solid #2d6af2;
+    box-shadow: 0 0 25px rgba(45, 106, 242, 0.2);
+    backdrop-filter: blur(12px);
+    background: linear-gradient(160deg, rgba(45, 106, 242, 0.05) 0%, rgba(10, 16, 31, 0.9) 100%);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+
+  .text-neon-blue-glow {
+    color: #4da6ff;
+    text-shadow: 0 0 8px rgba(77, 166, 255, 0.6);
+  }
+
+  .text-neon-green-glow {
+    color: #00ff9d;
+    text-shadow: 0 0 8px rgba(0, 255, 157, 0.6);
+  }
+
+  .scanlines {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.15));
+    background-size: 100% 4px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .city-silhouette {
+    background-image: linear-gradient(to bottom, transparent 80%, #02040a 100%), url(https://lh3.googleusercontent.com/aida-public/AB6AXuAzIdkdUXVwT8emdXamG9IHW8aN0evnLXKFAnymte4YAGlNf96YqJgLjTN12rscsbI7hRPj9ba1uPvGkFN16x7GCljnjN_YX8DxbpGRkCWaXoZ7S_-4Unw4YeQ-fyjuJtt03_JijjfK3FVohzPaiTgDfwrELYYfVUWBl92MfAZ7xA39_NePfj5Z5yh6fvoyONsf09fn1-aaw5sfPXs8ybETQ19q73U1oJIOJH25T0PkHLBlzYZU1WYSuH7OS9IAYCQ7AzC-IgsnXTA);
+    background-size: cover;
+    background-position: center bottom;
+    opacity: 0.15;
+    mix-blend-mode: luminosity;
+    filter: contrast(1.5) brightness(0.7);
+  }
 }
