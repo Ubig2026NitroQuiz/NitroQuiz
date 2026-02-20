@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Orbitron, Rajdhani } from "next/font/google";
+import { Inter, Orbitron, Rajdhani, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,6 +21,13 @@ const rajdhani = Rajdhani({
   variable: '--font-rajdhani',
 });
 
+const pressStart2P = Press_Start_2P({
+  weight: '400',
+  subsets: ["latin"],
+  display: "swap",
+  variable: '--font-press-start-2p',
+});
+
 export const metadata: Metadata = {
   title: "NitroQuiz - Balap Cerdas Adrenalin Tinggi",
   description: "Game kuis seru berkecepatan tinggi! Jawab pertanyaan, nyalakan nitro, dan jadilah juara di NitroQuiz.",
@@ -40,7 +47,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} ${inter.className}`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:ital,wght@0,400;0,600;0,700;1,700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+      </head>
+      <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} ${pressStart2P.variable}`}>
         {children}
       </body>
     </html>
