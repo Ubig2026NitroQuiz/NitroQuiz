@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ASSET_LIST, TRACK_ASSETS, getAssetOffset } from '@/lib/gameAssets';
 
-// --- Utility Functions ---
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
     toFloat: (obj: any, def: number): number => { if (obj !== null) { const x = parseFloat(obj); if (!isNaN(x)) return x; } return Util.toFloat(def, 0.0); },
@@ -190,178 +190,70 @@ export default function GameSpeedPage() {
                 console.error("Failed to load character", e);
             }
 
-            const assetList = [
-                { name: 'car', src: '/assets/vehicles/mc/foward-sonic.webp' },
-                { name: 'bg', src: '/assets/backgorund/citynight.png' },
-                { name: 'bg_mobile', src: '/assets/backgorund/citynight_mobile.png' }, // Aset khusus mobile
-                { name: 'obstacle', src: '/assets/obstacles/obstacle_barrel.png' },
-                { name: 'npc_car', src: '/assets/vehicles/car_ai_blue.jpg' },
-                { name: 'construction', src: '/assets/obstacles/construction_barrier.png' },
-                { name: 'traffic_light', src: '/assets/material/lampulalulintas.png' },
-                { name: 'car_rival', src: '/assets/vehicles/foward-opponent.png' },
-                { name: 'truck1', src: '/assets/vehicles/truck1.png' },
-                { name: 'truck2', src: '/assets/vehicles/truck2.png' },
-                // Truck Animation Assets
-                { name: 'truck_straight_0', src: '/assets/vehicles/truck/0.webp' },
-                { name: 'truck_straight_1', src: '/assets/vehicles/truck/1.webp' },
-                { name: 'truck_left_0', src: '/assets/vehicles/truck/0left.webp' },
-                { name: 'truck_left_1', src: '/assets/vehicles/truck/1kiri.webp' },
-                { name: 'truck_right_0', src: '/assets/vehicles/truck/0kanan.webp' },
-                { name: 'truck_right_1', src: '/assets/vehicles/truck/1kanan.webp' },
-                // JNE Truck Animation Assets
-                { name: 'jne_straight_1', src: '/assets/vehicles/jne/1lurus.webp' },
-                { name: 'jne_straight_2', src: '/assets/vehicles/jne/2lurus.webp' },
-                { name: 'jne_left_1', src: '/assets/vehicles/jne/1kiri.webp' },
-                { name: 'jne_left_2', src: '/assets/vehicles/jne/2kiri.webp' },
-                { name: 'jne_right_1', src: '/assets/vehicles/jne/1kanan.webp' },
-                { name: 'jne_right_2', src: '/assets/vehicles/jne/2kanan.webp' },
-                { name: 'car_1st', src: '/assets/vehicles/1rd-pov/1rd-sonic-foward-v2.png' },
+            const assetList = ASSET_LIST;
 
-                // Assets Kiri Jalan
-                { name: 'kiri_basmallah', src: '/assets/material/kiri_jalan/1basmallah.webp' },
-                { name: 'kiri_game', src: '/assets/material/kiri_jalan/1gameforsmart.webp' },
-                { name: 'kiri_ganesha', src: '/assets/material/kiri_jalan/1ganesha.webp' },
-                { name: 'kiri_matos', src: '/assets/material/kiri_jalan/2matos.webp' },
-                { name: 'kiri_ruangguru', src: '/assets/material/kiri_jalan/1ruangguru.webp' },
-                { name: 'kiri_ubig', src: '/assets/material/kiri_jalan/1ubig.webp' },
-                { name: 'kiri_kemendikbud', src: '/assets/material/kiri_jalan/2kemendikbud.webp' },
-                { name: 'kiri_baliho_1', src: '/assets/material/kiri_jalan/1baliho.webp' },
-                { name: 'kiri_mcc_1', src: '/assets/material/kiri_jalan/1mcc.webp' },
-                { name: 'kiri_mcc_3', src: '/assets/material/kiri_jalan/3mcc.webp' },
-                { name: 'kiri_bsi_3', src: '/assets/material/kiri_jalan/3bsi.webp' },
-                { name: 'kiri_gacoan', src: '/assets/material/kiri_jalan/1gacoan.webp' },
-                { name: 'kiri_lawson', src: '/assets/material/kiri_jalan/2lawson.webp' },
-                { name: 'kiri_cgv', src: '/assets/material/kiri_jalan/2cgv.webp' },
-                { name: 'kiri_pocari', src: '/assets/material/kiri_jalan/2pocari.webp' },
-                { name: 'kiri_shell', src: '/assets/material/kiri_jalan/2shell.webp' },
+            const promises: Promise<void>[] = [];
 
-                // Assets Kanan Jalan
-                { name: 'kanan_kemendikbud', src: '/assets/material/kanan_jalan/1kemendikbud.webp' },
-                { name: 'kanan_basmallah', src: '/assets/material/kanan_jalan/2basmallah.webp' },
-                { name: 'kanan_gramedia', src: '/assets/material/kanan_jalan/2gramedia.webp' },
-                { name: 'kanan_ruangguru', src: '/assets/material/kanan_jalan/2ruangguru.webp' },
-                { name: 'kanan_ubig', src: '/assets/material/kanan_jalan/2ubig.webp' },
-                { name: 'kanan_ruangguru_2', src: '/assets/material/kanan_jalan/3ruangguru.webp' },
-                { name: 'kanan_matos', src: '/assets/material/kanan_jalan/1matos.webp' },
-                { name: 'kanan_bsi_1', src: '/assets/material/kanan_jalan/1bsi.webp' },
-                { name: 'kanan_baliho_2', src: '/assets/material/kanan_jalan/2baliho.webp' },
-                { name: 'kanan_mcc_2', src: '/assets/material/kanan_jalan/2mcc.webp' },
-                { name: 'kanan_lawson', src: '/assets/material/kanan_jalan/1lawson.webp' },
-                { name: 'kanan_burgerking', src: '/assets/material/kanan_jalan/1burgerking.webp' },
-                { name: 'kanan_burgerking_2', src: '/assets/material/kanan_jalan/2burgerking.webp' },
-                { name: 'kanan_gacoan', src: '/assets/material/kanan_jalan/2gacoan.webp' },
-                { name: 'kanan_cgv', src: '/assets/material/kanan_jalan/1cgv.webp' },
-                { name: 'kanan_pocari', src: '/assets/material/kanan_jalan/1pocari.webp' },
-                { name: 'kanan_shell', src: '/assets/material/kanan_jalan/1shell.webp' },
-                // Starting Sequence - Revving Animation
-                { name: 'start_1', src: '/assets/vehicles/start/1.webp' },
-                { name: 'start_2', src: '/assets/vehicles/start/2.webp' },
-                // MC / Forward Animation
-                { name: 'mc_1', src: '/assets/vehicles/mc/1lurus.webp' },
-                { name: 'mc_2', src: '/assets/vehicles/mc/2lurus.webp' },
-                // MC / Turn Left Animation
-                { name: 'mc_left_1', src: '/assets/vehicles/mc/1kiri.webp' },
-                { name: 'mc_left_2', src: '/assets/vehicles/mc/2kiri.webp' },
-                // MC / Turn Right Animation
-                { name: 'mc_right_1', src: '/assets/vehicles/mc/1kanan.webp' },
-                { name: 'mc_right_2', src: '/assets/vehicles/mc/2kanan.webp' },
-                // Braking Animation
-                { name: 'rem_1', src: '/assets/vehicles/rem/1.webp' },
-                { name: 'rem_2', src: '/assets/vehicles/rem/2.webp' },
-                // NOS Animation Frames
-                { name: 'nos_1', src: '/assets/vehicles/nos/1.webp' },
-                { name: 'nos_2', src: '/assets/vehicles/nos/2.webp' },
-                { name: 'nos_3', src: '/assets/vehicles/nos/3.webp' },
-                { name: 'nos_4', src: '/assets/vehicles/nos/4.webp' },
-                { name: 'nos_5', src: '/assets/vehicles/nos/5.webp' },
-                { name: 'nos_6', src: '/assets/vehicles/nos/6.webp' },
-                { name: 'nos_7', src: '/assets/vehicles/nos/7.webp' },
-                { name: 'nos_8', src: '/assets/vehicles/nos/8.webp' },
-                { name: 'nos_9', src: '/assets/vehicles/nos/9.webp' },
-                { name: 'nos_10', src: '/assets/vehicles/nos/10.webp' },
-                { name: 'nos_11', src: '/assets/vehicles/nos/11.webp' },
-                { name: 'nos_12', src: '/assets/vehicles/nos/12.webp' },
-                { name: 'nos_13', src: '/assets/vehicles/nos/13.webp' },
-                { name: 'nos_14', src: '/assets/vehicles/nos/14.webp' },
-                { name: 'nos_15', src: '/assets/vehicles/nos/15.webp' },
-                { name: 'nos_16', src: '/assets/vehicles/nos/16.webp' },
-                { name: 'nos_17', src: '/assets/vehicles/nos/17.webp' },
-                { name: 'nos_18', src: '/assets/vehicles/nos/18.webp' },
-                // Odong-odong Assets
-                { name: 'odong_straight', src: '/assets/vehicles/odong/odong_straight.webp' },
-                { name: 'odong_left', src: '/assets/vehicles/odong/odong_left.webp' },
-                { name: 'odong_right', src: '/assets/vehicles/odong/odong_right.webp' },
-                // Odong-odong Animation Frames (Frame 2)
-                { name: '1odong_straight', src: '/assets/vehicles/odong/1odong_straight.webp' },
-                { name: '1odong_left', src: '/assets/vehicles/odong/1odong_left.webp' },
-                { name: '1odong_right', src: '/assets/vehicles/odong/1odong_right.webp' },
-                // Taxi Assets
-                { name: 'taxi_straight', src: '/assets/vehicles/taxi/taxi_straight.webp' },
-                { name: 'taxi_left', src: '/assets/vehicles/taxi/taxi_left.webp' },
-                { name: 'taxi_right', src: '/assets/vehicles/taxi/taxi_right.webp' },
-                { name: '1taxi_straight', src: '/assets/vehicles/taxi/1taxi_straight.webp' },
-                { name: '1taxi_left', src: '/assets/vehicles/taxi/1taxi_left.webp' },
-                { name: '1taxi_right', src: '/assets/vehicles/taxi/1taxi_right.webp' },
-
-                // --- City Assets ---
-                // Tempat Sampah
-                { name: 'trash_left', src: '/assets/material/tempat_sampah/1.webp' },
-                { name: 'trash_right', src: '/assets/material/tempat_sampah/2.webp' },
-                // Semak
-                { name: 'bush_left', src: '/assets/material/semak/1.png' },
-                { name: 'bush_right', src: '/assets/material/semak/2.png' },
-                // Toko Koran
-                { name: 'news_left', src: '/assets/material/toko_koran/1.png' },
-                { name: 'news_right', src: '/assets/material/toko_koran/2.png' },
-                // Vending Machine
-                { name: 'vending_left', src: '/assets/material/vending/1.png' },
-                { name: 'vending_right', src: '/assets/material/vending/2.png' },
-                // Pohon
-                { name: 'pohon_1', src: '/assets/material/pohon/1.webp' },
-                { name: 'pohon_2', src: '/assets/material/pohon/2.webp' },
-                { name: 'pohon_3', src: '/assets/material/pohon/3.webp' },
-                { name: 'pohon_4', src: '/assets/material/pohon/4.webp' },
-                // Pembatas Jalan
-                { name: 'cone', src: '/assets/material/pembatas_jalan/1penghalang.webp' },
-                { name: 'barrier', src: '/assets/material/pembatas_jalan/1roadbarrier.webp' },
-                // Bangku
-                { name: 'bench', src: '/assets/material/bangku/1.png' },
-            ];
-
-            const promises = assetList.map(item => new Promise<void>((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    (img as any).assetName = item.name;
-                    state.current.sprites[item.name] = img;
-                    resolve();
-                };
-                img.onerror = () => {
-                    const cvs = document.createElement('canvas');
-                    cvs.width = 128; cvs.height = 128;
-                    const ctx = cvs.getContext('2d');
-                    if (ctx) {
-                        if (item.name === 'traffic_light') {
-                            ctx.fillStyle = '#334155';
-                            ctx.fillRect(50, 20, 20, 108); // Pole
-                            ctx.fillStyle = '#ef4444'; // Red light
-                            ctx.fillRect(40, 0, 48, 50);
-                            ctx.fillStyle = '#fef08a';
-                            ctx.beginPath(); ctx.arc(64, 25, 10, 0, Math.PI * 2); ctx.fill();
-                        } else {
-                            if (item.name === 'npc_car') ctx.fillStyle = '#3b82f6';
-                            else if (item.name === 'construction') ctx.fillStyle = '#f97316';
-                            else if (item.name === 'car') ctx.fillStyle = '#ef4444';
-                            else ctx.fillStyle = '#444';
+            // Load from ASSET_LIST (named assets)
+            ASSET_LIST.forEach(item => {
+                promises.push(new Promise<void>((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        (img as any).assetName = item.name;
+                        // Simpan dengan key 'name' (untuk akses global)
+                        state.current.sprites[item.name] = img;
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        // Fallback logic
+                        const cvs = document.createElement('canvas');
+                        cvs.width = 128; cvs.height = 128;
+                        const ctx = cvs.getContext('2d');
+                        if (ctx) {
+                            ctx.fillStyle = '#444';
                             ctx.fillRect(0, 0, 128, 128);
+                            const finalCvs = cvs as any;
+                            finalCvs.assetName = item.name;
+                            state.current.sprites[item.name] = finalCvs;
                         }
-                        const finalCvs = cvs as any;
-                        finalCvs.assetName = item.name;
-                        state.current.sprites[item.name] = finalCvs;
-                    }
-                    resolve();
-                };
-                img.src = item.src;
-            }));
+                        resolve();
+                    };
+                    img.src = item.src;
+                }));
+            });
+
+            // Load from TRACK_ASSETS (direct src assets)
+            // Use a specific prefix or exact match logic if needed, 
+            // but here we just ensure the image is loaded into the sprite map keyed by its src path.
+            // Only load unique sources that aren't already covered (though re-loading is safe-ish, better to check)
+
+            // To properly support the new direct 'src' usage in TRACK_ASSETS without re-defining them in ASSET_LIST:
+            TRACK_ASSETS.forEach(item => {
+                if (item.src) {
+                    promises.push(new Promise<void>((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            (img as any).assetName = item.src; // Use src as name for these
+                            // Simpan dengan key 'src' 
+                            state.current.sprites[item.src] = img;
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            // Fallback
+                            const cvs = document.createElement('canvas');
+                            cvs.width = 128; cvs.height = 128;
+                            const ctx = cvs.getContext('2d');
+                            if (ctx) {
+                                ctx.fillStyle = '#f0f'; // Pink for error
+                                ctx.fillRect(0, 0, 128, 128);
+                                state.current.sprites[item.src] = cvs;
+                            }
+                            resolve();
+                        };
+                        img.src = item.src;
+                    }));
+                }
+            });
 
             await Promise.all(promises);
 
@@ -477,133 +369,47 @@ export default function GameSpeedPage() {
         addStraight(ROAD_CONF.LENGTH.SHORT);
         addDownhillToEnd(200);
 
-        // --- REALISTIC ORDERED CITY POPULATION ---
         const len = state.current.segments.length;
 
-        const leftBuildingSequence = [
-            'kiri_basmallah', 'kiri_game', 'kiri_ganesha',
-            'kiri_baliho_1', 'kiri_lawson', 'kiri_cgv', 'kiri_pocari', 'kiri_shell',
-            'kiri_matos', 'kiri_ruangguru', 'kiri_ubig', 'kiri_kemendikbud',
-            'kiri_mcc_1', 'kiri_mcc_3', 'kiri_bsi_3', 'kiri_gacoan'
-        ];
-        const rightBuildingSequence = [
-            'kanan_basmallah', 'kanan_lawson', 'kanan_cgv', 'kanan_pocari', 'kanan_shell',
-            'kanan_gramedia', 'kanan_matos', 'kanan_burgerking',
-            'kanan_kemendikbud', 'kanan_ruangguru', 'kanan_ubig', 'kanan_ruangguru_2',
-            'kanan_bsi_1', 'kanan_baliho_2', 'kanan_mcc_2', 'kanan_burgerking_2', 'kanan_gacoan'
-        ];
+        // --- HYBRID ASSET PLACEMENT ---
+        // 1. Manual Placement (Prioritas Utama)
+        // Load manual configuration from TRACK_ASSETS
 
-        const START_SEGMENT = 50;
-        const BLOCK_LENGTH = 60; // Every 60 segments is a new "block"
+        // Map to keep track of occupied spots to avoid overlap
+        // Keys: "segmentIndex_side" (e.g., "150_left")
+        const occupied: { [key: string]: boolean } = {};
 
-        for (let n = START_SEGMENT; n < len - 200; n += BLOCK_LENGTH) {
-            const buildingIdx = Math.floor((n - START_SEGMENT) / BLOCK_LENGTH);
+        TRACK_ASSETS.forEach(item => {
+            const segIdx = item.z;
+            if (segIdx < len) {
+                if (item.src) {
+                    // Try to get sprite by direct src key first
+                    let sprite = state.current.sprites[item.src];
 
-            // 1. PLACE BUILDINGS
-            const leftB = state.current.sprites[leftBuildingSequence[buildingIdx % leftBuildingSequence.length]];
-            const rightB = state.current.sprites[rightBuildingSequence[buildingIdx % rightBuildingSequence.length]];
+                    if (sprite) {
+                        // Use item.src for keyword matching (e.g. 'pohon')
+                        const offset = item.offset !== undefined ? item.offset : getAssetOffset(item.side, item.src);
+                        state.current.segments[segIdx].sprites.push({ source: sprite, offset: offset, offsetY: -1 });
 
-            if (leftB) state.current.segments[n].sprites.push({ source: leftB, offset: -2.8, offsetY: -1 });
-            if (rightB) state.current.segments[n + 5].sprites.push({ source: rightB, offset: 2.8, offsetY: -1 });
+                        // Mark occupied (give some buffer space)
+                        occupied[`${segIdx}_${item.side}`] = true;
+                        occupied[`${segIdx + 1}_${item.side}`] = true;
+                        occupied[`${segIdx + 2}_${item.side}`] = true;
 
-            // 2. PLACE STREET PROPS (Uniform across the block)
-
-            // Check if current buildings are "Important Landmarks"
-            // Important buildings that should NOT be blocked by trees:
-            const leftName = leftBuildingSequence[buildingIdx % leftBuildingSequence.length];
-            const rightName = rightBuildingSequence[buildingIdx % rightBuildingSequence.length];
-
-            const isLandmark = (name: string) => {
-                return name.includes('mcc') ||
-                    name.includes('ubig') ||
-                    name.includes('ganesha') ||
-                    name.includes('ruangguru') ||
-                    name.includes('baliho') ||
-                    name.includes('kemendikbud') ||
-                    name.includes('gramedia') ||
-                    name.includes('bsi') ||
-                    name.includes('lawson') ||
-                    name.includes('gacoan') ||
-                    name.includes('burgerking') ||
-                    name.includes('cgv') ||
-                    name.includes('pocari') ||
-                    name.includes('matos') ||
-                    name.includes('shell');
-            };
-
-            const leftIsImportant = isLandmark(leftName);
-            const rightIsImportant = isLandmark(rightName);
-
-            // Trees every 20 segments (Reduced density)
-            for (let i = 15; i < BLOCK_LENGTH; i += 25) {
-                const seg = n + i;
-                if (seg >= len) break;
-
-                // Tree variants
-                const pNum = (buildingIdx + i) % 4 + 1;
-                const tree = state.current.sprites[`pohon_${pNum}`];
-
-                if (tree) {
-                    // Only place LEFT tree if NOT important building
-                    // Place further back (offset -3.5) to avoid blocking building view
-                    if (!leftIsImportant) {
-                        state.current.segments[seg].sprites.push({ source: tree, offset: -3.5 });
-                    }
-
-                    // Only place RIGHT tree if NOT important building
-                    // Place further back (offset 3.5) to avoid blocking building view
-                    if (!rightIsImportant) {
-                        state.current.segments[seg + 2].sprites.push({ source: tree, offset: 3.5 });
+                        // Special logic: Zebra Crossing for Traffic Lights
+                        if (item.src.includes('lampulalulintas')) {
+                            // Add zebra cross for next 10 segments
+                            for (let z = 0; z < 10; z++) {
+                                if (state.current.segments[segIdx + z]) {
+                                    state.current.segments[segIdx + z].zebra = true;
+                                }
+                            }
+                        }
                     }
                 }
-
-                // Neighborhood props
-                if (i === 15) { // Adjusted from 10 to 15
-                    // Trash can and Bench
-                    const trashL = state.current.sprites.trash_left;
-                    const trashR = state.current.sprites.trash_right;
-                    const bench = state.current.sprites.bench;
-                    if (trashL) state.current.segments[seg + 5].sprites.push({ source: trashL, offset: -1.7 });
-                    if (trashR) state.current.segments[seg + 7].sprites.push({ source: trashR, offset: 1.7 });
-                    if (bench) state.current.segments[seg + 3].sprites.push({ source: bench, offset: 2.0 });
-                } else if (i === 30) {
-                    // Vending or News
-                    const isVending = (buildingIdx % 2 === 0);
-                    const propL = isVending ? state.current.sprites.vending_left : state.current.sprites.news_left;
-                    const propR = !isVending ? state.current.sprites.vending_right : state.current.sprites.news_right;
-                    if (propL) state.current.segments[seg + 5].sprites.push({ source: propL, offset: -1.9 });
-                    if (propR) state.current.segments[seg + 5].sprites.push({ source: propR, offset: 1.9 });
-                } else if (i === 50) {
-                    // Bushes (Semak)
-                    const bushL = state.current.sprites.bush_left;
-                    const bushR = state.current.sprites.bush_right;
-                    if (bushL) state.current.segments[seg + 5].sprites.push({ source: bushL, offset: -1.8 });
-                    if (bushR) state.current.segments[seg + 5].sprites.push({ source: bushR, offset: 1.8 });
-                }
             }
+        });
 
-            // 3. SPECIALS: CONSTRUCTION / ROAD BARRIERS
-            if (buildingIdx % 7 === 3) {
-                const cone = state.current.sprites.cone;
-                const barrier = state.current.sprites.barrier;
-                for (let k = 0; k < 5; k++) {
-                    if (cone) state.current.segments[n + 20 + k * 2].sprites.push({ source: cone, offset: -0.9 });
-                    if (barrier && k === 2) state.current.segments[n + 24].sprites.push({ source: barrier, offset: -1.2 });
-                }
-            }
-
-            // 4. INTERSECTIONS (Traffic Lights)
-            if (buildingIdx % 3 === 0) {
-                const tl = state.current.sprites.traffic_light;
-                for (let j = 0; j < 12; j++) {
-                    if (state.current.segments[n - 10 + j]) state.current.segments[n - 10 + j].zebra = true;
-                }
-                if (tl) {
-                    state.current.segments[n - 10].sprites.push({ source: tl, offset: -1.8 });
-                    state.current.segments[n - 10].sprites.push({ source: tl, offset: 1.8 });
-                }
-            }
-        }
 
         state.current.trackLength = len * SEGMENT_LENGTH;
 
@@ -806,20 +612,20 @@ export default function GameSpeedPage() {
         const carWorldWidth = playerRefWidth * 1.5625;
 
         let worldWidth = carWorldWidth * 0.9; // NPC mobil standar diperkecil
-        if (name === 'traffic_light') worldWidth = carWorldWidth * 3.0; // Dilabuhkan ke 3.0 agar terlihat besar dan jelas
-        else if (name?.startsWith('truck')) worldWidth = carWorldWidth * 1.5; // Truk diperkecil lagi
+        if (name?.includes('lampulalulintas') || name === 'traffic_light') worldWidth = carWorldWidth * 3.0; // Dilabuhkan ke 3.0 agar terlihat besar dan jelas
+        else if (name?.includes('truck')) worldWidth = carWorldWidth * 1.5; // Truk diperkecil lagi
         else if (name?.includes('car_rival') || name === 'foward-opponent') worldWidth = carWorldWidth * 0.9; // Rival diperkecil sama dengan NPC
         else if (name?.includes('odong') || name?.includes('taxi')) worldWidth = carWorldWidth * 0.95; // NPC diperkecil lagi
         else if (name?.includes('kiri_') || name?.includes('kanan_')) worldWidth = carWorldWidth * 12; // Bangunan sangat besar
-        else if (name?.startsWith('pohon_')) worldWidth = carWorldWidth * 8.0; // Pohon dibuat jauh lebih rimbun dan tinggi
-        else if (name?.startsWith('vending_')) worldWidth = carWorldWidth * 1.5; // Vending mencolok
-        else if (name?.startsWith('news_')) worldWidth = carWorldWidth * 2.5; // Toko koran lebih lebar
-        else if (name?.startsWith('trash_')) worldWidth = carWorldWidth * 0.8; // Tempat sampah kecil
-        else if (name?.startsWith('bush_')) worldWidth = carWorldWidth * 1.5; // Semak sedikit lebar
-        else if (name === 'bench') worldWidth = carWorldWidth * 1.8; // Bangku cukup panjang
-        else if (name === 'barrier') worldWidth = carWorldWidth * 1.8; // Pembatas jalan lebar
-        else if (name === 'cone') worldWidth = carWorldWidth * 0.6; // Kerucut kecil
-        else if (name === 'obstacle' || name === 'construction') worldWidth = carWorldWidth * 0.7; // Objek jalanan kecil
+        else if (name?.includes('pohon')) worldWidth = carWorldWidth * 8.0; // Pohon dibuat jauh lebih rimbun dan tinggi
+        else if (name?.includes('vending')) worldWidth = carWorldWidth * 1.5; // Vending mencolok
+        else if (name?.includes('news')) worldWidth = carWorldWidth * 2.5; // Toko koran lebih lebar
+        else if (name?.includes('trash') || name?.includes('tempat_sampah')) worldWidth = carWorldWidth * 0.8; // Tempat sampah kecil
+        else if (name?.includes('bush') || name?.includes('semak')) worldWidth = carWorldWidth * 1.5; // Semak sedikit lebar
+        else if (name?.includes('bench') || name?.includes('bangku')) worldWidth = carWorldWidth * 1.8; // Bangku cukup panjang
+        else if (name?.includes('barrier') || name?.includes('pembatas_jalan')) worldWidth = carWorldWidth * 1.8; // Pembatas jalan lebar
+        else if (name?.includes('cone') || name?.includes('penghalang')) worldWidth = carWorldWidth * 0.6; // Kerucut kecil
+        else if (name?.includes('obstacle') || name?.includes('construction')) worldWidth = carWorldWidth * 0.7; // Objek jalanan kecil
 
         const destW = scale * worldWidth * (width / 2);
         const destH = destW * (sprite.height / sprite.width);
@@ -845,8 +651,52 @@ export default function GameSpeedPage() {
     const renderPlayer = (ctx: CanvasRenderingContext2D, width: number, height: number, resolution: number, roadWidth: number, speedPercent: number, scale: number, destX: number, destY: number, steer: number, updown: number, viewMode: 'first' | 'third') => {
         const { keyLeft, keyRight, keyFaster, sprites } = state.current;
 
+        // Starting Sequence - Revving Animation saat Countdown & Preparation
+        const isPreparing = gameState === 'preparation';
+        const isCountdown = gameState === 'countdown';
+        const isAtStart = isPreparing || isCountdown;
+
+        // Update revving animation timer - Play when gas is pressed at start OR when braking
+        if ((isAtStart && keyFaster) || state.current.keySlower) {
+            state.current.revvingTimer += 16; // ~60fps
+            if (state.current.revvingTimer >= 80) { // Fast toggle for revving/braking effect
+                state.current.revvingTimer = 0;
+                state.current.revvingFrame = state.current.revvingFrame === 0 ? 1 : 0;
+            }
+        }
+
+        // Update MC Animation timer - Play when driving (Forward, Left, or Right)
+        if (!isAtStart && (keyFaster || keyLeft || keyRight) && !state.current.keySlower) {
+            state.current.mcTimer += 16;
+            if (state.current.mcTimer >= 80) {
+                state.current.mcTimer = 0;
+                state.current.mcFrame = (state.current.mcFrame + 1) % 4;
+            }
+        }
+
         if (viewMode === 'first') {
-            const sprite = sprites.car_1st;
+            let sprite = sprites.mc_1st_straight_0 || sprites.car_1st;
+
+            if (keyLeft) {
+                // Turn Left Animation (0-1)
+                const frame = state.current.mcFrame % 2;
+                sprite = sprites[`mc_1st_left_${frame}`] || sprite;
+            } else if (keyRight) {
+                // Turn Right Animation (0-1)
+                const frame = state.current.mcFrame % 2;
+                sprite = sprites[`mc_1st_right_${frame}`] || sprite;
+            } else if (keyFaster) {
+                // Straight Animation (0, 1, 3)
+                // Note: 2 is missing in file provided, so we cycle 0->1->3
+                const straightFrames = [0, 1, 3];
+                const frameIdx = state.current.mcFrame % straightFrames.length;
+                const suffix = straightFrames[frameIdx];
+                sprite = sprites[`mc_1st_straight_${suffix}`] || sprite;
+            } else {
+                // Idle
+                sprite = sprites.mc_1st_straight_0 || sprite;
+            }
+
             if (!sprite) return;
 
             // 1st Person POV: Cockpit/Hands
@@ -855,8 +705,10 @@ export default function GameSpeedPage() {
             const destH = destW * (sprite.height / sprite.width);
 
             // Centered horizontally, pushed lower to show more road
-            const x = (steer * -30);
-            const y = height - (destH * 0.8); // Posisi tetap stabil tanpa bounce
+            // Dynamic Sway logic for 1st person to make it feel alive
+            const sway = Math.sin(Date.now() / 200) * 5;
+            const x = (steer * -30) + sway;
+            const y = height - (destH * 0.8) + Math.abs(sway); // Posisi stabil dengan sedikit bounce
 
             // Dashboard red glow for 1st person
             if (state.current.keySlower) {
@@ -876,30 +728,6 @@ export default function GameSpeedPage() {
 
         // --- 3rd Person POV ---
 
-        // Starting Sequence - Revving Animation saat Countdown & Preparation
-        const isPreparing = gameState === 'preparation';
-        const isCountdown = gameState === 'countdown';
-        const isAtStart = isPreparing || isCountdown;
-
-        // Update revving animation timer - Play when gas is pressed at start OR when braking
-        // Update revving animation timer - Play when gas is pressed at start OR when braking
-        if ((isAtStart && keyFaster) || state.current.keySlower) {
-            state.current.revvingTimer += 16; // ~60fps
-            if (state.current.revvingTimer >= 80) { // Fast toggle for revving/braking effect
-                state.current.revvingTimer = 0;
-                state.current.revvingFrame = state.current.revvingFrame === 0 ? 1 : 0;
-            }
-        }
-
-        // Update MC Animation timer - Play when driving (Forward, Left, or Right)
-        if (!isAtStart && (keyFaster || keyLeft || keyRight) && !state.current.keySlower) {
-            state.current.mcTimer += 16;
-            if (state.current.mcTimer >= 80) {
-                state.current.mcTimer = 0;
-                state.current.mcFrame = state.current.mcFrame === 0 ? 1 : 0;
-            }
-        }
-
         let sprite = sprites.car;
 
         // Pilih sprite berdasarkan kondisi
@@ -910,14 +738,14 @@ export default function GameSpeedPage() {
             // Animasi Pengereman (Braking)
             sprite = state.current.revvingFrame === 0 ? sprites.rem_1 : sprites.rem_2;
         } else if (keyLeft) {
-            // Turn Left Animation
-            sprite = state.current.mcFrame === 0 ? sprites.mc_left_1 : sprites.mc_left_2;
+            // Turn Left Animation (0-3)
+            sprite = sprites[`mc_left_${state.current.mcFrame}`];
         } else if (keyRight) {
-            // Turn Right Animation
-            sprite = state.current.mcFrame === 0 ? sprites.mc_right_1 : sprites.mc_right_2;
+            // Turn Right Animation (0-3)
+            sprite = sprites[`mc_right_${state.current.mcFrame}`];
         } else if (keyFaster) {
-            // Normal Forward Driving (MC Animation)
-            sprite = state.current.mcFrame === 0 ? sprites.mc_1 : sprites.mc_2;
+            // Normal Forward Driving (MC Animation 0-3)
+            sprite = sprites[`mc_straight_${state.current.mcFrame}`];
         } else {
             // IDLE / Coasting (No WASD pressed) - Use standard forward-sonic
             sprite = sprites.car;
@@ -935,26 +763,36 @@ export default function GameSpeedPage() {
         const wasPressed = state.current.nosWasPressed;
 
         // NOS Animation State Machine - transisi normal dan cepat
-        const FRAME_DURATION = 60; // ms per frame (lebih cepat untuk transisi natural)
-        state.current.nosFrameTimer += 16; // ~60fps
+        const FRAME_DURATION = 5; // ULTRA FAST: 5ms per frame (approx 200fps playback speed)
+        state.current.nosFrameTimer += 16;
 
-        // Define frame sequences for the new 1-18 gif sequence
-        const STARTUP_FRAMES = [1, 2, 3, 4, 5, 6];
-        const LOOP_FRAMES = [7, 8, 9, 10, 11, 12, 13, 14, 15];
-        const ENDING_FRAMES = [16, 17, 18];
+        // Define frame sequences for the new 1-83 sequence
+        // Startup: 1-30, Loop: 31-83
+        const STARTUP_FRAMES = Array.from({ length: 30 }, (_, i) => i + 1);
+        const LOOP_FRAMES = Array.from({ length: 53 }, (_, i) => i + 31);
 
         let currentNosSprite: any = null;
-
 
         if (isNitro) {
             // NOS is being pressed
             if (!wasPressed) {
-                // Just started pressing
+                // If we were reversing (ending), try to resume from current frame
                 if (state.current.nosPhase === 'ending') {
-                    // Resume consistency: If we were just ending, jump back to loop immediately
-                    // This prevents "stuttering" frame 1 if input flickers
-                    state.current.nosPhase = 'loop';
-                    state.current.nosFrame = 0;
+                    // Current frame is absolute 1-83
+                    const currentAbsolute = state.current.nosFrame;
+                    if (currentAbsolute > 30) {
+                        // Resume in loop
+                        state.current.nosPhase = 'loop';
+                        // Find index in LOOP_FRAMES (31-83)
+                        const idx = LOOP_FRAMES.indexOf(currentAbsolute);
+                        state.current.nosFrame = idx >= 0 ? idx : 0;
+                    } else {
+                        // Resume in startup
+                        state.current.nosPhase = 'startup';
+                        // Find index in STARTUP_FRAMES (1-30)
+                        const idx = STARTUP_FRAMES.indexOf(currentAbsolute);
+                        state.current.nosFrame = idx >= 0 ? idx : 0;
+                    }
                 } else {
                     // Fresh start
                     state.current.nosPhase = 'startup';
@@ -963,20 +801,24 @@ export default function GameSpeedPage() {
                 }
             }
 
+            // Using while loop to catch up if frame duration is smaller than update deltas
             if (state.current.nosPhase === 'startup') {
-                if (state.current.nosFrameTimer >= FRAME_DURATION) {
-                    state.current.nosFrameTimer = 0;
+                while (state.current.nosFrameTimer >= FRAME_DURATION) {
+                    state.current.nosFrameTimer -= FRAME_DURATION;
                     state.current.nosFrame++;
                     if (state.current.nosFrame >= STARTUP_FRAMES.length) {
                         state.current.nosPhase = 'loop';
                         state.current.nosFrame = 0;
+                        break;
                     }
                 }
                 const frameNum = STARTUP_FRAMES[state.current.nosFrame];
                 currentNosSprite = sprites[`nos_${frameNum}`];
-            } else if (state.current.nosPhase === 'loop') {
-                if (state.current.nosFrameTimer >= FRAME_DURATION) {
-                    state.current.nosFrameTimer = 0;
+            }
+
+            if (state.current.nosPhase === 'loop') {
+                while (state.current.nosFrameTimer >= FRAME_DURATION) {
+                    state.current.nosFrameTimer -= FRAME_DURATION;
                     state.current.nosFrame = (state.current.nosFrame + 1) % LOOP_FRAMES.length;
                 }
                 const frameNum = LOOP_FRAMES[state.current.nosFrame];
@@ -987,24 +829,40 @@ export default function GameSpeedPage() {
         } else {
             // NOS is released
             if (wasPressed) {
-                // Just released - begin ending animation
+                // Just released - switch to reverse mode (using 'ending' phase)
+                let startReverseFrame = 1;
+                if (state.current.nosPhase === 'startup') {
+                    startReverseFrame = STARTUP_FRAMES[state.current.nosFrame] || 1;
+                } else if (state.current.nosPhase === 'loop') {
+                    startReverseFrame = LOOP_FRAMES[state.current.nosFrame] || 31;
+                } else if (state.current.nosPhase === 'ending') {
+                    startReverseFrame = state.current.nosFrame;
+                }
+
                 state.current.nosPhase = 'ending';
-                state.current.nosFrame = 0;
+                // Store absolute frame number directly in nosFrame for ending phase
+                state.current.nosFrame = startReverseFrame;
                 state.current.nosFrameTimer = 0;
             }
 
             if (state.current.nosPhase === 'ending') {
-                if (state.current.nosFrameTimer >= FRAME_DURATION) {
-                    state.current.nosFrameTimer = 0;
-                    state.current.nosFrame++;
-                    if (state.current.nosFrame >= ENDING_FRAMES.length) {
+                // Play backwards from current frame to 1
+                while (state.current.nosFrameTimer >= FRAME_DURATION) {
+                    state.current.nosFrameTimer -= FRAME_DURATION;
+                    state.current.nosFrame--;
+                    if (state.current.nosFrame < 1) {
                         state.current.nosPhase = 'idle';
                         state.current.nosFrame = 0;
+                        break;
                     }
                 }
+
                 if (state.current.nosPhase === 'ending') {
-                    const frameNum = ENDING_FRAMES[state.current.nosFrame];
-                    currentNosSprite = sprites[`nos_${frameNum}`];
+                    const frameNum = state.current.nosFrame;
+                    // Ensure we have a valid frame number (1-83)
+                    if (frameNum >= 1) {
+                        currentNosSprite = sprites[`nos_${frameNum}`];
+                    }
                 }
             }
 
@@ -1023,12 +881,14 @@ export default function GameSpeedPage() {
             finalH = baseH;
         } else {
             // Check if the current sprite is one of the MC animation frames that needs scaling down
-            const isMcStraight = [sprites.mc_1, sprites.mc_2].includes(finalSprite);
-            const isMcTurn = [sprites.mc_left_1, sprites.mc_left_2, sprites.mc_right_1, sprites.mc_right_2].includes(finalSprite);
+            // We use assetName attached to the image object
+            const sName = (finalSprite as any)?.assetName || '';
+            const isMcStraight = sName.startsWith('mc_straight_');
+            const isMcTurn = sName.startsWith('mc_left_') || sName.startsWith('mc_right_');
 
             let correctiveScale = 1.0;
-            if (isMcStraight) correctiveScale = 1.0; // Reduce slightly (1.05 -> 1.0)
-            else if (isMcTurn) correctiveScale = 0.84; // Keep turns as is
+            if (isMcStraight) correctiveScale = 1.0;
+            else if (isMcTurn) correctiveScale = 1.0; // Adjusted to match mc_straight
 
             // Use the natural dimensions for MC/others to avoid distortion
             finalW = finalSprite.width * playerScale * correctiveScale;
@@ -1923,6 +1783,37 @@ export default function GameSpeedPage() {
         ctx.lineWidth = 2;
         ctx.stroke();
 
+        // --- DEBUG OVERLAY ---
+        // Menampilkan indikator debug posisi dan keberadaan aset
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(10, logicalH - 80, 200, 70); // Posisi di pojok bawah kiri map
+
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'left';
+
+        // 1. Current Distance (Meters)
+        const currentSegIdx = Math.floor(position / SEGMENT_LENGTH);
+        const distanceMeters = currentSegIdx * 10; // Compressed distance: 1 Segment = 10 virtual meters
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`DIST: ${distanceMeters}m`, 20, logicalH - 60);
+
+        // 2. Check Asset at this location
+        // Search in TRACK_ASSETS for any asset at this index +/- 1 (tolerance)
+        const nearbyAsset = TRACK_ASSETS.find(a => Math.abs(a.z - currentSegIdx) <= 1);
+
+        if (nearbyAsset) {
+            const assetName = nearbyAsset.src.split('/').pop() || 'Unknown';
+            ctx.fillStyle = '#4ade80'; // Green for success
+            ctx.fillText(`ASSET CHECK: TRUE`, 20, logicalH - 40);
+            ctx.fillStyle = '#facc15'; // Yellow for name
+            ctx.fillText(`OBJ: ${assetName}`, 20, logicalH - 20);
+        } else {
+            ctx.fillStyle = '#ef4444'; // Red for false
+            ctx.fillText(`ASSET CHECK: FALSE`, 20, logicalH - 40);
+            ctx.fillStyle = '#94a3b8'; // Gray
+            ctx.fillText(`OBJ: None`, 20, logicalH - 20);
+        }
+
         ctx.restore();
     };
 
@@ -2429,7 +2320,7 @@ export default function GameSpeedPage() {
                         maxWidth: isMobileLandscape ? '90%' : '38rem',
                         width: '90%'
                     }}>
-                        <div style={{ fontSize: isMobileLandscape ? '2.5rem' : (usePCLayout ? '6rem' : '3rem'), marginBottom: '0.5rem' }}>🏁</div>
+                        <img src="/assets/logo/gameforsmartlogo.png" alt="Logo" style={{ height: isMobileLandscape ? '2.5rem' : (usePCLayout ? '6rem' : '3rem'), width: 'auto', marginBottom: '0.5rem' }} />
                         <h1 style={{ fontSize: isMobileLandscape ? '2.2rem' : (usePCLayout ? '4rem' : '2.5rem'), fontWeight: 950, fontStyle: 'italic', marginBottom: '0.25rem', color: '#fff' }}>GET READY!</h1>
                         <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem'), fontSize: usePCLayout ? '1rem' : '0.7rem' }}>City Night Protocol Active</p>
 
