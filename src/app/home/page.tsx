@@ -35,6 +35,7 @@ import {
     Zap,
     BookOpen
 } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 export default function HomePage() {
     const router = useRouter();
@@ -75,10 +76,8 @@ export default function HomePage() {
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950">
-                <div className="text-center space-y-4">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 animate-pulse">
-                        <Trophy className="w-8 h-8 text-white" />
-                    </div>
+                <div className="text-center space-y-6 flex flex-col items-center">
+                    <Logo width={280} height={80} animated={true} />
                     <div className="space-y-2">
                         <h2 className="text-xl font-semibold text-white">Loading Dashboard</h2>
                         <p className="text-gray-400 text-sm">Preparing your racing stats...</p>
@@ -110,11 +109,8 @@ export default function HomePage() {
                     <div className="flex items-center justify-between">
                         {/* Logo */}
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                                <Trophy className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-white">NitroQuiz</h1>
+                            <Logo width={150} height={45} animated={false} withText={false} />
+                            <div className="hidden sm:block border-l border-white/10 pl-3">
                                 <p className="text-xs text-gray-400">Learning through racing</p>
                             </div>
                         </div>

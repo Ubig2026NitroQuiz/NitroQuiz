@@ -463,35 +463,35 @@ h6 {
 /* Homepage Custom Styles */
 @layer components {
   .host-card {
-    border: 1px solid #00ff9d;
-    box-shadow: 0 0 25px rgba(0, 255, 157, 0.2);
+    border: 1px solid #578ea8;
+    box-shadow: 0 0 25px rgba(87, 142, 168, 0.2);
     backdrop-filter: blur(12px);
-    background: linear-gradient(160deg, rgba(0, 255, 157, 0.05) 0%, rgba(10, 16, 31, 0.9) 100%);
+    background: linear-gradient(160deg, rgba(87, 142, 168, 0.1) 0%, rgba(1, 42, 74, 0.9) 100%);
   }
 
   .join-card {
-    border: 1px solid #2d6af2;
-    box-shadow: 0 0 25px rgba(45, 106, 242, 0.2);
+    border: 1px solid #16668e;
+    box-shadow: 0 0 25px rgba(22, 102, 142, 0.2);
     backdrop-filter: blur(12px);
-    background: linear-gradient(160deg, rgba(45, 106, 242, 0.05) 0%, rgba(10, 16, 31, 0.9) 100%);
+    background: linear-gradient(160deg, rgba(22, 102, 142, 0.1) 0%, rgba(1, 42, 74, 0.9) 100%);
   }
 
   .glow-text {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 10px rgba(232, 235, 236, 0.5);
   }
 
   .text-neon-blue-glow {
-    color: #4da6ff;
-    text-shadow: 0 0 8px rgba(77, 166, 255, 0.6);
+    color: #578ea8;
+    text-shadow: 0 0 8px rgba(87, 142, 168, 0.6);
   }
 
   .text-neon-green-glow {
-    color: #00ff9d;
-    text-shadow: 0 0 8px rgba(0, 255, 157, 0.6);
+    color: #16668e;
+    text-shadow: 0 0 8px rgba(22, 102, 142, 0.6);
   }
 
   .scanlines {
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.15));
+    background: linear-gradient(to bottom, rgba(232, 235, 236, 0), rgba(232, 235, 236, 0) 50%, rgba(1, 42, 74, 0.15) 50%, rgba(1, 42, 74, 0.15));
     background-size: 100% 4px;
     position: absolute;
     top: 0;
@@ -503,11 +503,11 @@ h6 {
   }
 
   .city-silhouette {
-    background-image: linear-gradient(to bottom, transparent 80%, #02040a 100%), url(https://lh3.googleusercontent.com/aida-public/AB6AXuAzIdkdUXVwT8emdXamG9IHW8aN0evnLXKFAnymte4YAGlNf96YqJgLjTN12rscsbI7hRPj9ba1uPvGkFN16x7GCljnjN_YX8DxbpGRkCWaXoZ7S_-4Unw4YeQ-fyjuJtt03_JijjfK3FVohzPaiTgDfwrELYYfVUWBl92MfAZ7xA39_NePfj5Z5yh6fvoyONsf09fn1-aaw5sfPXs8ybETQ19q73U1oJIOJH25T0PkHLBlzYZU1WYSuH7OS9IAYCQ7AzC-IgsnXTA);
+    background-image: linear-gradient(to bottom, transparent 60%, rgba(1, 42, 74, 0.9) 100%), url(https://lh3.googleusercontent.com/aida-public/AB6AXuAzIdkdUXVwT8emdXamG9IHW8aN0evnLXKFAnymte4YAGlNf96YqJgLjTN12rscsbI7hRPj9ba1uPvGkFN16x7GCljnjN_YX8DxbpGRkCWaXoZ7S_-4Unw4YeQ-fyjuJtt03_JijjfK3FVohzPaiTgDfwrELYYfVUWBl92MfAZ7xA39_NePfj5Z5yh6fvoyONsf09fn1-aaw5sfPXs8ybETQ19q73U1oJIOJH25T0PkHLBlzYZU1WYSuH7OS9IAYCQ7AzC-IgsnXTA);
     background-size: cover;
     background-position: center bottom;
-    opacity: 0.15;
+    opacity: 0.25;
     mix-blend-mode: luminosity;
-    filter: contrast(1.5) brightness(0.7);
+    filter: contrast(1.2) brightness(0.8) sepia(0.5) hue-rotate(180deg) saturate(1.5);
   }
 }

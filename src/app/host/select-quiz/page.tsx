@@ -4,22 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ArrowLeft, HelpCircle, Heart, User } from "lucide-react";
+import { Search, ArrowLeft, HelpCircle, Heart, User, Play, FileText } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { questions, categoryNames } from "@/lib/questions";
+import { categoryNames } from "@/lib/questions";
 import { QuizCategory } from "@/types";
+import { supabaseCentral } from "@/lib/supabase";
+import { Logo } from "@/components/ui/logo";
+import Image from "next/image";
+import { getUser } from "@/lib/storage";
 
 // Helper type for our "Quiz" view derived from categories
 interface QuizView {
     id: string;
     title: string;
-    category: QuizCategory | "all";
+    category: string;
     questionCount: number;
     description: string;
     difficulty: "easy" | "medium" | "hard" | "mixed";
+    imageUrl?: string;
+    played?: number;
+    creatorId?: string;
 }
 
 export default function SelectQuizPage() {
@@ -30,53 +36,117 @@ export default function SelectQuizPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [quizzes, setQuizzes] = useState<QuizView[]>([]);
     const [allItems, setAllItems] = useState<QuizView[]>([]);
-    const [isTransitioning, setIsTransitioning] = useState(false);
     const [creating, setCreating] = useState(false);
     const [creatingQuizId, setCreatingQuizId] = useState<string | null>(null);
+    const [favorites, setFavorites] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'myquiz'>('all');
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-    // Background state (simplified for NitroQuiz theme)
-    const isFetching = false; // Local data is instant
+    // Background state
+    const [isFetching, setIsFetching] = useState(true);
+    const [isReturning, setIsReturning] = useState(false);
 
     const itemsPerPage = 9;
 
-    // Transform questions into "Quiz Packs" based on categories
-    // In a real app with DB, these would be actual quiz rows.
-    // Here we group questions by category to simulate "Quizzes".
+    // Get current user ID
     useEffect(() => {
-        // Group questions by category
-        const grouped = questions.reduce((acc, q) => {
-            if (!acc[q.category]) {
-                acc[q.category] = [];
-            }
-            acc[q.category].push(q);
-            return acc;
-        }, {} as Record<string, typeof questions>);
+        const user = getUser();
+        if (user) {
+            setCurrentUserId(user.id);
+        }
+    }, []);
 
-        const simulatedQuizzes: QuizView[] = Object.entries(grouped).map(([cat, qs]) => ({
-            id: `quiz-${cat}`,
-            title: `${categoryNames[cat as QuizCategory] || cat} Challenge`,
-            category: cat as QuizCategory,
-            questionCount: qs.length,
-            description: `Test your skills in ${categoryNames[cat as QuizCategory] || cat}!`,
-            difficulty: "mixed"
-        }));
+    // Load favorites from localStorage
+    useEffect(() => {
+        const savedFavorites = localStorage.getItem('quiz_favorites');
+        if (savedFavorites) {
+            try {
+                setFavorites(JSON.parse(savedFavorites));
+            } catch { }
+        }
+    }, []);
 
-        // Add a "Mega Mix" quiz containing all questions
-        simulatedQuizzes.unshift({
-            id: "quiz-all",
-            title: "Ultimate Nitro Mix",
-            category: "all",
-            questionCount: questions.length,
-            description: "A mix of all topics for the ultimate racer!",
-            difficulty: "hard"
+    const toggleFavorite = (quizId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setFavorites(prev => {
+            const updated = prev.includes(quizId)
+                ? prev.filter(id => id !== quizId)
+                : [...prev, quizId];
+            localStorage.setItem('quiz_favorites', JSON.stringify(updated));
+            return updated;
         });
+    };
 
-        setAllItems(simulatedQuizzes);
+    // Fetch quizzes from Central Database
+    useEffect(() => {
+        const fetchQuizzes = async () => {
+            setIsFetching(true);
+            try {
+                const { data, error } = await supabaseCentral
+                    .from("quizzes")
+                    .select("*")
+                    .eq("is_hidden", false)
+                    .eq("status", "active")
+                    .is("deleted_at", null)
+                    .order("created_at", { ascending: false });
+
+                if (error) {
+                    console.error("Error fetching quizzes:", error);
+                    return;
+                }
+
+                if (data) {
+                    const fetchedQuizzes: QuizView[] = data.map((quiz: any) => {
+                        let qCount = 0;
+                        if (Array.isArray(quiz.questions)) {
+                            qCount = quiz.questions.length;
+                        } else if (typeof quiz.questions === 'string') {
+                            try { qCount = JSON.parse(quiz.questions).length; } catch (e) { }
+                        }
+
+                        const rawCat = quiz.category || "umum";
+
+                        return {
+                            id: quiz.id,
+                            title: quiz.title || "Untitled Quiz",
+                            category: rawCat,
+                            questionCount: qCount,
+                            description: quiz.description || "No description provided.",
+                            difficulty: "mixed",
+                            imageUrl: quiz.image_url || quiz.cover_image,
+                            played: quiz.played || 0,
+                            creatorId: quiz.creator_id || quiz.user_id || null,
+                        };
+                    });
+
+                    setAllItems(fetchedQuizzes);
+                }
+            } catch (err) {
+                console.error("Failed to fetch quizzes", err);
+            } finally {
+                setIsFetching(false);
+            }
+        };
+
+        fetchQuizzes();
     }, []);
 
     // Filter and Paginate
     useEffect(() => {
         let filtered = allItems;
+
+        // Apply tab filter
+        if (activeTab === 'favorites') {
+            filtered = filtered.filter(q => favorites.includes(q.id));
+        }
+        // My Quiz: filter by current user's quizzes
+        if (activeTab === 'myquiz') {
+            if (currentUserId) {
+                filtered = filtered.filter(q => q.creatorId === currentUserId);
+            } else {
+                filtered = [];
+            }
+        }
 
         if (searchQuery) {
             filtered = filtered.filter(q =>
@@ -85,13 +155,16 @@ export default function SelectQuizPage() {
             );
         }
 
+        // Category filter: compare case-insensitively
         if (selectedCategory !== "All") {
-            filtered = filtered.filter(q => q.category === selectedCategory);
+            filtered = filtered.filter(q =>
+                q.category.toLowerCase() === selectedCategory.toLowerCase()
+            );
         }
 
         setQuizzes(filtered);
-        setCurrentPage(1); // Reset to page 1 on filter change
-    }, [allItems, searchQuery, selectedCategory]);
+        setCurrentPage(1);
+    }, [allItems, searchQuery, selectedCategory, activeTab, favorites, currentUserId]);
 
     const paginatedQuizzes = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -100,32 +173,48 @@ export default function SelectQuizPage() {
 
     const totalPages = Math.ceil(quizzes.length / itemsPerPage);
 
+    // Build categories dynamically from fetched data
     const categories = useMemo(() => {
-        return ["All", ...Object.keys(categoryNames)];
-    }, []);
+        const uniqueCategories = Array.from(new Set(allItems.map(q => q.category)));
+        return ["All", ...uniqueCategories];
+    }, [allItems]);
+
+    // Helper to get display name for a category
+    const getCategoryDisplayName = (cat: string): string => {
+        if (cat === 'All') return 'ALL CATEGORIES';
+        // Try exact match from known categoryNames
+        const known = categoryNames[cat as QuizCategory];
+        if (known) return known;
+        // Capitalize first letter of each word for unknown categories
+        return cat.split(/[-_\s]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    };
 
     const handleSelectQuiz = async (quizId: string) => {
         if (creating) return;
         setCreating(true);
         setCreatingQuizId(quizId);
 
-        // Simulate creation delay
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // For now, mockup redirect to settings or lobby
-        // Ideally we generate a game PIN here
         const mockGamePin = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // In a real implementation we would save the session to DB/LocalStorage here
-        // For this demo:
-        // Save quizId to localStorage as requested
         localStorage.setItem("currentQuizId", quizId);
         router.push(`/host/${mockGamePin}/settings`);
-
-        // Reset state cleaning up (though component will unmount)
-        setCreating(false);
-        setCreatingQuizId(null);
     };
+
+    if (isFetching || isReturning || creating) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden font-display text-white">
+                <div className="fixed inset-0 z-0 city-silhouette pointer-events-none"></div>
+                <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-blue-900/10 pointer-events-none"></div>
+                <div className="text-center z-10">
+                    <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
+                    <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
+                        {creating ? 'Preparing Quiz...' : 'Establishing Signal...'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden font-body text-white">
@@ -140,34 +229,34 @@ export default function SelectQuizPage() {
             {/* Scrollable Content Wrapper */}
             <div className="absolute inset-0 overflow-y-auto z-10">
 
-                {/* Header */}
-                <div className="w-full px-4 pt-6 flex items-center justify-between">
-                    <motion.button
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        whileHover={{ scale: 1.05 }}
-                        className="p-3 bg-black/40 border border-[#2d6af2]/50 hover:bg-[#2d6af2]/20 hover:border-[#2d6af2] text-[#2d6af2] rounded-xl transition-all shadow-[0_0_15px_rgba(45,106,242,0.2)] flex items-center justify-center group"
-                        aria-label="Back to Home"
-                        onClick={() => router.push('/')}
-                    >
-                        <ArrowLeft size={20} className="group-hover:text-white transition-colors" />
-                    </motion.button>
+                {/* Top Bar: Back + Logo1 left, Logo2 right */}
+                <div className="w-full px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <motion.button
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            whileHover={{ scale: 1.05 }}
+                            className="p-3 bg-black/40 border border-[#2d6af2]/50 hover:bg-[#2d6af2]/20 hover:border-[#2d6af2] text-[#2d6af2] rounded-xl transition-all shadow-[0_0_15px_rgba(45,106,242,0.2)] flex items-center justify-center group"
+                            aria-label="Back to Home"
+                            onClick={() => {
+                                setIsReturning(true);
+                                router.push('/');
+                            }}
+                        >
+                            <ArrowLeft size={20} className="group-hover:text-white transition-colors" />
+                        </motion.button>
+                        <Logo width={140} height={40} withText={false} animated={false} />
+                    </div>
+                    <Image
+                        src="/assets/logo/logo2.png"
+                        alt="GameForSmart.com"
+                        width={240}
+                        height={60}
+                        className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(45,106,242,0.3)]"
+                    />
                 </div>
 
-                <div className="relative container mx-auto px-6 pb-4 max-w-6xl">
-
-                    {/* Page Title */}
-                    <div className="text-center mb-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <h2 className="text-3xl md:text-5xl font-display text-white uppercase tracking-wider drop-shadow-[0_0_15px_rgba(45,106,242,0.8)]">
-                                SELECT QUIZ
-                            </h2>
-                        </motion.div>
-                    </div>
+                <div className="relative container mx-auto px-6 pb-4 max-w-6xl pt-2">
 
                     {/* Search & Filter Bar */}
                     <motion.div
@@ -176,7 +265,8 @@ export default function SelectQuizPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="bg-black/40 border border-[#2d6af2]/30 rounded-2xl p-4 sm:p-6 mb-8 backdrop-blur-md shadow-[0_0_25px_rgba(45,106,242,0.1)]"
                     >
-                        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
+                        {/* Top Row: Search + Category Filter */}
+                        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
                             {/* Search */}
                             <div className="relative flex-1 group/search">
                                 <Input
@@ -199,17 +289,56 @@ export default function SelectQuizPage() {
 
                             {/* Category Select */}
                             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger className="w-full sm:w-48 h-12 bg-black/60 border border-[#2d6af2]/30 text-white focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] rounded-xl font-display text-xs tracking-wider uppercase">
+                                <SelectTrigger className="w-full sm:w-52 h-12 bg-black/60 border border-[#2d6af2]/30 text-white focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] rounded-xl font-display text-xs tracking-wider uppercase">
                                     <SelectValue placeholder="CATEGORY" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#0a0a0f] border border-[#2d6af2]/30 text-white font-display text-xs uppercase tracking-wider">
                                     {categories.map((cat) => (
                                         <SelectItem key={cat} value={cat} className="focus:bg-[#2d6af2]/20 focus:text-white cursor-pointer py-3">
-                                            {cat === 'All' ? 'ALL CATEGORIES' : (categoryNames[cat as QuizCategory] || cat)}
+                                            {getCategoryDisplayName(cat)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        {/* Bottom Row: Tab Buttons - Centered */}
+                        <div className="flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => setActiveTab('all')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-display text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'all'
+                                    ? 'bg-[#2d6af2] text-white shadow-[0_0_15px_rgba(45,106,242,0.4)]'
+                                    : 'bg-black/40 border border-[#2d6af2]/20 text-gray-400 hover:text-white hover:border-[#2d6af2]/50'
+                                    }`}
+                            >
+                                <Search size={14} />
+                                Quizzes
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('favorites')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-display text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'favorites'
+                                    ? 'bg-gradient-to-r from-pink-600 to-red-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]'
+                                    : 'bg-black/40 border border-pink-500/20 text-gray-400 hover:text-pink-400 hover:border-pink-500/50'
+                                    }`}
+                            >
+                                <Heart size={14} className={activeTab === 'favorites' ? 'fill-white' : ''} />
+                                Favorites
+                                {favorites.length > 0 && (
+                                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'favorites' ? 'bg-white/20' : 'bg-pink-500/20 text-pink-400'}`}>
+                                        {favorites.length}
+                                    </span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('myquiz')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-display text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'myquiz'
+                                    ? 'bg-gradient-to-r from-[#00ff9d] to-emerald-500 text-black shadow-[0_0_15px_rgba(0,255,157,0.4)]'
+                                    : 'bg-black/40 border border-[#00ff9d]/20 text-gray-400 hover:text-[#00ff9d] hover:border-[#00ff9d]/50'
+                                    }`}
+                            >
+                                <FileText size={14} />
+                                My Quiz
+                            </button>
                         </div>
                     </motion.div>
 
@@ -217,61 +346,89 @@ export default function SelectQuizPage() {
                     <AnimatePresence mode="wait">
                         {paginatedQuizzes.length > 0 ? (
                             <motion.div
-                                key={`grid-${currentPage}`}
+                                key={`grid-${currentPage}-${activeTab}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                             >
                                 {paginatedQuizzes.map((quiz, index) => {
-                                    const isThisQuizCreating = creatingQuizId === quiz.id;
+                                    const isFavorited = favorites.includes(quiz.id);
 
                                     return (
                                         <motion.div
                                             key={quiz.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                                            whileHover={!isThisQuizCreating ? { scale: 1.02, translateY: -5 } : {}}
-                                            whileTap={!isThisQuizCreating ? { scale: 0.98 } : {}}
+                                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            transition={{ duration: 0.4, delay: index * 0.1, type: "spring", stiffness: 100 }}
+                                            whileHover={{ scale: 1.02, translateY: -5 }}
                                         >
                                             <Card
-                                                className={`h-full bg-black/40 border transition-all duration-300 relative overflow-hidden group cursor-pointer
-                                ${isThisQuizCreating
-                                                        ? "border-[#2d6af2] shadow-[0_0_30px_rgba(45,106,242,0.4)]"
-                                                        : "border-[#2d6af2]/30 hover:border-[#2d6af2] hover:shadow-[0_0_20px_rgba(45,106,242,0.2)]"
-                                                    }`}
-                                                onClick={() => handleSelectQuiz(quiz.id)}
+                                                className="h-full flex flex-col bg-black/40 border transition-all duration-300 relative overflow-hidden group border-[#2d6af2]/30 hover:border-[#2d6af2] hover:shadow-[0_0_20px_rgba(45,106,242,0.2)]"
                                             >
-                                                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                                                <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                                                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent opacity-50 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"></div>
+                                                <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"></div>
 
-                                                {isThisQuizCreating && (
-                                                    <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                                                        <div className="w-10 h-10 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mb-3"></div>
-                                                        <p className="text-[#2d6af2] font-display text-xs tracking-widest animate-pulse">INITIATING...</p>
-                                                    </div>
-                                                )}
+                                                {/* Quiz background image */}
+                                                <div className="absolute inset-0 z-0 pointer-events-none">
+                                                    {quiz.imageUrl && (
+                                                        <div
+                                                            className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity"
+                                                            style={{ backgroundImage: `url(${quiz.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                                                        />
+                                                    )}
+                                                    <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-black/80"></div>
+                                                </div>
 
-                                                <CardHeader className="pb-2">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="px-2 py-1 bg-[#2d6af2]/10 border border-[#2d6af2]/30 rounded text-[10px] text-[#2d6af2] font-display uppercase tracking-wider">
-                                                            {quiz.category === 'all' ? 'MIXED' : categoryNames[quiz.category as QuizCategory] || quiz.category}
-                                                        </div>
-                                                        <div className="text-gray-500 hover:text-red-500 transition-colors">
-                                                            <Heart size={16} />
+                                                {/* Favorite button - Top Right */}
+                                                <button
+                                                    onClick={(e) => toggleFavorite(quiz.id, e)}
+                                                    className={`absolute top-3 right-3 z-20 p-2 rounded-full transition-all duration-200 backdrop-blur-sm ${isFavorited
+                                                        ? 'bg-pink-500/30 border border-pink-500/50 text-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.4)] hover:bg-pink-500/50'
+                                                        : 'bg-black/50 border border-white/10 text-gray-500 hover:text-pink-400 hover:border-pink-500/30 hover:bg-pink-500/10'
+                                                        }`}
+                                                >
+                                                    <Heart size={14} className={isFavorited ? 'fill-pink-400' : ''} />
+                                                </button>
+
+                                                <CardHeader className="pb-4 relative z-20 flex-1 flex flex-col">
+                                                    <div className="flex items-start mb-3 pr-10">
+                                                        <div className="px-2 py-1 bg-[#2d6af2]/20 border border-[#2d6af2]/30 rounded text-[10px] text-[#2d6af2] font-display uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                                                            {getCategoryDisplayName(quiz.category)}
                                                         </div>
                                                     </div>
-                                                    <CardTitle className="text-lg md:text-xl text-white font-display uppercase tracking-wide leading-tight group-hover:text-neon-blue transition-colors">
+                                                    <CardTitle className="text-lg md:text-xl text-white font-display uppercase tracking-wide leading-tight group-hover:text-[#2d6af2] transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-2" title={quiz.title}>
                                                         {quiz.title}
                                                     </CardTitle>
+                                                    <div className="text-sm text-gray-400 font-body line-clamp-2 mt-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] flex-1" title={quiz.description}>
+                                                        {quiz.description}
+                                                    </div>
                                                 </CardHeader>
 
-                                                <CardFooter className="pt-4 border-t border-[#2d6af2]/10 flex justify-between items-center text-xs text-gray-400 font-display tracking-wider">
-                                                    <div className="flex items-center gap-2">
-                                                        <HelpCircle size={14} className="text-[#2d6af2]" />
-                                                        {quiz.questionCount} QUESTIONS
+                                                <CardFooter className="mt-auto pt-4 border-t border-[#2d6af2]/10 flex justify-between items-center text-xs text-gray-400 font-display tracking-wider relative z-20 bg-black/40 backdrop-blur-sm">
+                                                    <div className="flex items-center gap-4 drop-shadow-md">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <HelpCircle size={14} className="text-[#2d6af2]" />
+                                                            {quiz.questionCount} Qs
+                                                        </div>
+                                                        {quiz.played !== undefined && (
+                                                            <div className="flex items-center gap-1.5 text-[#2d6af2]/80">
+                                                                <User size={14} />
+                                                                {quiz.played}
+                                                            </div>
+                                                        )}
                                                     </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleSelectQuiz(quiz.id);
+                                                        }}
+                                                        disabled={creating}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#2d6af2] to-[#4da6ff] hover:from-[#3b7bf5] hover:to-[#5bb8ff] text-white font-display text-[10px] tracking-widest uppercase rounded-lg transition-all duration-200 shadow-[0_0_12px_rgba(45,106,242,0.3)] hover:shadow-[0_0_20px_rgba(45,106,242,0.5)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Play size={12} className="fill-white" />
+                                                        Start
+                                                    </button>
                                                 </CardFooter>
                                             </Card>
                                         </motion.div>
@@ -286,20 +443,50 @@ export default function SelectQuizPage() {
                                 exit={{ opacity: 0 }}
                                 className="col-span-full py-20 text-center"
                             >
-                                <Search className="h-16 w-16 mx-auto text-[#2d6af2]/20 mb-4" />
-                                <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">No Quizzes Found</h3>
-                                <p className="text-blue-400/40 text-sm mb-6">Try adjusting your filters or search terms</p>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setSearchQuery("");
-                                        setSearchInput("");
-                                        setSelectedCategory("All");
-                                    }}
-                                    className="bg-[#2d6af2]/10 border border-[#2d6af2]/50 text-[#2d6af2] hover:bg-[#2d6af2] hover:text-white transition-all font-display text-xs uppercase tracking-wider"
-                                >
-                                    Reset Filters
-                                </Button>
+                                {activeTab === 'favorites' ? (
+                                    <>
+                                        <Heart className="h-16 w-16 mx-auto text-pink-500/20 mb-4" />
+                                        <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">No Favorites Yet</h3>
+                                        <p className="text-pink-400/40 text-sm mb-6">Tap the heart icon on any quiz to save it here</p>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setActiveTab('all')}
+                                            className="bg-pink-500/10 border border-pink-500/50 text-pink-400 hover:bg-pink-500 hover:text-white transition-all font-display text-xs uppercase tracking-wider"
+                                        >
+                                            Browse Quizzes
+                                        </Button>
+                                    </>
+                                ) : activeTab === 'myquiz' ? (
+                                    <>
+                                        <FileText className="h-16 w-16 mx-auto text-[#00ff9d]/20 mb-4" />
+                                        <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">No Quizzes Created</h3>
+                                        <p className="text-[#00ff9d]/40 text-sm mb-6">Quizzes you create will appear here</p>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setActiveTab('all')}
+                                            className="bg-[#00ff9d]/10 border border-[#00ff9d]/50 text-[#00ff9d] hover:bg-[#00ff9d] hover:text-black transition-all font-display text-xs uppercase tracking-wider"
+                                        >
+                                            Browse Quizzes
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search className="h-16 w-16 mx-auto text-[#2d6af2]/20 mb-4" />
+                                        <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">No Quizzes Found</h3>
+                                        <p className="text-blue-400/40 text-sm mb-6">Try adjusting your filters or search terms</p>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setSearchQuery("");
+                                                setSearchInput("");
+                                                setSelectedCategory("All");
+                                            }}
+                                            className="bg-[#2d6af2]/10 border border-[#2d6af2]/50 text-[#2d6af2] hover:bg-[#2d6af2] hover:text-white transition-all font-display text-xs uppercase tracking-wider"
+                                        >
+                                            Reset Filters
+                                        </Button>
+                                    </>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
