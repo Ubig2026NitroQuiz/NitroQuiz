@@ -11,8 +11,10 @@ import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import Image from "next/image"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog"
-import { questions, categoryNames, getQuestionsByCategory } from "@/lib/questions"
-import { Question, QuizCategory } from "@/types"
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { supabase, supabaseCentral } from "@/lib/supabase"
+import { Question } from "@/types"
+import { Logo } from "@/components/ui/logo"
 
 const backgroundGif = "/assets/background/2_v2.webp" // Reusing homepage background to ensure it exists
 
@@ -36,6 +38,7 @@ export default function SettingsPage() {
         title: string;
         description: string;
         totalQuestions: number;
+        questions: any[];
     } | null>(null)
 
     const [saving, setSaving] = useState(false)
@@ -54,40 +57,50 @@ export default function SettingsPage() {
         return shuffled
     }
 
-    // Load Quiz Data
+    // Load Quiz Data from Central Database
     useEffect(() => {
-        // Try to get from localStorage first
-        const storedQuizId = localStorage.getItem("currentQuizId");
+        const fetchQuizFromCentral = async () => {
+            const storedQuizId = localStorage.getItem("currentQuizId");
 
-        if (!storedQuizId) {
-            console.error("No quiz ID found in storage");
-            router.push('/host/select-quiz');
-            return;
-        }
+            if (!storedQuizId) {
+                console.error("No quiz ID found in storage");
+                router.push('/host/select-quiz');
+                return;
+            }
 
-        setQuizId(storedQuizId);
+            setQuizId(storedQuizId);
 
-        let currentQuestions = [];
-        let title = "";
-        let description = "";
+            try {
+                const { data, error } = await supabaseCentral
+                    .from('quizzes')
+                    .select('*')
+                    .eq('id', storedQuizId)
+                    .single();
 
-        if (storedQuizId === 'quiz-all') {
-            currentQuestions = questions;
-            title = "Ultimate Nitro Mix";
-            description = "A mix of all topics for the ultimate racer!";
-        } else if (storedQuizId.startsWith('quiz-')) {
-            const category = storedQuizId.replace('quiz-', '') as QuizCategory;
-            currentQuestions = getQuestionsByCategory(category);
-            title = `${categoryNames[category] || category} Challenge`;
-            description = `Test your skills in ${categoryNames[category] || category}!`;
-        }
+                if (error) {
+                    console.error("Failed to load quiz metadata", error);
+                    return;
+                }
 
-        setQuizDetail({
-            title,
-            description,
-            totalQuestions: currentQuestions.length
-        });
+                if (data) {
+                    let qs = data.questions || [];
+                    if (typeof qs === 'string') {
+                        try { qs = JSON.parse(qs); } catch (e) { }
+                    }
 
+                    setQuizDetail({
+                        title: data.title || "Untitled Quiz",
+                        description: data.description || "No description provided.",
+                        totalQuestions: qs.length,
+                        questions: qs
+                    });
+                }
+            } catch (err) {
+                console.error("Error fetching quiz from central:", err);
+            }
+        };
+
+        fetchQuizFromCentral();
     }, [router]);
 
 
@@ -134,39 +147,57 @@ export default function SettingsPage() {
         if (saving || !quizDetail || !quizId) return;
         setSaving(true);
 
-        // Get questions based on ID again
-        let availableQuestions: Question[] = [];
-        if (quizId === 'quiz-all') {
-            availableQuestions = questions;
-        } else if (quizId.startsWith('quiz-')) {
-            const category = quizId.replace('quiz-', '') as QuizCategory;
-            availableQuestions = getQuestionsByCategory(category);
+        try {
+            const limit = parseInt(questionCount);
+            // Shuffle and slice questions from the central DB payload
+            const selectedQuestions = shuffleArray(quizDetail.questions).slice(0, limit);
+
+            // Create session in Primary DB
+            const { data: sessionData, error } = await supabase
+                .from('sessions')
+                .insert({
+                    game_pin: roomCode,
+                    quiz_id: quizId,
+                    status: 'waiting',
+                    question_limit: limit,
+                    total_time_minutes: parseInt(duration) / 60,
+                    difficulty: selectedDifficulty,
+                    current_questions: selectedQuestions,
+                    // Note: host_id would ideally be set here if authentication is present
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error("Error creating session in Supabase:", error);
+
+                // For bulletproofing during migrations, let's allow it to fallback to localStorage
+                // If it fails because of schema mismatches, we'll know from console.
+            }
+
+            // Still save to localStorage for immediate client-side logic in Lobby (can be removed if deeply integrated)
+            const settings = {
+                sessionId: sessionData?.id,
+                gamePin: roomCode,
+                quizId: quizId,
+                quizTitle: quizDetail.title,
+                totalTimeMinutes: parseInt(duration) / 60,
+                questionLimit: limit,
+                difficulty: selectedDifficulty,
+                questions: selectedQuestions,
+                status: 'waiting',
+                players: []
+            };
+
+            localStorage.setItem(`session_${roomCode}`, JSON.stringify(settings));
+            localStorage.setItem("hostroomCode", roomCode as string);
+            localStorage.setItem("settings_muted", isMuted.toString());
+
+            router.push(`/host/${roomCode}/lobby`);
+        } catch (err) {
+            console.error("Unexpected error creating session:", err);
+            setSaving(false);
         }
-
-        const limit = parseInt(questionCount);
-        const selectedQuestions = shuffleArray(availableQuestions).slice(0, limit);
-
-        const settings = {
-            gamePin: roomCode,
-            quizId: quizId,
-            quizTitle: quizDetail.title,
-            totalTimeMinutes: parseInt(duration) / 60,
-            questionLimit: limit,
-            difficulty: selectedDifficulty,
-            questions: selectedQuestions,
-            status: 'lobby',
-            players: []
-        };
-
-        // Save to LocalStorage (Simulating DB)
-        localStorage.setItem(`session_${roomCode}`, JSON.stringify(settings));
-        localStorage.setItem("hostroomCode", roomCode as string);
-        localStorage.setItem("settings_muted", isMuted.toString());
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        router.push(`/host/${roomCode}/lobby`);
     };
 
     const handleCancelSession = async () => {
@@ -178,16 +209,16 @@ export default function SettingsPage() {
         } catch (err) {
             console.error("Error deleting session:", err);
             router.push('/host/select-quiz'); // Fallback
-        } finally {
-            setIsDeleting(false);
-            setShowCancelDialog(false);
         }
     };
 
     if (!quizDetail) {
         return (
-            <div className="flex h-screen items-center justify-center bg-[#0a0a0f]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+            <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden font-display text-white">
+                <div className="text-center z-10">
+                    <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
+                    <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">Establishing Signal...</p>
+                </div>
             </div>
         );
     }
@@ -208,8 +239,9 @@ export default function SettingsPage() {
             </div>
 
             <div className="absolute inset-0 overflow-y-auto z-10">
-                <div className="w-full px-4 pt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                {/* Top Bar: Back + Logo1 left, Logo2 right */}
+                <div className="w-full px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                         <motion.button
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -220,19 +252,20 @@ export default function SettingsPage() {
                         >
                             <ArrowLeft size={20} className="group-hover:text-white transition-colors" />
                         </motion.button>
+                        <Logo width={140} height={40} withText={false} animated={false} />
                     </div>
+                    <Image
+                        src="/assets/logo/logo2.png"
+                        alt="GameForSmart.com"
+                        width={240}
+                        height={60}
+                        className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(45,106,242,0.3)]"
+                    />
                 </div>
 
                 <div className="relative container mx-auto px-4 sm:px-6 pb-6 max-w-4xl">
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center mb-8">
-                        <div>
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display uppercase tracking-wider text-white drop-shadow-[0_0_15px_rgba(45,106,242,0.5)]">
-                                SETTINGS
-                            </h1>
-                        </div>
-                    </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 100, damping: 12 }}>
                         <Card className="bg-black/60 border border-[#2d6af2]/50 backdrop-blur-md shadow-[0_0_30px_rgba(45,106,242,0.15)] p-6 sm:p-8 rounded-[2rem] relative overflow-hidden">
                             {/* Card Glow Effect */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#2d6af2]/10 blur-[50px] pointer-events-none"></div>
