@@ -107,7 +107,16 @@ export default function Home() {
 
       const params = new URLSearchParams(window.location.search);
       const r = params.get("room");
-      if (r) setRoomCode(r.toUpperCase());
+      if (r) {
+        const code = r.toUpperCase();
+        setRoomCode(code);
+        // If logged in, redirect directly to the room lobby
+        const u = getUser();
+        if (u) {
+          router.push(`/player/${code}/lobby`);
+          return;
+        }
+      }
     }
 
     init();

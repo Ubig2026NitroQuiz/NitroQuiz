@@ -260,7 +260,7 @@ export default function PlayerLobbyPage() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex flex-col items-center justify-center"
+                            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
                         >
                             {/* Racing lights indicator */}
                             <div className="flex gap-4 mb-10">
