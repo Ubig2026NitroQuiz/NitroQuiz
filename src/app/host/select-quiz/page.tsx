@@ -366,16 +366,27 @@ export default function SelectQuizPage() {
                     <AnimatePresence mode="wait">
                         {(isFetching || isReturning || creating) ? (
                             <motion.div
-                                key="loading"
+                                key="skeleton"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="col-span-full py-20 text-center"
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                             >
-                                <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
-                                <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
-                                    {creating ? 'Preparing Quiz...' : 'Establishing Signal...'}
-                                </p>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="bg-black/40 border border-[#2d6af2]/10 rounded-2xl overflow-hidden animate-pulse">
+                                        {/* Image skeleton */}
+                                        <div className="w-full h-40 bg-gradient-to-br from-[#2d6af2]/10 to-[#0a0a0f]" />
+                                        {/* Content skeleton */}
+                                        <div className="p-4 space-y-3">
+                                            <div className="h-4 bg-white/5 rounded-lg w-3/4" />
+                                            <div className="h-3 bg-white/5 rounded-lg w-1/2" />
+                                            <div className="flex gap-2 mt-3">
+                                                <div className="h-6 w-16 bg-white/5 rounded-full" />
+                                                <div className="h-6 w-12 bg-white/5 rounded-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </motion.div>
                         ) : paginatedQuizzes.length > 0 ? (
                             <motion.div

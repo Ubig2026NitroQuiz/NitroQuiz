@@ -37,6 +37,7 @@ export default function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +63,47 @@ export default function Home() {
   };
   useEffect(() => {
     async function init() {
+      // PRIORITY: Check if this is a QR scan redirect (?room=XXX)
+      // If so, show loading, check login, redirect immediately — never show homepage
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get("room");
+      if (roomParam) {
+        const code = roomParam.toUpperCase();
+        setIsRedirecting(true);
+
+        // Quick check: is user already in localStorage?
+        const existingUser = getUser();
+        if (existingUser) {
+          router.push(`/player/${code}/lobby`);
+          return;
+        }
+
+        // Also check Supabase session (OAuth users)
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            const newUser: User = {
+              id: session.user.id,
+              username: session.user.user_metadata.full_name || session.user.email?.split("@")[0] || "Racer",
+              email: session.user.email || "",
+              totalPoints: 0,
+              gamesPlayed: 0,
+              createdAt: new Date().toISOString(),
+            };
+            saveUser(newUser);
+            router.push(`/player/${code}/lobby`);
+            return;
+          }
+        } catch (e) {
+          console.error("Session check failed:", e);
+        }
+
+        // Not logged in → redirect to player login with room code
+        router.push(`/player/${code}/login`);
+        return;
+      }
+
+      // Normal homepage flow (no ?room= param)
       try {
         const {
           data: { session },
@@ -96,26 +138,12 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Failed to get Supabase session:", error);
-        // Fallback: check localStorage for saved user
         const currentUser = getUser();
         if (!currentUser) {
           router.push("/login");
           return;
         }
         setUser(currentUser);
-      }
-
-      const params = new URLSearchParams(window.location.search);
-      const r = params.get("room");
-      if (r) {
-        const code = r.toUpperCase();
-        setRoomCode(code);
-        // If logged in, redirect directly to the room lobby
-        const u = getUser();
-        if (u) {
-          router.push(`/player/${code}/lobby`);
-          return;
-        }
       }
     }
 
@@ -157,7 +185,7 @@ export default function Home() {
     }
   };
 
-  if (!user || isHosting) {
+  if (!user || isHosting || isRedirecting) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden font-display text-white">
         <div className="text-center z-10">
