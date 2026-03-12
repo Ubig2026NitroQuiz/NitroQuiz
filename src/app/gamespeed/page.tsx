@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ASSET_LIST, TRACK_ASSETS, getAssetOffset } from '@/lib/gameAssets';
 import QuizOverlay, { QuizQuestion } from '@/components/game/QuizOverlay';
+import { supabase } from '@/lib/supabase';
+import { getUser } from '@/lib/storage';
 
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
@@ -142,6 +144,28 @@ export default function GameSpeedPage() {
     const touchCurrentX = useRef<number | null>(null);
     const steeringTouchId = useRef<number | null>(null);
     const swipeThreshold = 30; // minimum swipe distance to trigger steer
+
+    // Participant Update Helper
+    const updateParticipantStatus = useCallback(async (updates: any) => {
+        const sessId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_sessionId') : null;
+        const user = getUser();
+        if (sessId && user) {
+            try {
+                await supabase.from("participants").update(updates)
+                    .eq("session_id", sessId)
+                    .eq("nickname", user.username);
+            } catch (error) {
+                console.error("Failed to sync participant status:", error);
+            }
+        }
+    }, []);
+
+    // Sync "Answering" vs "Racing" state for Host Monitor
+    useEffect(() => {
+        if (mounted && assetsLoaded) {
+            updateParticipantStatus({ minigame: showQuiz });
+        }
+    }, [showQuiz, mounted, assetsLoaded, updateParticipantStatus]);
 
     // Refs for game loop
     const state = useRef({
@@ -1841,12 +1865,19 @@ export default function GameSpeedPage() {
     };
 
     const endGame = () => {
+        const roomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
+        
         // Clean up quiz data from localStorage
         localStorage.removeItem('nitroquiz_game_questions');
         localStorage.removeItem('nitroquiz_game_roomCode');
         localStorage.removeItem('nitroquiz_game_sessionId');
         localStorage.removeItem('nitroquiz_game_quizId');
-        router.push('/');
+
+        if (roomCode) {
+            router.push(`/player/${roomCode}/podium`);
+        } else {
+            router.push('/');
+        }
     };
 
     // Load quiz questions from localStorage (preloaded by player lobby)
@@ -1893,13 +1924,23 @@ export default function GameSpeedPage() {
 
     // Handle quiz completion for current round
     const handleQuizComplete = useCallback((results: { correct: number; total: number; score: number }) => {
-        setTotalQuizScore(prev => prev + results.score);
-        setQuizQuestionIndex(prev => prev + QUESTIONS_PER_ROUND);
+        const newScore = totalQuizScore + results.score;
+        setTotalQuizScore(newScore);
+        
+        const nextIndex = quizQuestionIndex + QUESTIONS_PER_ROUND;
+        setQuizQuestionIndex(nextIndex);
         setShowQuiz(false);
 
+        // Sync progress to server (used by host monitor)
+        const isFinishedNow = nextIndex >= allQuizQuestions.length;
+        updateParticipantStatus({
+            score: newScore,
+            current_question: Math.min(nextIndex, allQuizQuestions.length),
+            ...(isFinishedNow ? { finished_at: new Date().toISOString() } : {})
+        });
+
         // Check if there are more questions left
-        const nextIndex = quizQuestionIndex + QUESTIONS_PER_ROUND;
-        if (nextIndex >= allQuizQuestions.length) {
+        if (isFinishedNow) {
             // All questions done!
             setAllQuizDone(true);
             setGameState('finished');
@@ -1912,7 +1953,7 @@ export default function GameSpeedPage() {
             setCountdown(3);
             setGameState('countdown');
         }
-    }, [quizQuestionIndex, allQuizQuestions.length]);
+    }, [quizQuestionIndex, allQuizQuestions.length, totalQuizScore, updateParticipantStatus]);
 
     // Get current quiz questions for this round
     const currentRoundQuestions = allQuizQuestions.slice(quizQuestionIndex, quizQuestionIndex + QUESTIONS_PER_ROUND);

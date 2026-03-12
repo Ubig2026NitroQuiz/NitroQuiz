@@ -24,6 +24,7 @@ interface Participant {
   current_question: number;
   finished_at: string | null;
   eliminated: boolean;
+  minigame?: boolean;
   user_id?: string | null;
 }
 
@@ -437,6 +438,10 @@ export default function GameMonitorPage() {
                     ) : player.eliminated ? (
                       <div className="bg-red-500/20 border border-red-500/50 px-3 py-1.5 rounded-lg text-red-500 font-display text-[10px] tracking-widest w-full text-center">
                         CRASHED
+                      </div>
+                    ) : player.minigame ? (
+                      <div className="bg-blue-500/20 border border-blue-500/50 px-3 py-1.5 rounded-lg text-blue-400 font-display text-[10px] tracking-widest animate-pulse w-full text-center">
+                        ANSWERING
                       </div>
                     ) : (
                       <div className="border border-white/10 px-3 py-1.5 rounded-lg text-gray-500 font-display text-[10px] tracking-widest w-full text-center opacity-50">
