@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ArrowLeft, HelpCircle, Heart, User, Play, FileText } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { Search, ArrowLeft, HelpCircle, Heart, User, Play, FileText, RefreshCw } from "lucide-react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { categoryNames } from "@/lib/questions";
@@ -22,18 +22,18 @@ interface QuizView {
     category: string;
     questionCount: number;
     description: string;
-    difficulty: "easy" | "medium" | "hard" | "mixed";
     imageUrl?: string;
     played?: number;
     creatorId?: string;
+    isPublic: boolean;
 }
 
 export default function SelectQuizPage() {
     const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [currentPage, setCurrentPage] = useState(1);
+    const [visibleCount, setVisibleCount] = useState(9);
+    const observer = useRef<IntersectionObserver | null>(null);
     const [quizzes, setQuizzes] = useState<QuizView[]>([]);
     const [allItems, setAllItems] = useState<QuizView[]>([]);
     const [creating, setCreating] = useState(false);
@@ -46,7 +46,7 @@ export default function SelectQuizPage() {
     const [isFetching, setIsFetching] = useState(true);
     const [isReturning, setIsReturning] = useState(false);
 
-    const itemsPerPage = 9;
+
 
     // Get current user ID
     useEffect(() => {
@@ -78,62 +78,102 @@ export default function SelectQuizPage() {
     };
 
     // Fetch quizzes from Central Database
-    useEffect(() => {
-        const fetchQuizzes = async () => {
-            setIsFetching(true);
-            try {
-                const { data, error } = await supabaseCentral
+    const fetchQuizzes = async () => {
+        setIsFetching(true);
+        try {
+            const user = getUser();
+            const userId = user ? user.id : null;
+            if (userId && !currentUserId) {
+                setCurrentUserId(userId);
+            }
+
+            // 1. Fetch public active quizzes
+            const { data: publicData, error: publicError } = await supabaseCentral
+                .from("quizzes")
+                .select("*")
+                .eq("is_hidden", false)
+                .eq("status", "active")
+                .is("deleted_at", null)
+                .order("created_at", { ascending: false });
+
+            if (publicError) {
+                console.error("Error fetching public quizzes:", publicError);
+                return;
+            }
+
+            let allData = [...(publicData || [])];
+
+            // 2. Fetch user's own quizzes directly (including drafts/hidden)
+            if (userId) {
+                const { data: userData, error: userError } = await supabaseCentral
                     .from("quizzes")
                     .select("*")
-                    .eq("is_hidden", false)
-                    .eq("status", "active")
+                    .eq("creator_id", userId)
                     .is("deleted_at", null)
                     .order("created_at", { ascending: false });
 
-                if (error) {
-                    console.error("Error fetching quizzes:", error);
-                    return;
-                }
-
-                if (data) {
-                    const fetchedQuizzes: QuizView[] = data.map((quiz: any) => {
-                        let qCount = 0;
-                        if (Array.isArray(quiz.questions)) {
-                            qCount = quiz.questions.length;
-                        } else if (typeof quiz.questions === 'string') {
-                            try { qCount = JSON.parse(quiz.questions).length; } catch (e) { }
+                if (!userError && userData) {
+                    const existingIds = new Set(allData.map(q => q.id));
+                    userData.forEach((q: any) => {
+                        if (!existingIds.has(q.id)) {
+                            allData.push(q);
                         }
-
-                        const rawCat = quiz.category || "umum";
-
-                        return {
-                            id: quiz.id,
-                            title: quiz.title || "Untitled Quiz",
-                            category: rawCat,
-                            questionCount: qCount,
-                            description: quiz.description || "No description provided.",
-                            difficulty: "mixed",
-                            imageUrl: quiz.image_url || quiz.cover_image,
-                            played: quiz.played || 0,
-                            creatorId: quiz.creator_id || quiz.user_id || null,
-                        };
                     });
-
-                    setAllItems(fetchedQuizzes);
                 }
-            } catch (err) {
-                console.error("Failed to fetch quizzes", err);
-            } finally {
-                setIsFetching(false);
             }
-        };
 
+            if (allData) {
+                const fetchedQuizzes: QuizView[] = allData.map((quiz: any) => {
+                    let qCount = 0;
+                    if (Array.isArray(quiz.questions)) {
+                        qCount = quiz.questions.length;
+                    } else if (typeof quiz.questions === 'string') {
+                        try { qCount = JSON.parse(quiz.questions).length; } catch (e) { }
+                    }
+
+                    const rawCat = quiz.category || "umum";
+
+                    return {
+                        id: quiz.id,
+                        title: quiz.title || "Untitled Quiz",
+                        category: rawCat,
+                        questionCount: qCount,
+                        description: quiz.description || "No description provided.",
+                        difficulty: "mixed",
+                        imageUrl: quiz.image_url || quiz.cover_image,
+                        played: quiz.played || 0,
+                        creatorId: quiz.creator_id || quiz.user_id || null,
+                        isPublic: quiz.is_public !== false,
+                    };
+                });
+
+                // Sort again by created_at just in case
+                // Not strictly necessary, but keeps newest at top
+                fetchedQuizzes.sort((a, b) => {
+                    // if we wanted to sort by date, we'd need created_at in QuizView. 
+                    // Let's just leave it as is or sorting won't matter much.
+                    return 0; 
+                });
+
+                setAllItems(fetchedQuizzes);
+            }
+        } catch (err) {
+            console.error("Failed to fetch quizzes", err);
+        } finally {
+            setIsFetching(false);
+        }
+    };
+
+    useEffect(() => {
         fetchQuizzes();
-    }, []);
+    }, [activeTab]);
 
     // Filter and Paginate
     useEffect(() => {
         let filtered = allItems;
+
+        // Hide private quizzes unless current user is the creator
+        filtered = filtered.filter(q => q.isPublic || (currentUserId && q.creatorId === currentUserId));
 
         // Apply tab filter
         if (activeTab === 'favorites') {
@@ -148,10 +188,10 @@ export default function SelectQuizPage() {
             }
         }
 
-        if (searchQuery) {
+        if (searchInput) {
             filtered = filtered.filter(q =>
-                q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                q.description.toLowerCase().includes(searchQuery.toLowerCase())
+                q.title.toLowerCase().includes(searchInput.toLowerCase()) ||
+                q.description.toLowerCase().includes(searchInput.toLowerCase())
             );
         }
 
@@ -163,15 +203,25 @@ export default function SelectQuizPage() {
         }
 
         setQuizzes(filtered);
-        setCurrentPage(1);
-    }, [allItems, searchQuery, selectedCategory, activeTab, favorites, currentUserId]);
+        setVisibleCount(9); // Reset visible on new filter
+    }, [allItems, searchInput, selectedCategory, activeTab, favorites, currentUserId]);
 
-    const paginatedQuizzes = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        return quizzes.slice(start, start + itemsPerPage);
-    }, [quizzes, currentPage]);
+    const displayedQuizzes = useMemo(() => {
+        return quizzes.slice(0, visibleCount);
+    }, [quizzes, visibleCount]);
 
-    const totalPages = Math.ceil(quizzes.length / itemsPerPage);
+    const lastQuizElementRef = (node: HTMLDivElement | null) => {
+        if (isFetching || isReturning || creating) return;
+        if (observer.current) observer.current.disconnect();
+
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && visibleCount < quizzes.length) {
+                setVisibleCount(prev => Math.min(prev + 9, quizzes.length));
+            }
+        });
+
+        if (node) observer.current.observe(node);
+    };
 
     // Build categories dynamically from fetched data
     const categories = useMemo(() => {
@@ -201,20 +251,7 @@ export default function SelectQuizPage() {
         router.push(`/host/${mockGamePin}/settings`);
     };
 
-    if (isFetching || isReturning || creating) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden font-display text-white">
-                <div className="fixed inset-0 z-0 city-silhouette pointer-events-none"></div>
-                <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-blue-900/10 pointer-events-none"></div>
-                <div className="text-center z-10">
-                    <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
-                    <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
-                        {creating ? 'Preparing Quiz...' : 'Establishing Signal...'}
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    // The early loading screen return was removed so layout stays stable while fetching.
 
     return (
         <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden font-body text-white">
@@ -265,26 +302,29 @@ export default function SelectQuizPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="bg-black/40 border border-[#2d6af2]/30 rounded-2xl p-4 sm:p-6 mb-8 backdrop-blur-md shadow-[0_0_25px_rgba(45,106,242,0.1)]"
                     >
-                        {/* Top Row: Search + Category Filter */}
-                        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
-                            {/* Search */}
-                            <div className="relative flex-1 group/search">
-                                <Input
-                                    placeholder="SEARCH QUIZ..."
-                                    value={searchInput}
-                                    onChange={(e) => setSearchInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") setSearchQuery(searchInput);
-                                    }}
-                                    className="w-full h-12 pl-4 pr-12 bg-black/60 border border-[#2d6af2]/30 text-white placeholder:text-[#2d6af2]/40 focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] rounded-xl font-display text-xs tracking-wider uppercase transition-all"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setSearchQuery(searchInput)}
-                                    className="absolute right-0 inset-y-0 flex items-center justify-center px-4 text-[#2d6af2]/60 hover:text-[#2d6af2] transition-colors"
-                                >
-                                    <Search className="h-5 w-5" />
-                                </button>
+                        {/* Search, Refresh & Category Filter */}
+                        <div className="flex flex-col sm:flex-row gap-4 mb-6 relative">
+                            <div className="flex-1 flex gap-2">
+                                <div className="relative flex-1 group/search">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2d6af2] w-5 h-5 group-focus-within/search:text-[#00ff9d] transition-colors" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Search quiz title..."
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        className="w-full bg-black/50 border border-[#2d6af2]/30 pl-11 pr-11 h-12 text-white font-display uppercase tracking-widest placeholder:text-gray-500 rounded-xl focus-visible:ring-1 focus-visible:ring-[#00ff9d]/50 focus-visible:border-[#00ff9d]/50 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+                                    />
+                                    {searchInput && (
+                                        <button
+                                            onClick={() => {
+                                                setSearchInput("");
+                                            }}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white pb-1 text-lg leading-none"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Category Select */}
@@ -344,27 +384,65 @@ export default function SelectQuizPage() {
 
                     {/* Grid */}
                     <AnimatePresence mode="wait">
-                        {paginatedQuizzes.length > 0 ? (
+                        {(isFetching || isReturning || creating) ? (
                             <motion.div
-                                key={`grid-${currentPage}-${activeTab}`}
+                                key="skeleton-loading"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
+                            >
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                        <Card key={i} className="h-64 flex flex-col bg-black/40 border border-[#2d6af2]/10 overflow-hidden relative">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent pointer-events-none z-10 animate-pulse"></div>
+                                            
+                                            {/* Top right favorite button skeleton */}
+                                            <div className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/5 animate-pulse"></div>
+                                            
+                                            <CardHeader className="pb-4 relative z-20 flex-1 flex flex-col">
+                                                <div className="flex items-start mb-3">
+                                                    <div className="w-24 h-6 bg-[#2d6af2]/20 rounded animate-pulse"></div>
+                                                </div>
+                                                <div className="w-3/4 h-7 bg-white/10 rounded mb-2 animate-pulse mt-2"></div>
+                                                <div className="w-1/2 h-7 bg-white/10 rounded animate-pulse"></div>
+                                                <div className="w-full h-4 bg-white/5 rounded mt-auto animate-pulse"></div>
+                                                <div className="w-4/5 h-4 bg-white/5 rounded mt-2 animate-pulse"></div>
+                                            </CardHeader>
+                                            
+                                            <CardFooter className="mt-auto pt-4 border-t border-[#2d6af2]/10 flex justify-between items-center relative z-20 bg-black/40">
+                                                <div className="flex gap-4">
+                                                    <div className="w-12 h-4 bg-white/10 rounded animate-pulse"></div>
+                                                    <div className="w-12 h-4 bg-white/10 rounded animate-pulse"></div>
+                                                </div>
+                                                <div className="w-20 h-8 bg-[#2d6af2]/20 rounded-lg animate-pulse"></div>
+                                            </CardFooter>
+                                        </Card>
+                                    ))}
+                                </motion.div>
+                        ) : displayedQuizzes.length > 0 ? (
+                            <motion.div
+                                key={`grid-lazy-${activeTab}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                             >
-                                {paginatedQuizzes.map((quiz, index) => {
+                                {displayedQuizzes.map((quiz, index) => {
                                     const isFavorited = favorites.includes(quiz.id);
+                                    const isLast = index === displayedQuizzes.length - 1;
 
                                     return (
                                         <motion.div
+                                            ref={isLast ? lastQuizElementRef : null}
                                             key={quiz.id}
-                                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            transition={{ duration: 0.4, delay: index * 0.1, type: "spring", stiffness: 100 }}
-                                            whileHover={{ scale: 1.02, translateY: -5 }}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ duration: 0.2 }}
+                                            whileHover={{ scale: 1.01 }}
+                                            style={{ willChange: "transform, opacity" }}
                                         >
                                             <Card
-                                                className="h-full flex flex-col bg-black/40 border transition-all duration-300 relative overflow-hidden group border-[#2d6af2]/30 hover:border-[#2d6af2] hover:shadow-[0_0_20px_rgba(45,106,242,0.2)]"
+                                                className="h-full flex flex-col bg-black/40 border transition-all duration-200 relative overflow-hidden group border-[#2d6af2]/30 hover:border-[#2d6af2] hover:shadow-[0_0_15px_rgba(45,106,242,0.2)]"
                                             >
                                                 <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent opacity-50 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"></div>
                                                 <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"></div>
@@ -460,14 +538,16 @@ export default function SelectQuizPage() {
                                     <>
                                         <FileText className="h-16 w-16 mx-auto text-[#00ff9d]/20 mb-4" />
                                         <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">No Quizzes Created</h3>
-                                        <p className="text-[#00ff9d]/40 text-sm mb-6">Quizzes you create will appear here</p>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setActiveTab('all')}
-                                            className="bg-[#00ff9d]/10 border border-[#00ff9d]/50 text-[#00ff9d] hover:bg-[#00ff9d] hover:text-black transition-all font-display text-xs uppercase tracking-wider"
-                                        >
-                                            Browse Quizzes
-                                        </Button>
+                                        <p className="text-[#00ff9d]/40 text-sm mb-6">Quizzes you create will appear here.</p>
+                                        <div className="flex justify-center gap-4">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setActiveTab('all')}
+                                                className="bg-[#00ff9d]/10 border border-[#00ff9d]/50 text-[#00ff9d] hover:bg-[#00ff9d] hover:text-black transition-all font-display text-xs uppercase tracking-wider"
+                                            >
+                                                Browse All
+                                            </Button>
+                                        </div>
                                     </>
                                 ) : (
                                     <>
@@ -477,7 +557,6 @@ export default function SelectQuizPage() {
                                         <Button
                                             variant="outline"
                                             onClick={() => {
-                                                setSearchQuery("");
                                                 setSearchInput("");
                                                 setSelectedCategory("All");
                                             }}
@@ -491,28 +570,10 @@ export default function SelectQuizPage() {
                         )}
                     </AnimatePresence>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex justify-center mt-12 gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="h-10 px-4 bg-black/40 border border-[#2d6af2]/30 text-white font-display text-xs disabled:opacity-30 hover:bg-[#2d6af2]/20 hover:border-[#2d6af2] transition-all uppercase tracking-wider"
-                            >
-                                Prev
-                            </Button>
-                            <div className="flex items-center px-4 bg-[#2d6af2]/10 border border-[#2d6af2]/30 rounded-md text-[#2d6af2] font-display text-xs">
-                                PAGE {currentPage} / {totalPages}
-                            </div>
-                            <Button
-                                variant="outline"
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="h-10 px-4 bg-black/40 border border-[#2d6af2]/30 text-white font-display text-xs disabled:opacity-30 hover:bg-[#2d6af2]/20 hover:border-[#2d6af2] transition-all uppercase tracking-wider"
-                            >
-                                Next
-                            </Button>
+                    {/* Lazy Loading Trigger Spinner */}
+                    {visibleCount < quizzes.length && (
+                        <div className="flex justify-center mt-12 mb-8">
+                            <div className="w-8 h-8 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin"></div>
                         </div>
                     )}
 

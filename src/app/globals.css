@@ -45,6 +45,14 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-user-select: none; /* Disable text selection globally */
+    user-select: none;
+  }
+
+  /* Re-enable selection for inputs and text areas */
+  input, textarea, select {
+    -webkit-user-select: auto;
+    user-select: auto;
   }
 
   /* Custom scrollbar */

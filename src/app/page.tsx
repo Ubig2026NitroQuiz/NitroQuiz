@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, saveUser, removeUser } from "@/lib/storage";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseCentral } from "@/lib/supabase";
 import { User } from "@/types";
 import {
   Menu,
@@ -65,20 +65,34 @@ export default function Home() {
       try {
         const {
           data: { session },
-        } = await supabase.auth.getSession();
+        } = await supabaseCentral.auth.getSession();
 
         if (session?.user) {
+          let userProfileId = session.user.id;
+          let username = session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Racer";
+
+          try {
+            const { data: profile } = await supabaseCentral
+              .from("profiles")
+              .select("id, username")
+              .eq("auth_user_id", session.user.id)
+              .single();
+            if (profile) {
+              userProfileId = profile.id;
+              if (profile.username) username = profile.username;
+            }
+          } catch (e) {
+            console.error("Failed to fetch profile:", e);
+          }
+
           const u = getUser();
-          if (!u || u.id !== session.user.id) {
+          if (!u || u.id !== userProfileId) {
             const newUser: User = {
-              id: session.user.id,
-              username:
-                session.user.user_metadata.full_name ||
-                session.user.email?.split("@")[0] ||
-                "Racer",
+              id: userProfileId,
+              username: username,
               email: session.user.email || "",
-              totalPoints: 0,
-              gamesPlayed: 0,
+              totalPoints: u?.totalPoints || 0,
+              gamesPlayed: u?.gamesPlayed || 0,
               createdAt: new Date().toISOString(),
             };
             saveUser(newUser);
@@ -127,7 +141,7 @@ export default function Home() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await supabaseCentral.auth.signOut();
     removeUser();
     router.push("/login");
   };
@@ -223,9 +237,6 @@ export default function Home() {
                       <UserIcon className="w-6 h-6 text-[#2d6af2]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-[#2d6af2] font-display tracking-[0.2em] uppercase mb-0.5">
-                        Verified Racer
-                      </p>
                       <p className="text-white text-lg font-bold truncate tracking-tight">
                         {user.username}
                       </p>
@@ -268,13 +279,9 @@ export default function Home() {
                   </button>
 
                   <button
-                    onClick={() => {
-                      setShowHowToPlay(true);
-                      setIsDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group"
+                    className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group opacity-50 cursor-not-allowed"
                   >
-                    <div className="p-2 rounded-xl bg-gray-500/10 group-hover:bg-[#2d6af2]/20 transition-colors">
+                    <div className="p-2 rounded-xl bg-gray-500/10 transition-colors">
                       <DownloadIcon className="w-4 h-4 text-[#2d6af2]" />
                     </div>
                     <span className="text-sm font-medium tracking-wide">
@@ -302,7 +309,7 @@ export default function Home() {
                       <LogOut className="w-4 h-4" />
                     </div>
                     <span className="text-sm tracking-[0.1em] uppercase">
-                      Disconnect
+                      Logout
                     </span>
                   </button>
                 </div>
@@ -430,7 +437,7 @@ export default function Home() {
 
       <main className="relative z-20 flex flex-col items-center justify-center min-h-screen w-full max-w-7xl mx-auto p-4 md:p-8">
         <header className="text-center mb-12 relative z-30 w-full flex flex-col items-center">
-          <Logo width={400} height={120} />
+          <Logo width={400} height={120} withText={false} />
         </header>
 
         <div className="flex flex-col md:flex-row gap-8 lg:gap-16 w-full justify-center items-stretch max-w-5xl">

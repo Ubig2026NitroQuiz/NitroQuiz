@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from 'next/navigation';
 import { saveUser } from '@/lib/storage';
 import { User } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { supabaseCentral } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Loader2, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -54,7 +54,7 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         setIsGoogleLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { error } = await supabaseCentral.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/` },
             });
