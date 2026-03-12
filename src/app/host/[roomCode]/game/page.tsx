@@ -143,6 +143,18 @@ export default function GameMonitorPage() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  // 3.5 Auto-end when ALL players finish (no need to wait for timer)
+  useEffect(() => {
+    if (!sessionId || participants.length === 0 || isEnding) return;
+    const allDone = participants.every(p =>
+      p.finished_at !== null || p.eliminated === true
+    );
+    if (allDone) {
+      // Small delay so last realtime update renders
+      setTimeout(() => handleEndRace(), 1500);
+    }
+  }, [participants, sessionId, isEnding]);
+
   // 4. Bot Brain System
   useEffect(() => {
     if (!sessionId || isEnding) return;
@@ -440,7 +452,7 @@ export default function GameMonitorPage() {
                         CRASHED
                       </div>
                     ) : player.minigame ? (
-                      <div className="bg-blue-500/20 border border-blue-500/50 px-3 py-1.5 rounded-lg text-blue-400 font-display text-[10px] tracking-widest animate-pulse w-full text-center">
+                      <div className="bg-blue-500/20 border border-blue-500/50 px-3 py-1.5 rounded-lg text-blue-400 font-display text-[10px] tracking-widest animate-pulse w-full text-center shadow-[0_0_10px_rgba(59,130,246,0.3)]">
                         ANSWERING
                       </div>
                     ) : (

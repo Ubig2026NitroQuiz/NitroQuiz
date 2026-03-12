@@ -145,22 +145,22 @@ export default function GameSpeedPage() {
     const steeringTouchId = useRef<number | null>(null);
     const swipeThreshold = 30; // minimum swipe distance to trigger steer
 
-    // Participant Update Helper
-    const updateParticipantStatus = useCallback(async (updates: any) => {
+    // Participant Update Helper - syncs player state to Supabase for host monitor
+    const updateParticipantStatus = useCallback(async (updates: Record<string, any>) => {
         const sessId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_sessionId') : null;
         const user = getUser();
         if (sessId && user) {
             try {
-                await supabase.from("participants").update(updates)
-                    .eq("session_id", sessId)
-                    .eq("nickname", user.username);
+                await supabase.from('participants').update(updates)
+                    .eq('session_id', sessId)
+                    .eq('nickname', user.username);
             } catch (error) {
-                console.error("Failed to sync participant status:", error);
+                console.error('Failed to sync participant status:', error);
             }
         }
     }, []);
 
-    // Sync "Answering" vs "Racing" state for Host Monitor
+    // Sync minigame (quiz) status for Host Monitor
     useEffect(() => {
         if (mounted && assetsLoaded) {
             updateParticipantStatus({ minigame: showQuiz });
@@ -1618,11 +1618,6 @@ export default function GameSpeedPage() {
             if (detectedMobile && gameState === 'playing') {
                 state.current.keyFaster = true;
             }
-
-            // Auto-start game for PC since countdown was done in lobby
-            if (!detectedMobile && mounted && gameState === 'preparation') {
-                setGameState('playing');
-            }
         };
         window.addEventListener('resize', setSize);
         if (mounted) setSize();
@@ -1866,13 +1861,11 @@ export default function GameSpeedPage() {
 
     const endGame = () => {
         const roomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
-        
         // Clean up quiz data from localStorage
         localStorage.removeItem('nitroquiz_game_questions');
         localStorage.removeItem('nitroquiz_game_roomCode');
         localStorage.removeItem('nitroquiz_game_sessionId');
         localStorage.removeItem('nitroquiz_game_quizId');
-
         if (roomCode) {
             router.push(`/player/${roomCode}/podium`);
         } else {
@@ -1887,33 +1880,15 @@ export default function GameSpeedPage() {
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => {
-                        let parsedOptions: string[] = [];
-                        if (Array.isArray(q.options)) parsedOptions = q.options;
-                        else if (Array.isArray(q.answers)) {
-                            // Convert quiziz format {id, answer} to string array
-                            parsedOptions = q.answers.map((ans: any) => ans.answer || '');
-                        } else if (Array.isArray(q.choices)) parsedOptions = q.choices;
-                        else if (Array.isArray(q.pilihan)) parsedOptions = q.pilihan;
-
-                        let parsedCorrect = 0;
-                        if (typeof q.correct === 'string' || typeof q.correct === 'number') {
-                            parsedCorrect = parseInt(String(q.correct), 10) || 0;
-                        } else if (typeof q.correctAnswer === 'number') {
-                            parsedCorrect = q.correctAnswer;
-                        } else if (typeof q.correct_answer === 'number') {
-                            parsedCorrect = q.correct_answer;
-                        } else if (typeof q.answer === 'number') {
-                            parsedCorrect = q.answer;
-                        }
-
-                        return {
-                            id: q.id || `q-${idx}`,
-                            question: q.question || q.text || q.pertanyaan || '',
-                            options: parsedOptions,
-                            correctAnswer: parsedCorrect,
-                        };
-                    });
+                    // Normalize questions to QuizQuestion format
+                    const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => ({
+                        id: q.id || `q-${idx}`,
+                        question: q.question || q.text || q.pertanyaan || '',
+                        options: q.options || q.choices || q.pilihan || [],
+                        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer
+                            : typeof q.correct_answer === 'number' ? q.correct_answer
+                                : typeof q.answer === 'number' ? q.answer : 0,
+                    }));
                     setAllQuizQuestions(normalized);
                 }
             }
@@ -1926,20 +1901,19 @@ export default function GameSpeedPage() {
     const handleQuizComplete = useCallback((results: { correct: number; total: number; score: number }) => {
         const newScore = totalQuizScore + results.score;
         setTotalQuizScore(newScore);
-        
         const nextIndex = quizQuestionIndex + QUESTIONS_PER_ROUND;
         setQuizQuestionIndex(nextIndex);
         setShowQuiz(false);
 
-        // Sync progress to server (used by host monitor)
+        // Sync progress to Supabase (host monitor reads this)
         const isFinishedNow = nextIndex >= allQuizQuestions.length;
         updateParticipantStatus({
             score: newScore,
             current_question: Math.min(nextIndex, allQuizQuestions.length),
+            minigame: false,
             ...(isFinishedNow ? { finished_at: new Date().toISOString() } : {})
         });
 
-        // Check if there are more questions left
         if (isFinishedNow) {
             // All questions done!
             setAllQuizDone(true);
@@ -1972,7 +1946,44 @@ export default function GameSpeedPage() {
             {/* Main Game Canvas */}
             <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
 
-            {/* Removed Loading Overlay because lobby preloads assets and we want a seamless transition */}
+            {/* Loading Overlay */}
+            {!assetsLoaded && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: '#020617',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 999,
+                    gap: '1.5rem'
+                }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        border: '3px solid rgba(59, 130, 246, 0.2)',
+                        borderTopColor: '#3b82f6',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }} />
+                    <div style={{
+                        color: '#60a5fa',
+                        fontSize: '0.75rem',
+                        fontWeight: 900,
+                        letterSpacing: '0.4em',
+                        textTransform: 'uppercase',
+                        textShadow: '0 0 10px rgba(59, 130, 246, 0.5)'
+                    }}>
+                        Initializing Engine...
+                    </div>
+                    <style>{`
+                        @keyframes spin {
+                            to { transform: rotate(360deg); }
+                        }
+                    `}</style>
+                </div>
+            )}
 
             {/* Mobile Orientation Choice Overlay */}
             {mounted && isMobile && assetsLoaded && !mobileOrientationChoice && (
@@ -1994,10 +2005,7 @@ export default function GameSpeedPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', maxWidth: '320px' }}>
                         <button
-                            onClick={() => {
-                                setMobileOrientationChoice('portrait');
-                                setGameState('playing');
-                            }}
+                            onClick={() => setMobileOrientationChoice('portrait')}
                             style={{
                                 padding: '1.5rem',
                                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -2019,7 +2027,6 @@ export default function GameSpeedPage() {
                         <button
                             onClick={() => {
                                 setMobileOrientationChoice('landscape');
-                                setGameState('playing');
                                 if (document.documentElement.requestFullscreen) {
                                     document.documentElement.requestFullscreen().catch(() => { });
                                 }
@@ -2411,7 +2418,68 @@ export default function GameSpeedPage() {
                 }
             `}</style>
 
-            {/* Countdown Overlay - Clean Elegant Style (Used for between-round countdowns) */}
+            {/* Preparation Overlay - Citynight Premium Style */}
+            {mounted && assetsLoaded && gameState === 'preparation' && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.9)', color: 'white', fontFamily: 'var(--font-rajdhani)', padding: isMobileLandscape ? '1rem' : '0' }}>
+                    <div style={{
+                        backgroundColor: '#0f172a',
+                        padding: isMobileLandscape ? '1.5rem 3.5rem' : (usePCLayout ? '3.5rem' : '1.5rem'),
+                        borderRadius: usePCLayout ? '2rem' : '1.5rem',
+                        border: '2px solid #3b82f6',
+                        textAlign: 'center',
+                        boxShadow: '0 0 60px rgba(59, 130, 246, 0.3)',
+                        maxWidth: isMobileLandscape ? '90%' : '38rem',
+                        width: '90%'
+                    }}>
+                        <img src="/assets/logo/gameforsmartlogo.png" alt="Logo" style={{ height: isMobileLandscape ? '2.5rem' : (usePCLayout ? '6rem' : '3rem'), width: 'auto', marginBottom: '0.5rem' }} />
+                        <h1 style={{ fontSize: isMobileLandscape ? '2.2rem' : (usePCLayout ? '4rem' : '2.5rem'), fontWeight: 950, fontStyle: 'italic', marginBottom: '0.25rem', color: '#fff' }}>GET READY!</h1>
+                        <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem'), fontSize: usePCLayout ? '1rem' : '0.7rem' }}>City Night Protocol Active</p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: usePCLayout ? '1.5rem' : '0.75rem', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem') }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.75rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Distance</div>
+                                <div style={{ fontSize: isMobileLandscape ? '1.2rem' : (usePCLayout ? '2.5rem' : '1.5rem'), fontWeight: 900, color: '#3b82f6' }}>{stats.totalLaps} LAPS</div>
+                            </div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.75rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Nitro Fuel</div>
+                                <div style={{ fontSize: isMobileLandscape ? '1.2rem' : (usePCLayout ? '2.5rem' : '1.5rem'), fontWeight: 900, color: '#10b981' }}>{stats.nos}%</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setGameState('countdown');
+                                let count = 5;
+                                setCountdown(count);
+                                const interval = setInterval(() => {
+                                    count--;
+                                    setCountdown(count);
+                                    if (count <= 0) {
+                                        clearInterval(interval);
+                                        setTimeout(() => { setGameState('playing'); }, 500);
+                                    }
+                                }, 1000);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: isMobileLandscape ? '1rem 0' : (usePCLayout ? '1.75rem 0' : '1.25rem 0'),
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                color: '#fff',
+                                borderRadius: '1.25rem',
+                                fontWeight: 900,
+                                fontSize: isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.75rem' : '1.25rem'),
+                                cursor: 'pointer',
+                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 0 30px rgba(59, 130, 246, 0.4)'
+                            }}
+                        >
+                            START ENGINE
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Countdown Overlay - Clean Elegant Style */}
             {mounted && assetsLoaded && gameState === 'countdown' && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
                     <div style={{ position: 'relative' }}>
@@ -2495,3 +2563,4 @@ export default function GameSpeedPage() {
         </div>
     );
 }
+

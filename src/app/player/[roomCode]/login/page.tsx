@@ -29,29 +29,13 @@ export default function PlayerLoginPage() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
-    const [isChecking, setIsChecking] = useState(true);
 
     useEffect(() => {
         const user = getUser();
         if (user) {
             router.push(`/player/${roomCode}/lobby`);
-        } else {
-            setIsChecking(false);
         }
     }, [roomCode, router]);
-
-    if (isChecking) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden font-display text-white">
-                <div className="text-center z-10">
-                    <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
-                    <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
-                        Establishing Signal...
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     const {
         register: registerLogin,

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, saveUser, removeUser } from "@/lib/storage";
-import { supabase, supabaseCentral } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
 import {
   Menu,
@@ -68,31 +68,17 @@ export default function Home() {
         } = await supabase.auth.getSession();
 
         if (session?.user) {
-          let userProfileId = session.user.id;
-          let username = session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Racer";
-
-          try {
-            const { data: profile } = await supabaseCentral
-              .from("profiles")
-              .select("id, username")
-              .eq("email", session.user.email)
-              .single();
-            if (profile) {
-              userProfileId = profile.id;
-              if (profile.username) username = profile.username;
-            }
-          } catch (e) {
-            console.error("Failed to fetch profile:", e);
-          }
-
           const u = getUser();
-          if (!u || u.id !== userProfileId) {
+          if (!u || u.id !== session.user.id) {
             const newUser: User = {
-              id: userProfileId,
-              username: username,
+              id: session.user.id,
+              username:
+                session.user.user_metadata.full_name ||
+                session.user.email?.split("@")[0] ||
+                "Racer",
               email: session.user.email || "",
-              totalPoints: u?.totalPoints || 0,
-              gamesPlayed: u?.gamesPlayed || 0,
+              totalPoints: 0,
+              gamesPlayed: 0,
               createdAt: new Date().toISOString(),
             };
             saveUser(newUser);
@@ -121,11 +107,7 @@ export default function Home() {
 
       const params = new URLSearchParams(window.location.search);
       const r = params.get("room");
-      if (r) {
-        setRoomCode(r.toUpperCase());
-        const nick = getUser()?.username || "Racer";
-        router.push(`/player/${r.toUpperCase()}/login?nickname=${encodeURIComponent(nick)}`);
-      }
+      if (r) setRoomCode(r.toUpperCase());
     }
 
     init();
@@ -212,11 +194,10 @@ export default function Home() {
         >
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all duration-300 border ${
-              isDropdownOpen
+            className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all duration-300 border ${isDropdownOpen
                 ? "bg-[#2d6af2] border-[#2d6af2] text-white shadow-[0_0_20px_rgba(45,106,242,0.5)]"
                 : "bg-black/40 backdrop-blur-md border-white/10 text-gray-400 hover:text-white hover:border-white/20"
-            }`}
+              }`}
           >
             {isDropdownOpen ? (
               <X className="w-5 h-5" />
@@ -439,27 +420,27 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <main className="relative z-20 flex flex-col items-center justify-center min-h-screen w-full max-w-7xl mx-auto p-4 md:p-8 pb-20 md:pb-8">
-        <header className="text-center mb-8 md:mb-12 relative z-30 w-full flex flex-col items-center justify-center scale-75 md:scale-100 origin-center transition-transform">
+      <main className="relative z-20 flex flex-col items-center justify-center min-h-screen w-full max-w-7xl mx-auto p-4 md:p-8">
+        <header className="text-center mb-12 relative z-30 w-full flex flex-col items-center">
           <Logo width={400} height={120} withText={false} />
         </header>
 
-        <div className="flex flex-col md:flex-row gap-6 md:gap-8 lg:gap-16 w-full justify-center items-stretch max-w-5xl">
+        <div className="flex flex-col md:flex-row gap-8 lg:gap-16 w-full justify-center items-stretch max-w-5xl">
           {/* Host Card */}
-          <div className="host-card rounded-[2rem] p-6 md:p-10 flex-1 flex flex-col items-center justify-between relative overflow-hidden group transition-all duration-300">
+          <div className="host-card rounded-[2rem] p-8 md:p-10 flex-1 flex flex-col items-center justify-between relative overflow-hidden group transition-all duration-300">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#00ff9d]/20 to-transparent rounded-bl-full pointer-events-none"></div>
-            <div className="w-full text-center mb-8 h-full flex flex-col items-center">
+            <div className="w-full text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#000000]/50 border border-white/10 mb-6 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
                 <Gamepad2 className="w-8 h-8 text-[#00ff9d]" />
               </div>
-              <h2 className="font-body font-bold text-3xl md:text-4xl text-white mb-2 tracking-wide glow-text uppercase">
+              <h2 className="font-body font-bold text-4xl text-white mb-2 tracking-wide glow-text uppercase">
                 HOST
               </h2>
-              <p className="text-gray-400 text-sm font-light tracking-wider mb-8 md:mb-24 flex-1">
+              <p className="text-gray-400 text-sm font-light tracking-wider">
                 Create a new room and invite players.
               </p>
             </div>
-            <div className="w-full mt-auto">
+            <div className="w-full mb-28">
               <button
                 onClick={handleHost}
                 className="w-full bg-[#00ff9d] hover:bg-[#33ffb0] text-black font-display text-sm py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(0,255,157,0.4)] hover:shadow-[0_0_30px_rgba(0,255,157,0.6)] transition-all duration-300 uppercase tracking-wider transform active:scale-[0.98] border border-white/20"
@@ -470,16 +451,16 @@ export default function Home() {
           </div>
 
           {/* Join Card */}
-          <div className="join-card rounded-[2rem] p-6 md:p-10 flex-1 flex flex-col items-center justify-between relative overflow-hidden group transition-all duration-300">
+          <div className="join-card rounded-[2rem] p-8 md:p-10 flex-1 flex flex-col items-center justify-between relative overflow-hidden group transition-all duration-300">
             <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-[#2d6af2]/20 to-transparent rounded-br-full pointer-events-none"></div>
-            <div className="w-full text-center mb-6 h-full flex flex-col items-center">
+            <div className="w-full text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#000000]/50 border border-white/10 mb-6 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
                 <LogIn className="w-8 h-8 text-[#2d6af2]" />
               </div>
-              <h2 className="font-body font-bold text-3xl md:text-4xl text-white mb-2 tracking-wide glow-text uppercase">
+              <h2 className="font-body font-bold text-4xl text-white mb-2 tracking-wide glow-text uppercase">
                 JOIN
               </h2>
-              <p className="text-gray-400 text-sm font-light tracking-wider flex-1 mb-6">
+              <p className="text-gray-400 text-sm font-light tracking-wider">
                 Enter a code to join game.
               </p>
             </div>

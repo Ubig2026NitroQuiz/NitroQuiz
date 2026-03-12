@@ -202,11 +202,9 @@ export default function PlayerLobbyPage() {
 
                 {/* LOADING */}
                 {status === "loading" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center font-display text-white mt-20">
-                        <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
-                        <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
-                            Establishing Signal...
-                        </p>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
+                        <Loader2 className="w-16 h-16 text-[#00ff9d] animate-spin mb-6" />
+                        <h2 className="font-display text-2xl tracking-widest text-[#00ff9d] uppercase glow-text">CONNECTING...</h2>
                     </motion.div>
                 )}
 
@@ -269,11 +267,10 @@ export default function PlayerLobbyPage() {
                                 {[0, 1, 2, 3, 4].map((i) => (
                                     <motion.div
                                         key={i}
-                                        className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${
-                                            countdownValue <= (10 - i * 2)
+                                        className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${countdownValue <= (10 - i * 2)
                                                 ? 'bg-red-500 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.8)]'
                                                 : 'bg-gray-800 border-gray-600'
-                                        } ${countdownValue <= 0 ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_25px_rgba(0,255,157,0.8)]' : ''}`}
+                                            } ${countdownValue <= 0 ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_25px_rgba(0,255,157,0.8)]' : ''}`}
                                         animate={countdownValue <= (10 - i * 2) ? { scale: [1, 1.2, 1] } : {}}
                                         transition={{ duration: 0.3 }}
                                     />
@@ -281,28 +278,44 @@ export default function PlayerLobbyPage() {
                             </div>
 
                             {/* Big countdown number */}
-                            <motion.div
-                                key={countdownValue}
-                                initial={{ opacity: 0, scale: 1.5, y: -20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="relative flex items-center justify-center min-h-[160px]"
-                            >
-                                <span className={`font-display text-[120px] md:text-[160px] font-black leading-none tracking-tighter ${getCountdownColor(countdownValue)} drop-shadow-xl`}>
-                                    {countdownValue > 0 ? countdownValue : "GO!"}
-                                </span>
-                            </motion.div>
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={countdownValue}
+                                    initial={{ opacity: 0, scale: 2, y: -30 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.5, y: 30 }}
+                                    transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 15 }}
+                                    className="relative"
+                                >
+                                    <span className={`font-display text-[120px] md:text-[160px] font-black leading-none tracking-tighter ${getCountdownColor(countdownValue)} drop-shadow-[0_0_40px_currentColor]`}>
+                                        {countdownValue > 0 ? countdownValue : "GO!"}
+                                    </span>
+                                </motion.div>
+                            </AnimatePresence>
 
                             {/* Status label */}
                             <motion.p
                                 key={`label-${getCountdownLabel(countdownValue)}`}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="font-display text-lg tracking-[0.3em] uppercase text-gray-400 mt-2"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="font-display text-lg tracking-[0.3em] uppercase text-gray-400 mt-6"
                             >
                                 {getCountdownLabel(countdownValue)}
                             </motion.p>
+
+                            {/* Pulsing ring effect */}
+                            <motion.div
+                                className="absolute w-64 h-64 rounded-full border border-[#2d6af2]/20"
+                                animate={{
+                                    scale: [1, 1.5, 1],
+                                    opacity: [0.3, 0, 0.3],
+                                }}
+                                transition={{
+                                    repeat: Infinity,
+                                    duration: 2,
+                                    ease: "easeInOut",
+                                }}
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -155,7 +155,7 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
                 </AnimatePresence>
 
                 {/* Answer Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {currentQ.options.map((option, idx) => {
                         const isSelected = selectedAnswer === idx;
                         const isCorrectAnswer = idx === currentQ.correctAnswer;
@@ -167,31 +167,17 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
                         let textColor = 'white';
                         let shadow = 'none';
 
-                        // Calculate motion animations
-                        let animationProps: any = {};
-
                         if (showCorrect) {
                             bgColor = 'rgba(0, 255, 157, 0.15)';
                             borderColor = '#00ff9d';
                             shadow = '0 0 20px rgba(0, 255, 157, 0.3)';
-                            animationProps = {
-                                scale: [1, 1.05, 1],
-                                transition: { duration: 0.5, repeat: Infinity }
-                            };
                         } else if (isWrongSelected) {
                             bgColor = 'rgba(239, 68, 68, 0.15)';
                             borderColor = '#ef4444';
                             shadow = '0 0 20px rgba(239, 68, 68, 0.3)';
-                            animationProps = {
-                                x: [0, -10, 10, -10, 10, 0],
-                                transition: { duration: 0.4 }
-                            };
                         } else if (isSelected) {
                             bgColor = 'rgba(45, 106, 242, 0.2)';
                             borderColor = '#2d6af2';
-                            animationProps = { scale: 1.02 };
-                        } else if (isRevealed && !showCorrect && !isWrongSelected) {
-                            animationProps = { opacity: 0.5 };
                         }
 
                         const labels = ['A', 'B', 'C', 'D'];
@@ -201,7 +187,6 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
                                 key={idx}
                                 whileHover={!isRevealed ? { scale: 1.02 } : {}}
                                 whileTap={!isRevealed ? { scale: 0.98 } : {}}
-                                animate={animationProps}
                                 onClick={() => !isRevealed && handleReveal(idx)}
                                 disabled={isRevealed}
                                 style={{
@@ -211,27 +196,25 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
                                     padding: '1rem 1.25rem',
                                     textAlign: 'left',
                                     cursor: isRevealed ? 'default' : 'pointer',
-                                    transition: 'background-color 0.2s, border-color 0.2s',
+                                    transition: 'all 0.2s',
                                     boxShadow: shadow,
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.75rem',
                                     color: textColor,
-                                    width: '100%',
-                                    minHeight: '4.5rem'
                                 }}
                             >
                                 <span style={{
-                                    width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem',
+                                    width: '2rem', height: '2rem', borderRadius: '0.5rem',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '1rem', fontWeight: 900,
+                                    fontSize: '0.875rem', fontWeight: 900,
                                     backgroundColor: showCorrect ? '#00ff9d' : isWrongSelected ? '#ef4444' : 'rgba(45,106,242,0.2)',
                                     color: showCorrect || isWrongSelected ? 'black' : '#2d6af2',
                                     flexShrink: 0,
                                 }}>
                                     {showCorrect ? '✓' : isWrongSelected ? '✗' : labels[idx]}
                                 </span>
-                                <span style={{ fontSize: '1rem', fontWeight: 600, wordBreak: 'break-word', display: 'flex', alignItems: 'center', flex: 1 }}>
+                                <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
                                     {option}
                                 </span>
                             </motion.button>
