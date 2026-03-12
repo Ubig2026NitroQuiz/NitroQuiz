@@ -266,12 +266,12 @@ export default function SettingsPage() {
                 <div className="relative container mx-auto px-4 sm:px-6 pb-6 max-w-4xl">
 
                     <motion.div initial={{ opacity: 0, scale: 0.95, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 100, damping: 12 }}>
-                        <Card className="bg-black/60 border border-[#2d6af2]/50 backdrop-blur-md shadow-[0_0_30px_rgba(45,106,242,0.15)] p-6 sm:p-8 rounded-[2rem] relative overflow-hidden">
+                        <Card className="bg-black/60 border border-[#2d6af2]/50 backdrop-blur-md shadow-[0_0_30px_rgba(45,106,242,0.15)] p-4 sm:p-6 rounded-[2rem] relative overflow-hidden">
                             {/* Card Glow Effect */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#2d6af2]/10 blur-[50px] pointer-events-none"></div>
 
-                            <div className="space-y-6 sm:space-y-8 relative z-10">
-                                <div className="p-4 bg-black/40 border border-[#2d6af2]/30 rounded-xl relative overflow-hidden group">
+                            <div className="space-y-4 relative z-10">
+                                <div className="p-3 bg-black/40 border border-[#2d6af2]/30 rounded-xl relative overflow-hidden group">
                                     <div className="absolute inset-0 bg-[#2d6af2]/5 group-hover:bg-[#2d6af2]/10 transition-colors"></div>
                                     <div className="flex items-start space-x-3 relative z-10">
                                         <div className="flex-shrink-0 mt-1"><Hash className="h-5 w-5 text-[#2d6af2]" /></div>
@@ -282,13 +282,13 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-2 sm:space-y-3">
-                                        <Label className="text-base sm:text-lg font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
-                                            <Clock className="h-4 w-4" /><span>Duration</span>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                            <Clock className="h-3.5 w-3.5" /><span>Duration</span>
                                         </Label>
                                         <Select value={duration} onValueChange={setDuration}>
-                                            <SelectTrigger className="text-sm sm:text-base p-3 sm:p-5 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
+                                            <SelectTrigger className="text-sm p-3 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#0a101f] border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider">
@@ -300,12 +300,12 @@ export default function SettingsPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-2 sm:space-y-3">
-                                        <Label className="text-base sm:text-lg font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
-                                            <Hash className="h-4 w-4" /><span>Questions</span>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                            <Hash className="h-3.5 w-3.5" /><span>Questions</span>
                                         </Label>
                                         <Select value={questionCount} onValueChange={setQuestionCount}>
-                                            <SelectTrigger className="text-sm sm:text-base p-3 sm:p-5 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
+                                            <SelectTrigger className="text-sm p-3 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#0a101f] border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider">
@@ -317,9 +317,9 @@ export default function SettingsPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-2 sm:space-y-3">
-                                        <Label className="text-base sm:text-lg font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
-                                            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                            {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                                             <span>Sound</span>
                                         </Label>
                                         <div className="flex items-center justify-center gap-4 w-full text-sm sm:text-base px-5 h-10.5 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider rounded-xl transition-all">
@@ -334,16 +334,16 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 sm:space-y-6">
-                                    <Label className="text-base sm:text-lg font-display uppercase tracking-wide flex items-center justify-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] mb-4">
-                                        <Settings className="h-4 w-4" /><span>Difficulty</span>
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-display uppercase tracking-wide flex items-center justify-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] mb-2">
+                                        <Settings className="h-3.5 w-3.5" /><span>Difficulty</span>
                                     </Label>
                                     <div className="flex justify-center space-x-3 sm:space-x-6">
                                         {["Easy", "Normal", "Hard"].map((diff) => (
                                             <Button
                                                 key={diff}
                                                 onClick={() => setSelectedDifficulty(diff.toLowerCase())}
-                                                className={`text-sm sm:text-base px-6 sm:px-8 py-6 font-display uppercase tracking-wider w-32 transition-all duration-200 border capitalize rounded-xl
+                                                className={`text-sm px-5 py-4 font-display uppercase tracking-wider w-28 transition-all duration-200 border capitalize rounded-xl
                                                 ${selectedDifficulty === diff.toLowerCase()
                                                         ? "bg-[#2d6af2] hover:bg-[#3b7bf5] text-white border-white/50 shadow-[0_0_15px_rgba(45,106,242,0.6)]"
                                                         : "bg-black/60 border-[#2d6af2]/30 text-[#2d6af2] hover:bg-[#2d6af2]/10 hover:border-[#2d6af2] hover:shadow-[0_0_10px_rgba(45,106,242,0.4)]"}`}
@@ -354,25 +354,23 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t border-[#2d6af2]/20">
-                                    <Button
-                                        onClick={handleCreateRoom}
-                                        disabled={saving}
-                                        className="w-full text-base sm:text-xl py-6 sm:py-8 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:from-[#3b7bf5] hover:to-[#33ffb0] text-black font-display uppercase tracking-widest disabled:from-gray-800 disabled:to-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_0_20px_rgba(45,106,242,0.4)] hover:shadow-[0_0_30px_rgba(45,106,242,0.6)] rounded-xl border-none"
-                                    >
-                                        {saving ? (
-                                            <span className="flex items-center gap-2">
-                                                <div className="h-4 w-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                                                Loading...
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center gap-2">
-                                                <Play className="fill-current h-5 w-5 sm:h-6 sm:w-6" />
-                                                Continue
-                                            </span>
-                                        )}
-                                    </Button>
-                                </div>
+                                <Button
+                                    onClick={handleCreateRoom}
+                                    disabled={saving}
+                                    className="w-full text-base py-5 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:from-[#3b7bf5] hover:to-[#33ffb0] text-black font-display uppercase tracking-widest disabled:from-gray-800 disabled:to-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_0_20px_rgba(45,106,242,0.4)] hover:shadow-[0_0_30px_rgba(45,106,242,0.6)] rounded-xl border-none"
+                                >
+                                    {saving ? (
+                                        <span className="flex items-center gap-2">
+                                            <div className="h-4 w-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                                            Loading...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <Play className="fill-current h-5 w-5" />
+                                            Continue
+                                        </span>
+                                    )}
+                                </Button>
                             </div>
                         </Card>
                     </motion.div>

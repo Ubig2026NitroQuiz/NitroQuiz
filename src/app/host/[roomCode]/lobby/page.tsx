@@ -354,32 +354,9 @@ export default function HostRoomPage() {
             <div className="relative z-20 flex flex-col h-full w-full mx-auto p-4 md:p-8">
 
                 {/* Header */}
-                <div className="w-full flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <Logo width={220} height={60} animated={false} withText={false} />
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <Button
-                            onClick={simulateJoin}
-                            variant="outline"
-                            className="bg-[#00ff9d]/5 border-[#00ff9d]/30 text-[#00ff9d] hover:bg-[#00ff9d]/10 hover:text-[#00ff9d] font-display text-xs uppercase tracking-wider rounded-xl h-12"
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> Add Bot
-                        </Button>
-
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setIsMuted((p) => !p)}
-                            className={`p-3 border rounded-xl shadow-lg transition-all ${isMuted
-                                ? "bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
-                                : "bg-[#2d6af2]/10 border-[#2d6af2]/30 text-[#2d6af2] hover:bg-[#2d6af2]/20 shadow-[0_0_10px_rgba(45,106,242,0.3)]"
-                                }`}
-                        >
-                            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-                        </motion.button>
-                    </div>
+                <div className="w-full flex items-center justify-between mb-6">
+                    <Logo width={200} height={55} animated={false} withText={false} />
+                    <img src="/assets/logo/logo2.png" alt="Logo 2" className="h-10 object-contain opacity-70 hover:opacity-100 transition-opacity" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start relative">
@@ -481,6 +458,27 @@ export default function HostRoomPage() {
                                     <h2 className="font-display text-2xl text-white tracking-wide">
                                         Players: {participants.length}
                                     </h2>
+                                </div>
+
+                                {/* Add Bot & Mute — inside player header */}
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        onClick={simulateJoin}
+                                        variant="outline"
+                                        size="sm"
+                                        className="bg-[#00ff9d]/5 border-[#00ff9d]/30 text-[#00ff9d] hover:bg-[#00ff9d]/10 font-display text-[10px] uppercase tracking-wider rounded-lg h-8 px-3"
+                                    >
+                                        <Plus className="mr-1 h-3 w-3" /> Bot
+                                    </Button>
+                                    <button
+                                        onClick={() => setIsMuted((p) => !p)}
+                                        className={`p-1.5 border rounded-lg transition-all ${isMuted
+                                            ? "bg-red-500/10 border-red-500/30 text-red-400"
+                                            : "bg-[#2d6af2]/10 border-[#2d6af2]/30 text-[#2d6af2]"
+                                            }`}
+                                    >
+                                        {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                                    </button>
                                 </div>
 
                                 {participants.length > 0 && (
@@ -732,50 +730,57 @@ export default function HostRoomPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Countdown Overlay */}
+            {/* Countdown Overlay — dark bg, smooth transitions */}
             <AnimatePresence>
                 {countdown !== null && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-[#0a0a0f]/95 backdrop-blur-sm flex flex-col items-center justify-center"
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center"
+                        style={{ willChange: 'opacity' }}
                     >
                         {/* Racing lights */}
-                        <div className="flex gap-6 mb-12">
-                            {[0, 1, 2, 3, 4].map((i) => (
-                                <motion.div
-                                    key={i}
-                                    className={`w-12 h-12 rounded-full border-2 transition-all duration-300 ${
-                                        countdown <= (10 - i * 2)
-                                            ? 'bg-red-500 border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.8)]'
-                                            : 'bg-gray-800 border-gray-600'
-                                    } ${countdown <= 0 ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_40px_rgba(0,255,157,0.8)]' : ''}`}
-                                    animate={countdown <= (10 - i * 2) ? { scale: [1, 1.3, 1] } : {}}
-                                    transition={{ duration: 0.3 }}
-                                />
-                            ))}
+                        <div className="flex gap-5 mb-10">
+                            {[0, 1, 2, 3, 4].map((i) => {
+                                const isLit = countdown <= (10 - i * 2);
+                                const isGo = countdown <= 0;
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 transition-all duration-500 ease-out ${
+                                            isGo ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_30px_rgba(0,255,157,0.8)]'
+                                            : isLit ? 'bg-red-500 border-red-400 shadow-[0_0_25px_rgba(239,68,68,0.7)]'
+                                            : 'bg-gray-800/60 border-gray-700'
+                                        }`}
+                                        style={{ willChange: 'background-color, box-shadow', transform: isLit ? 'scale(1.1)' : 'scale(1)', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                                    />
+                                );
+                            })}
                         </div>
 
                         <AnimatePresence mode="wait">
                             <motion.span
                                 key={countdown}
-                                initial={{ opacity: 0, scale: 2 }}
+                                initial={{ opacity: 0, scale: 1.6 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 15 }}
-                                className={`font-display text-[180px] md:text-[240px] font-black leading-none tracking-tighter ${
+                                exit={{ opacity: 0, scale: 0.7 }}
+                                transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                                style={{ willChange: 'transform, opacity' }}
+                                className={`font-display text-[150px] md:text-[220px] font-black leading-none tracking-tighter ${
                                     countdown > 6 ? 'text-[#2d6af2]' : countdown > 3 ? 'text-yellow-400' : 'text-[#00ff9d]'
-                                } drop-shadow-[0_0_60px_currentColor]`}
+                                } drop-shadow-[0_0_50px_currentColor]`}
                             >
                                 {countdown > 0 ? countdown : "GO!"}
                             </motion.span>
                         </AnimatePresence>
 
                         <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="font-display text-2xl tracking-[0.3em] uppercase text-gray-400 mt-8"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="font-display text-xl md:text-2xl tracking-[0.3em] uppercase text-gray-500 mt-6"
                         >
                             {countdown > 0 ? "RACE STARTING" : ""}
                         </motion.p>

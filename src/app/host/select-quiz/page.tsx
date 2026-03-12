@@ -256,23 +256,21 @@ export default function SelectQuizPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="bg-black/40 border border-[#2d6af2]/30 rounded-2xl p-4 sm:p-6 mb-8 backdrop-blur-md shadow-[0_0_25px_rgba(45,106,242,0.1)]"
                     >
-                        {/* Search, Refresh & Category Filter */}
+                        {/* Search & Category Filter */}
                         <div className="flex flex-col sm:flex-row gap-4 mb-6 relative">
-                            <div className="flex-1 flex gap-2">
-                                <div className="relative flex-1 group/search">
+                            <div className="flex-1">
+                                <div className="relative group/search">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2d6af2] w-5 h-5 group-focus-within/search:text-[#00ff9d] transition-colors" />
                                     <Input
                                         type="text"
                                         placeholder="Search quiz title..."
                                         value={searchInput}
-                                        onChange={(e) => setSearchInput(e.target.value)}
-                                        className="w-full bg-black/50 border border-[#2d6af2]/30 pl-11 h-12 text-white font-display uppercase tracking-widest placeholder:text-gray-500 rounded-xl focus-visible:ring-1 focus-visible:ring-[#00ff9d]/50 focus-visible:border-[#00ff9d]/50 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                setSearchQuery(searchInput);
-                                                setCurrentPage(1);
-                                            }
+                                        onChange={(e) => {
+                                            setSearchInput(e.target.value);
+                                            setSearchQuery(e.target.value);
+                                            setCurrentPage(1);
                                         }}
+                                        className="w-full bg-black/50 border border-[#2d6af2]/30 pl-11 h-12 text-white font-display uppercase tracking-widest placeholder:text-gray-500 rounded-xl focus-visible:ring-1 focus-visible:ring-[#00ff9d]/50 focus-visible:border-[#00ff9d]/50 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
                                     />
                                     {searchInput && (
                                         <button
@@ -287,24 +285,6 @@ export default function SelectQuizPage() {
                                         </button>
                                     )}
                                 </div>
-                                <Button
-                                    onClick={() => {
-                                        setSearchQuery(searchInput);
-                                        setCurrentPage(1);
-                                    }}
-                                    className="h-12 px-6 bg-[#2d6af2] hover:bg-[#3b7bf5] text-white font-display tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(45,106,242,0.3)] hover:shadow-[0_0_25px_rgba(45,106,242,0.5)] rounded-xl"
-                                >
-                                    Search
-                                </Button>
-                                <Button
-                                    onClick={fetchQuizzes}
-                                    disabled={isFetching || creating}
-                                    variant="outline"
-                                    className="h-12 w-12 px-0 bg-black/40 border-[#2d6af2]/30 text-[#2d6af2] hover:bg-[#2d6af2]/20 transition-all rounded-xl"
-                                    title="Refresh Quizzes"
-                                >
-                                    <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
-                                </Button>
                             </div>
 
                             {/* Category Select */}
