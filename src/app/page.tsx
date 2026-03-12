@@ -65,7 +65,7 @@ export default function Home() {
       try {
         const {
           data: { session },
-        } = await supabaseCentral.auth.getSession();
+        } = await supabase.auth.getSession();
 
         if (session?.user) {
           let userProfileId = session.user.id;
@@ -75,7 +75,7 @@ export default function Home() {
             const { data: profile } = await supabaseCentral
               .from("profiles")
               .select("id, username")
-              .eq("auth_user_id", session.user.id)
+              .eq("email", session.user.email)
               .single();
             if (profile) {
               userProfileId = profile.id;
@@ -141,7 +141,7 @@ export default function Home() {
   }, []);
 
   const handleLogout = async () => {
-    await supabaseCentral.auth.signOut();
+    await supabase.auth.signOut();
     removeUser();
     router.push("/login");
   };
