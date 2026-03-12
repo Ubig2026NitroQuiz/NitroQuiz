@@ -21,6 +21,8 @@ import {
   Trophy,
   Target,
   DownloadIcon,
+  Gamepad2,
+  LogIn,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
@@ -60,30 +62,41 @@ export default function Home() {
   };
   useEffect(() => {
     async function init() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (session?.user) {
-        const u = getUser();
-        if (!u || u.id !== session.user.id) {
-          const newUser: User = {
-            id: session.user.id,
-            username:
-              session.user.user_metadata.full_name ||
-              session.user.email?.split("@")[0] ||
-              "Racer",
-            email: session.user.email || "",
-            totalPoints: 0,
-            gamesPlayed: 0,
-            createdAt: new Date().toISOString(),
-          };
-          saveUser(newUser);
-          setUser(newUser);
+        if (session?.user) {
+          const u = getUser();
+          if (!u || u.id !== session.user.id) {
+            const newUser: User = {
+              id: session.user.id,
+              username:
+                session.user.user_metadata.full_name ||
+                session.user.email?.split("@")[0] ||
+                "Racer",
+              email: session.user.email || "",
+              totalPoints: 0,
+              gamesPlayed: 0,
+              createdAt: new Date().toISOString(),
+            };
+            saveUser(newUser);
+            setUser(newUser);
+          } else {
+            setUser(u);
+          }
         } else {
-          setUser(u);
+          const currentUser = getUser();
+          if (!currentUser) {
+            router.push("/login");
+            return;
+          }
+          setUser(currentUser);
         }
-      } else {
+      } catch (error) {
+        console.error("Failed to get Supabase session:", error);
+        // Fallback: check localStorage for saved user
         const currentUser = getUser();
         if (!currentUser) {
           router.push("/login");
@@ -426,9 +439,7 @@ export default function Home() {
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#00ff9d]/20 to-transparent rounded-bl-full pointer-events-none"></div>
             <div className="w-full text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#000000]/50 border border-white/10 mb-6 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-                <span className="material-icons-outlined text-3xl text-[#00ff9d]">
-                  videogame_asset
-                </span>
+                <Gamepad2 className="w-8 h-8 text-[#00ff9d]" />
               </div>
               <h2 className="font-body font-bold text-4xl text-white mb-2 tracking-wide glow-text uppercase">
                 HOST
@@ -452,9 +463,7 @@ export default function Home() {
             <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-[#2d6af2]/20 to-transparent rounded-br-full pointer-events-none"></div>
             <div className="w-full text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#000000]/50 border border-white/10 mb-6 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-                <span className="material-icons-outlined text-3xl text-[#2d6af2]">
-                  login
-                </span>
+                <LogIn className="w-8 h-8 text-[#2d6af2]" />
               </div>
               <h2 className="font-body font-bold text-4xl text-white mb-2 tracking-wide glow-text uppercase">
                 JOIN

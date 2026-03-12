@@ -49,10 +49,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:ital,wght@0,400;0,600;0,700;1,700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+        {/* Fonts are loaded via next/font/google - no CDN links needed */}
       </head>
       <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} ${pressStart2P.variable}`}>
         <NextTopLoader

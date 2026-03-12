@@ -222,8 +222,20 @@ export default function HostRoomPage() {
         }
     };
 
-    const startGame = () => {
-        setCountdown(5);
+    const startGame = async () => {
+        // 1. Update session status to "active" so players start their countdown
+        if (sessionId) {
+            try {
+                await supabase
+                    .from("sessions")
+                    .update({ status: "active", started_at: new Date().toISOString() })
+                    .eq("id", sessionId);
+            } catch (err) {
+                console.error("Failed to update session status:", err);
+            }
+        }
+        // 2. Start host-side countdown
+        setCountdown(10);
     };
 
     useEffect(() => {
@@ -719,6 +731,57 @@ export default function HostRoomPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Countdown Overlay */}
+            <AnimatePresence>
+                {countdown !== null && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] bg-[#0a0a0f]/95 backdrop-blur-sm flex flex-col items-center justify-center"
+                    >
+                        {/* Racing lights */}
+                        <div className="flex gap-6 mb-12">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                                <motion.div
+                                    key={i}
+                                    className={`w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                                        countdown <= (10 - i * 2)
+                                            ? 'bg-red-500 border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.8)]'
+                                            : 'bg-gray-800 border-gray-600'
+                                    } ${countdown <= 0 ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_40px_rgba(0,255,157,0.8)]' : ''}`}
+                                    animate={countdown <= (10 - i * 2) ? { scale: [1, 1.3, 1] } : {}}
+                                    transition={{ duration: 0.3 }}
+                                />
+                            ))}
+                        </div>
+
+                        <AnimatePresence mode="wait">
+                            <motion.span
+                                key={countdown}
+                                initial={{ opacity: 0, scale: 2 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 15 }}
+                                className={`font-display text-[180px] md:text-[240px] font-black leading-none tracking-tighter ${
+                                    countdown > 6 ? 'text-[#2d6af2]' : countdown > 3 ? 'text-yellow-400' : 'text-[#00ff9d]'
+                                } drop-shadow-[0_0_60px_currentColor]`}
+                            >
+                                {countdown > 0 ? countdown : "GO!"}
+                            </motion.span>
+                        </AnimatePresence>
+
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="font-display text-2xl tracking-[0.3em] uppercase text-gray-400 mt-8"
+                        >
+                            {countdown > 0 ? "RACE STARTING" : ""}
+                        </motion.p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getUser } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const carGifs = [
     "/assets/car/car1_v2.webp",
@@ -21,9 +21,10 @@ export default function PlayerLobbyPage() {
     const params = useParams();
     const roomCode = params.roomCode as string;
 
-    const [status, setStatus] = useState<"loading" | "waiting" | "starting" | "error">("loading");
+    const [status, setStatus] = useState<"loading" | "waiting" | "countdown" | "go" | "error">("loading");
     const [errorMessage, setErrorMessage] = useState("");
     const [assignedCar, setAssignedCar] = useState<string>("/assets/car/car1_v2.webp");
+    const [countdownValue, setCountdownValue] = useState(10);
 
     useEffect(() => {
         const user = getUser();
@@ -31,6 +32,8 @@ export default function PlayerLobbyPage() {
             router.push(`/player/${roomCode}/login`);
             return;
         }
+
+        let cleanup: (() => void) | undefined;
 
         const joinRoom = async () => {
             try {
@@ -44,6 +47,12 @@ export default function PlayerLobbyPage() {
                 if (sessionError || !sessionData) {
                     setStatus("error");
                     setErrorMessage("Room not found or invalid.");
+                    return;
+                }
+
+                // If the game is already active, go straight to countdown
+                if (sessionData.status === "active") {
+                    setStatus("countdown");
                     return;
                 }
 
@@ -66,7 +75,7 @@ export default function PlayerLobbyPage() {
                         .from("participants")
                         .insert({
                             session_id: sessionData.id,
-                            user_id: user.id || null, // Real human player marks user_id if valid UUID
+                            user_id: user.id || null,
                             nickname: user.username,
                             car_character: carChoice,
                             score: 0,
@@ -82,23 +91,19 @@ export default function PlayerLobbyPage() {
 
                 setStatus("waiting");
 
-                // 4. Listen for game start
-                // we can listen to Session status changing to "active"
+                // 4. Listen for game start (session status -> "active")
                 const channel = supabase.channel(`public:sessions:${sessionData.id}`)
                     .on(
                         'postgres_changes',
                         { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
                         (payload) => {
                             if (payload.new.status === "active") {
-                                setStatus("starting");
-                                setTimeout(() => {
-                                    router.push(`/player/${roomCode}/game`); // Not built yet, but placeholder
-                                }, 2000);
+                                setStatus("countdown");
                             }
                         }
                     ).subscribe();
 
-                return () => {
+                cleanup = () => {
                     supabase.removeChannel(channel);
                 };
 
@@ -109,18 +114,57 @@ export default function PlayerLobbyPage() {
         };
 
         joinRoom();
+
+        return () => {
+            if (cleanup) cleanup();
+        };
     }, [roomCode, router]);
 
+    // Countdown timer: 10 -> 0, then redirect to gamespeed
+    useEffect(() => {
+        if (status !== "countdown") return;
+
+        if (countdownValue <= 0) {
+            setStatus("go");
+            // Brief "GO!" display then redirect
+            setTimeout(() => {
+                router.push('/gamespeed');
+            }, 1500);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setCountdownValue(prev => prev - 1);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [status, countdownValue, router]);
+
+    // Racing-themed countdown labels
+    const getCountdownLabel = (val: number) => {
+        if (val > 7) return "ENGINES ON";
+        if (val > 4) return "REV IT UP";
+        if (val > 2) return "GET SET";
+        if (val > 0) return "READY";
+        return "GO!";
+    };
+
+    const getCountdownColor = (val: number) => {
+        if (val > 6) return "text-[#2d6af2]";
+        if (val > 3) return "text-yellow-400";
+        return "text-[#00ff9d]";
+    };
+
     return (
-        <div className="bg-[#0b101a] text-white min-h-screen relative overflow-hidden font-body selection:bg-[#2d6af2] selection:text-white flex flex-col items-center justify-center p-4">
-            <div className="fixed inset-0 z-0 city-silhouette pointer-events-none"></div>
+        <div className="bg-[#0b101a] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4">
+            {/* Simplified BG - no heavy external images */}
             <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#0b101a] via-transparent to-[#2d6af2]/10 pointer-events-none"></div>
             <div className="fixed bottom-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#2d6af2]/10 via-[#0a101f]/50 to-[#0a101f] pointer-events-none z-0"></div>
             <div className="fixed bottom-0 w-full h-1/2 bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.1)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.1)_1px,transparent_1px)] bg-[length:60px_60px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom z-0 pointer-events-none opacity-20"></div>
-            <div className="scanlines z-10 opacity-30 pointer-events-none"></div>
 
             <div className="relative z-20 w-full max-w-sm text-center">
 
+                {/* LOADING */}
                 {status === "loading" && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
                         <Loader2 className="w-16 h-16 text-[#00ff9d] animate-spin mb-6" />
@@ -128,6 +172,7 @@ export default function PlayerLobbyPage() {
                     </motion.div>
                 )}
 
+                {/* ERROR */}
                 {status === "error" && (
                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-red-500/10 border border-red-500/50 p-6 rounded-2xl backdrop-blur-md">
                         <Zap className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -142,11 +187,12 @@ export default function PlayerLobbyPage() {
                     </motion.div>
                 )}
 
+                {/* WAITING FOR HOST */}
                 {status === "waiting" && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-black/40 border border-[#2d6af2]/30 p-8 rounded-3xl backdrop-blur-xl shadow-[0_0_50px_rgba(45,106,242,0.2)]"
+                        className="bg-black/40 border border-[#2d6af2]/30 p-8 rounded-3xl shadow-[0_0_50px_rgba(45,106,242,0.2)]"
                     >
                         <div className="mb-8">
                             <h2 className="font-display text-3xl text-white uppercase tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] mb-2">YOU'RE IN</h2>
@@ -170,15 +216,92 @@ export default function PlayerLobbyPage() {
                     </motion.div>
                 )}
 
-                {status === "starting" && (
+                {/* COUNTDOWN */}
+                <AnimatePresence mode="wait">
+                    {status === "countdown" && (
+                        <motion.div
+                            key="countdown"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex flex-col items-center justify-center"
+                        >
+                            {/* Racing lights indicator */}
+                            <div className="flex gap-4 mb-10">
+                                {[0, 1, 2, 3, 4].map((i) => (
+                                    <motion.div
+                                        key={i}
+                                        className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${
+                                            countdownValue <= (10 - i * 2)
+                                                ? 'bg-red-500 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.8)]'
+                                                : 'bg-gray-800 border-gray-600'
+                                        } ${countdownValue <= 0 ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_25px_rgba(0,255,157,0.8)]' : ''}`}
+                                        animate={countdownValue <= (10 - i * 2) ? { scale: [1, 1.2, 1] } : {}}
+                                        transition={{ duration: 0.3 }}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Big countdown number */}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={countdownValue}
+                                    initial={{ opacity: 0, scale: 2, y: -30 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.5, y: 30 }}
+                                    transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 15 }}
+                                    className="relative"
+                                >
+                                    <span className={`font-display text-[120px] md:text-[160px] font-black leading-none tracking-tighter ${getCountdownColor(countdownValue)} drop-shadow-[0_0_40px_currentColor]`}>
+                                        {countdownValue > 0 ? countdownValue : "GO!"}
+                                    </span>
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* Status label */}
+                            <motion.p
+                                key={`label-${getCountdownLabel(countdownValue)}`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="font-display text-lg tracking-[0.3em] uppercase text-gray-400 mt-6"
+                            >
+                                {getCountdownLabel(countdownValue)}
+                            </motion.p>
+
+                            {/* Pulsing ring effect */}
+                            <motion.div
+                                className="absolute w-64 h-64 rounded-full border border-[#2d6af2]/20"
+                                animate={{
+                                    scale: [1, 1.5, 1],
+                                    opacity: [0.3, 0, 0.3],
+                                }}
+                                transition={{
+                                    repeat: Infinity,
+                                    duration: 2,
+                                    ease: "easeInOut",
+                                }}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* GO! */}
+                {status === "go" && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="flex flex-col items-center"
                     >
-                        <h1 className="font-display text-6xl md:text-8xl text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-orange-500 uppercase tracking-tighter drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-pulse">
+                        <motion.h1
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ repeat: Infinity, duration: 0.5 }}
+                            className="font-display text-[100px] md:text-[140px] text-transparent bg-clip-text bg-gradient-to-b from-[#00ff9d] to-[#2d6af2] uppercase tracking-tighter leading-none font-black drop-shadow-[0_0_50px_rgba(0,255,157,0.6)]"
+                        >
                             GO!
-                        </h1>
+                        </motion.h1>
+                        <p className="font-display text-[#00ff9d] text-sm uppercase tracking-[0.3em] mt-4 animate-pulse">
+                            LAUNCHING RACE...
+                        </p>
                     </motion.div>
                 )}
             </div>

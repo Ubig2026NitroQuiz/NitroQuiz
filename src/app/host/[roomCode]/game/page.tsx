@@ -78,11 +78,7 @@ export default function GameMonitorPage() {
             setParticipants(pData as Participant[]);
           }
 
-          // Update session status to active if not already
-          await supabase
-            .from("sessions")
-            .update({ status: "active", started_at: new Date().toISOString() })
-            .eq("id", sessionData.id);
+          // Session status already set to "active" from lobby page
         }
       } catch (err) {
         console.error("Initialization error:", err);
