@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ASSET_LIST, TRACK_ASSETS, getAssetOffset } from '@/lib/gameAssets';
+import QuizOverlay, { QuizQuestion } from '@/components/game/QuizOverlay';
 
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
@@ -122,6 +123,15 @@ export default function GameSpeedPage() {
     const [isBraking, setIsBraking] = useState(false);
     const [isBoosting, setIsBoosting] = useState(false);
     const [mobileOrientationChoice, setMobileOrientationChoice] = useState<'portrait' | 'landscape' | null>(null);
+
+    // Quiz Integration State
+    const [allQuizQuestions, setAllQuizQuestions] = useState<QuizQuestion[]>([]);
+    const [quizRound, setQuizRound] = useState(0); // Which round of quiz (0 = haven't started)
+    const [quizQuestionIndex, setQuizQuestionIndex] = useState(0); // Index into allQuizQuestions
+    const [showQuiz, setShowQuiz] = useState(false);
+    const [totalQuizScore, setTotalQuizScore] = useState(0);
+    const [allQuizDone, setAllQuizDone] = useState(false);
+    const QUESTIONS_PER_ROUND = 3;
 
     const usePCLayout = !isMobile || mobileOrientationChoice === 'landscape';
     const isMobileLandscape = isMobile && mobileOrientationChoice === 'landscape';
@@ -1177,8 +1187,16 @@ export default function GameSpeedPage() {
         // Lap & Finish line check
         if (position > trackLength - playerZ) {
             if (state.current.currentLap >= state.current.totalLaps) {
-                setGameState('finished');
-                state.current.speed = 0;
+                // Check if we have quiz questions remaining
+                if (allQuizQuestions.length > 0 && quizQuestionIndex < allQuizQuestions.length) {
+                    // Show quiz overlay instead of finishing
+                    state.current.speed = 0;
+                    setShowQuiz(true);
+                    setQuizRound(prev => prev + 1);
+                } else {
+                    setGameState('finished');
+                    state.current.speed = 0;
+                }
             } else {
                 state.current.currentLap++;
                 state.current.position = 0;
@@ -1818,8 +1836,63 @@ export default function GameSpeedPage() {
     };
 
     const endGame = () => {
-        router.push('/select-character');
+        // Clean up quiz data from localStorage
+        localStorage.removeItem('nitroquiz_game_questions');
+        localStorage.removeItem('nitroquiz_game_roomCode');
+        localStorage.removeItem('nitroquiz_game_sessionId');
+        localStorage.removeItem('nitroquiz_game_quizId');
+        router.push('/');
     };
+
+    // Load quiz questions from localStorage (preloaded by player lobby)
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem('nitroquiz_game_questions');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    // Normalize questions to QuizQuestion format
+                    const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => ({
+                        id: q.id || `q-${idx}`,
+                        question: q.question || q.text || q.pertanyaan || '',
+                        options: q.options || q.choices || q.pilihan || [],
+                        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer
+                            : typeof q.correct_answer === 'number' ? q.correct_answer
+                            : typeof q.answer === 'number' ? q.answer : 0,
+                    }));
+                    setAllQuizQuestions(normalized);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load quiz questions:', e);
+        }
+    }, []);
+
+    // Handle quiz completion for current round
+    const handleQuizComplete = useCallback((results: { correct: number; total: number; score: number }) => {
+        setTotalQuizScore(prev => prev + results.score);
+        setQuizQuestionIndex(prev => prev + QUESTIONS_PER_ROUND);
+        setShowQuiz(false);
+
+        // Check if there are more questions left
+        const nextIndex = quizQuestionIndex + QUESTIONS_PER_ROUND;
+        if (nextIndex >= allQuizQuestions.length) {
+            // All questions done!
+            setAllQuizDone(true);
+            setGameState('finished');
+        } else {
+            // Reset race for the next round
+            state.current.position = 0;
+            state.current.speed = 0;
+            state.current.playerX = 0;
+            state.current.nos = 100;
+            setCountdown(3);
+            setGameState('countdown');
+        }
+    }, [quizQuestionIndex, allQuizQuestions.length]);
+
+    // Get current quiz questions for this round
+    const currentRoundQuestions = allQuizQuestions.slice(quizQuestionIndex, quizQuestionIndex + QUESTIONS_PER_ROUND);
 
     return (
         <div style={{
@@ -2385,8 +2458,17 @@ export default function GameSpeedPage() {
                 </div>
             )}
 
+            {/* Quiz Overlay */}
+            {showQuiz && currentRoundQuestions.length > 0 && (
+                <QuizOverlay
+                    questions={currentRoundQuestions}
+                    roundNumber={quizRound}
+                    onComplete={handleQuizComplete}
+                />
+            )}
+
             {/* Victory Overlay - Premium Modern Style */}
-            {mounted && assetsLoaded && gameState === 'finished' && (
+            {mounted && assetsLoaded && gameState === 'finished' && !showQuiz && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
                     <div style={{
                         backgroundColor: '#0f172a',
@@ -2404,15 +2486,21 @@ export default function GameSpeedPage() {
                         <h1 style={{ fontSize: isMobileLandscape ? '1.4rem' : (usePCLayout ? '4rem' : '2rem'), fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.25rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
                         <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem'), fontSize: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1rem' : '0.7rem') }}>Racing Protocol: Complete</p>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobileLandscape ? '0.5rem' : (usePCLayout ? '1.5rem' : '0.75rem'), marginBottom: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '1.5rem') }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: allQuizQuestions.length > 0 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: isMobileLandscape ? '0.5rem' : (usePCLayout ? '1.5rem' : '0.75rem'), marginBottom: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '1.5rem') }}>
                             <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Grade Points</div>
-                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>100</div>
+                                <div style={{ fontSize: '0.65rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Quiz Score</div>
+                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>{totalQuizScore}</div>
                             </div>
                             <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Record Time</div>
-                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>01:24</div>
+                                <div style={{ fontSize: '0.65rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Races Done</div>
+                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>{quizRound}</div>
                             </div>
+                            {allQuizQuestions.length > 0 && (
+                                <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                    <div style={{ fontSize: '0.65rem', color: '#00ff9d', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Questions</div>
+                                    <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>{allQuizQuestions.length}</div>
+                                </div>
+                            )}
                         </div>
 
                         <button

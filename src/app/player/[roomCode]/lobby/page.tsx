@@ -25,6 +25,7 @@ export default function PlayerLobbyPage() {
     const [errorMessage, setErrorMessage] = useState("");
     const [assignedCar, setAssignedCar] = useState<string>("/assets/car/car1_v2.webp");
     const [countdownValue, setCountdownValue] = useState(10);
+    const [sessionId, setSessionId] = useState<string | null>(null);
 
     useEffect(() => {
         const user = getUser();
@@ -99,6 +100,8 @@ export default function PlayerLobbyPage() {
                         (payload) => {
                             if (payload.new.status === "active") {
                                 setStatus("countdown");
+                                // Preload quiz questions from session
+                                preloadQuizData(sessionData.id);
                             }
                         }
                     ).subscribe();
@@ -119,6 +122,39 @@ export default function PlayerLobbyPage() {
             if (cleanup) cleanup();
         };
     }, [roomCode, router]);
+
+    // Preload quiz data from session's current_questions
+    const preloadQuizData = async (sessId: string) => {
+        try {
+            const { data } = await supabase
+                .from("sessions")
+                .select("current_questions, question_limit, quiz_id")
+                .eq("id", sessId)
+                .single();
+
+            if (data?.current_questions) {
+                let questions = data.current_questions;
+                if (typeof questions === 'string') {
+                    try { questions = JSON.parse(questions); } catch (e) { }
+                }
+                // Store for gamespeed to pick up
+                localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questions));
+                localStorage.setItem('nitroquiz_game_roomCode', roomCode);
+                localStorage.setItem('nitroquiz_game_sessionId', sessId);
+                if (data.quiz_id) {
+                    localStorage.setItem('nitroquiz_game_quizId', data.quiz_id);
+                }
+            }
+
+            // Prefetch gamespeed page for faster load
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = '/gamespeed';
+            document.head.appendChild(link);
+        } catch (err) {
+            console.error('Failed to preload quiz:', err);
+        }
+    };
 
     // Countdown timer: 10 -> 0, then redirect to gamespeed
     useEffect(() => {
