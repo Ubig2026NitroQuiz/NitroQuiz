@@ -140,7 +140,7 @@ export default function LoginPage() {
             <div className="relative z-10 w-full max-w-[380px] mx-4">
 
                 {/* Logo */}
-                <div className="mb-8">
+                <div className="mb-6 md:mb-8 flex justify-center scale-90 md:scale-100 origin-center transition-transform">
                     <Logo width={280} height={80} />
                 </div>
 
@@ -154,7 +154,7 @@ export default function LoginPage() {
                     {/* Glow border */}
                     <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-[#2d6af2]/30 via-transparent to-[#00ff9d]/15 z-0 pointer-events-none" />
 
-                    <div className="relative bg-[#080d1a]/95 backdrop-blur-2xl rounded-2xl p-7 z-10 shadow-[0_0_50px_rgba(45,106,242,0.12),inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    <div className="relative bg-[#080d1a]/95 backdrop-blur-2xl rounded-2xl p-5 md:p-7 z-10 shadow-[0_0_50px_rgba(45,106,242,0.12),inset_0_1px_0_rgba(255,255,255,0.06)]">
 
                         {/* Accent top */}
                         <div className="absolute top-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-[#2d6af2]/60 to-transparent" />
