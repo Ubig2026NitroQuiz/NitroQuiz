@@ -278,11 +278,11 @@ export default function SettingsPage() {
                                     </h2>
                                 </div>
 
-                                {/* Settings Grid - 4 columns, all aligned */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {/* Settings Grid - 3 columns */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {/* Duration */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] pl-1">
                                             <Clock className="h-3.5 w-3.5" /><span>Duration</span>
                                         </Label>
                                         <Select value={duration} onValueChange={setDuration}>
@@ -301,7 +301,7 @@ export default function SettingsPage() {
 
                                     {/* Questions */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] pl-1">
                                             <ListOrdered className="h-3.5 w-3.5" /><span>Questions</span>
                                         </Label>
                                         <Select value={questionCount} onValueChange={setQuestionCount}>
@@ -320,7 +320,7 @@ export default function SettingsPage() {
 
                                     {/* Sound */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] pl-1">
                                             {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                                             <span>Sound</span>
                                         </Label>
@@ -334,26 +334,26 @@ export default function SettingsPage() {
                                             <Volume2 className={`h-4 w-4 ${!isMuted ? "text-[#2d6af2]" : "text-gray-600"}`} />
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* Difficulty */}
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
-                                            <Settings className="h-3.5 w-3.5" /><span>Difficulty</span>
-                                        </Label>
-                                        <div className="flex h-11 rounded-xl overflow-hidden border border-[#2d6af2]/30">
-                                            {["Easy", "Normal", "Hard"].map((diff, i) => (
-                                                <button
-                                                    key={diff}
-                                                    onClick={() => setSelectedDifficulty(diff.toLowerCase())}
-                                                    className={`flex-1 text-xs font-display uppercase tracking-wider transition-all duration-200 ${i > 0 ? 'border-l border-[#2d6af2]/30' : ''}
-                                                    ${selectedDifficulty === diff.toLowerCase()
-                                                            ? "bg-[#2d6af2] text-white shadow-[inset_0_0_15px_rgba(45,106,242,0.4)]"
-                                                            : "bg-black/60 text-[#2d6af2] hover:bg-[#2d6af2]/10"}`}
-                                                >
-                                                    {diff}
-                                                </button>
-                                            ))}
-                                        </div>
+                                {/* Difficulty - below, same 3-col grid */}
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] pl-1">
+                                        <Settings className="h-3.5 w-3.5" /><span>Difficulty</span>
+                                    </Label>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {["Easy", "Normal", "Hard"].map((diff) => (
+                                            <button
+                                                key={diff}
+                                                onClick={() => setSelectedDifficulty(diff.toLowerCase())}
+                                                className={`h-11 text-sm font-display uppercase tracking-wider transition-all duration-200 rounded-xl border
+                                                ${selectedDifficulty === diff.toLowerCase()
+                                                        ? "bg-[#2d6af2] text-white border-[#2d6af2] shadow-[0_0_15px_rgba(45,106,242,0.5)]"
+                                                        : "bg-black/60 border-[#2d6af2]/30 text-[#2d6af2] hover:bg-[#2d6af2]/10 hover:border-[#2d6af2]"}`}
+                                            >
+                                                {diff}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
