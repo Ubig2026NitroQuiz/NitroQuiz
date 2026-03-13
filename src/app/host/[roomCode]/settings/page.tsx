@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Clock, Hash, Play, Settings, Volume2, VolumeX } from "lucide-react"
+import { ArrowLeft, Clock, ListOrdered, Play, Settings, Volume2, VolumeX } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
@@ -270,42 +270,42 @@ export default function SettingsPage() {
                             {/* Card Glow Effect */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#2d6af2]/10 blur-[50px] pointer-events-none"></div>
 
-                            <div className="space-y-4 relative z-10">
-                                <div className="p-3 bg-black/40 border border-[#2d6af2]/30 rounded-xl relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-[#2d6af2]/5 group-hover:bg-[#2d6af2]/10 transition-colors"></div>
-                                    <div className="flex items-start space-x-3 relative z-10">
-                                        <div className="flex-shrink-0 mt-1"><Hash className="h-5 w-5 text-[#2d6af2]" /></div>
-                                        <div className="flex-1 space-y-1">
-                                            <p className="text-base sm:text-lg text-[#2d6af2] font-display uppercase tracking-wider">{quizDetail.title}</p>
-                                            <p className="text-cyan-400 font-display text-xs sm:text-sm tracking-wide">{quizDetail.description}</p>
-                                        </div>
-                                    </div>
+                            <div className="space-y-5 relative z-10">
+                                {/* Quiz Title - centered, bold, no icon, no description */}
+                                <div className="p-4 bg-black/40 border border-[#2d6af2]/30 rounded-xl">
+                                    <h2 className="text-lg sm:text-xl text-white font-display font-bold uppercase tracking-widest text-center drop-shadow-[0_0_10px_rgba(45,106,242,0.4)]">
+                                        {quizDetail.title}
+                                    </h2>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Settings Grid - 4 columns, all aligned */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {/* Duration */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
                                             <Clock className="h-3.5 w-3.5" /><span>Duration</span>
                                         </Label>
                                         <Select value={duration} onValueChange={setDuration}>
-                                            <SelectTrigger className="text-sm p-3 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
+                                            <SelectTrigger className="text-sm h-11 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#0a101f] border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider">
                                                 {Array.from({ length: 6 }, (_, i) => (i + 1) * 5).map((min) => (
                                                     <SelectItem key={min} value={(min * 60).toString()} className="focus:bg-[#2d6af2]/20 focus:text-white cursor-pointer">
-                                                        {min} Minutes
+                                                        {min} Min
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
+
+                                    {/* Questions */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
-                                            <Hash className="h-3.5 w-3.5" /><span>Questions</span>
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                            <ListOrdered className="h-3.5 w-3.5" /><span>Questions</span>
                                         </Label>
                                         <Select value={questionCount} onValueChange={setQuestionCount}>
-                                            <SelectTrigger className="text-sm p-3 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
+                                            <SelectTrigger className="text-sm h-11 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider focus:border-[#2d6af2] focus:ring-1 focus:ring-[#2d6af2] w-full transition-all rounded-xl">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#0a101f] border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider">
@@ -317,40 +317,43 @@ export default function SettingsPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
+
+                                    {/* Sound */}
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm font-display uppercase tracking-wide flex items-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
                                             {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                                             <span>Sound</span>
                                         </Label>
-                                        <div className="flex items-center justify-center gap-4 w-full text-sm sm:text-base px-5 h-10.5 bg-black/60 border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider rounded-xl transition-all">
-                                            <VolumeX className={`h-6 w-6 ${isMuted ? "text-red-500" : "text-gray-600"}`} />
+                                        <div className="flex items-center justify-center gap-3 w-full h-11 bg-black/60 border border-[#2d6af2]/30 text-white rounded-xl">
+                                            <VolumeX className={`h-4 w-4 ${isMuted ? "text-red-500" : "text-gray-600"}`} />
                                             <Switch
                                                 checked={!isMuted}
                                                 onCheckedChange={(checked: boolean) => setIsMuted(!checked)}
                                                 className="data-[state=checked]:bg-[#2d6af2] data-[state=unchecked]:bg-[#333] border border-[#2d6af2]/50"
                                             />
-                                            <Volume2 className={`h-6 w-6 ${!isMuted ? "text-[#2d6af2]" : "text-gray-600"}`} />
+                                            <Volume2 className={`h-4 w-4 ${!isMuted ? "text-[#2d6af2]" : "text-gray-600"}`} />
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-display uppercase tracking-wide flex items-center justify-center space-x-2 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)] mb-2">
-                                        <Settings className="h-3.5 w-3.5" /><span>Difficulty</span>
-                                    </Label>
-                                    <div className="flex justify-center space-x-3 sm:space-x-6">
-                                        {["Easy", "Normal", "Hard"].map((diff) => (
-                                            <Button
-                                                key={diff}
-                                                onClick={() => setSelectedDifficulty(diff.toLowerCase())}
-                                                className={`text-sm px-5 py-4 font-display uppercase tracking-wider w-28 transition-all duration-200 border capitalize rounded-xl
-                                                ${selectedDifficulty === diff.toLowerCase()
-                                                        ? "bg-[#2d6af2] hover:bg-[#3b7bf5] text-white border-white/50 shadow-[0_0_15px_rgba(45,106,242,0.6)]"
-                                                        : "bg-black/60 border-[#2d6af2]/30 text-[#2d6af2] hover:bg-[#2d6af2]/10 hover:border-[#2d6af2] hover:shadow-[0_0_10px_rgba(45,106,242,0.4)]"}`}
-                                            >
-                                                {diff}
-                                            </Button>
-                                        ))}
+                                    {/* Difficulty */}
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-display uppercase tracking-wide flex items-center space-x-1.5 text-[#00ff9d] drop-shadow-[0_0_5px_rgba(0,255,157,0.5)]">
+                                            <Settings className="h-3.5 w-3.5" /><span>Difficulty</span>
+                                        </Label>
+                                        <div className="flex h-11 rounded-xl overflow-hidden border border-[#2d6af2]/30">
+                                            {["Easy", "Normal", "Hard"].map((diff, i) => (
+                                                <button
+                                                    key={diff}
+                                                    onClick={() => setSelectedDifficulty(diff.toLowerCase())}
+                                                    className={`flex-1 text-xs font-display uppercase tracking-wider transition-all duration-200 ${i > 0 ? 'border-l border-[#2d6af2]/30' : ''}
+                                                    ${selectedDifficulty === diff.toLowerCase()
+                                                            ? "bg-[#2d6af2] text-white shadow-[inset_0_0_15px_rgba(45,106,242,0.4)]"
+                                                            : "bg-black/60 text-[#2d6af2] hover:bg-[#2d6af2]/10"}`}
+                                                >
+                                                    {diff}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
