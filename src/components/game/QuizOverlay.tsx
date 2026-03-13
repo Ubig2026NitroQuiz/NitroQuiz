@@ -21,8 +21,9 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [isRevealed, setIsRevealed] = useState(false);
     const [correctCount, setCorrectCount] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(15); // 15 seconds per question
+    const [timeLeft, setTimeLeft] = useState(15);
     const [totalScore, setTotalScore] = useState(0);
+    const [showFeedback, setShowFeedback] = useState<'correct' | 'wrong' | null>(null);
 
     const currentQ = questions[currentIndex];
     const total = questions.length;
@@ -32,7 +33,6 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
         if (isRevealed || !currentQ) return;
 
         if (timeLeft <= 0) {
-            // Time's up - treat as wrong answer
             handleReveal(-1);
             return;
         }
@@ -46,6 +46,7 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
         setTimeLeft(15);
         setSelectedAnswer(null);
         setIsRevealed(false);
+        setShowFeedback(null);
     }, [currentIndex]);
 
     const handleReveal = useCallback((answerIdx: number) => {
@@ -56,28 +57,31 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
         const isCorrect = answerIdx === currentQ.correctAnswer;
         if (isCorrect) {
             setCorrectCount(prev => prev + 1);
-            // Score: base 100 + time bonus (up to 50)
             const timeBonus = Math.floor(timeLeft * 3.33);
             setTotalScore(prev => prev + 100 + timeBonus);
+            setShowFeedback('correct');
+        } else {
+            setShowFeedback('wrong');
         }
 
-        // Auto-advance after 2 seconds
+        // Auto-advance after 1.8 seconds
         setTimeout(() => {
+            setShowFeedback(null);
             if (currentIndex < total - 1) {
                 setCurrentIndex(prev => prev + 1);
             } else {
-                // All questions answered
                 const finalCorrect = isCorrect ? correctCount + 1 : correctCount;
                 const finalScore = isCorrect ? totalScore + 100 + Math.floor(timeLeft * 3.33) : totalScore;
                 onComplete({ correct: finalCorrect, total, score: finalScore });
             }
-        }, 2000);
+        }, 1800);
     }, [isRevealed, currentQ, currentIndex, total, correctCount, totalScore, timeLeft, onComplete]);
 
     if (!currentQ) return null;
 
     const timerColor = timeLeft > 10 ? '#00ff9d' : timeLeft > 5 ? '#fbbf24' : '#ef4444';
     const timerPercent = (timeLeft / 15) * 100;
+    const labels = ['A', 'B', 'C', 'D'];
 
     return (
         <div style={{
@@ -85,77 +89,119 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
             backgroundColor: 'rgba(2, 6, 23, 0.97)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--font-rajdhani), sans-serif',
-            padding: '1rem',
+            padding: '0.75rem',
+            overflow: 'auto',
         }}>
-            <div style={{ maxWidth: '40rem', width: '100%' }}>
-                {/* Header: Round + Progress */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            {/* Feedback Animation */}
+            <AnimatePresence>
+                {showFeedback && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.5 }}
+                        transition={{ duration: 0.4 }}
+                        style={{
+                            position: 'fixed', inset: 0, zIndex: 3100,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            pointerEvents: 'none',
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: [0, 1.3, 1] }}
+                            transition={{ duration: 0.5 }}
+                            style={{
+                                fontSize: '5rem',
+                                filter: showFeedback === 'correct'
+                                    ? 'drop-shadow(0 0 40px rgba(0, 255, 157, 0.8))'
+                                    : 'drop-shadow(0 0 40px rgba(239, 68, 68, 0.8))',
+                            }}
+                        >
+                            {showFeedback === 'correct' ? '✅' : '❌'}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div style={{ maxWidth: '36rem', width: '100%' }}>
+                {/* Header: Round + Progress + Timer */}
+                <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    marginBottom: '0.75rem',
+                }}>
                     <div style={{
-                        fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase',
-                        letterSpacing: '0.2em', color: '#2d6af2',
-                        padding: '0.25rem 0.75rem', background: 'rgba(45,106,242,0.15)',
-                        borderRadius: '0.5rem', border: '1px solid rgba(45,106,242,0.3)'
+                        fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase',
+                        letterSpacing: '0.15em', color: '#2d6af2',
+                        padding: '0.2rem 0.6rem', background: 'rgba(45,106,242,0.15)',
+                        borderRadius: '0.4rem', border: '1px solid rgba(45,106,242,0.3)'
                     }}>
                         ROUND {roundNumber}
                     </div>
                     <div style={{
-                        fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8',
-                        letterSpacing: '0.15em', textTransform: 'uppercase'
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
                     }}>
-                        {currentIndex + 1} / {total}
+                        <span style={{
+                            fontSize: '1.5rem', fontWeight: 900, color: timerColor,
+                            textShadow: `0 0 15px ${timerColor}60`,
+                            minWidth: '2.5rem', textAlign: 'center',
+                        }}>
+                            {timeLeft}s
+                        </span>
+                        <span style={{
+                            fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8',
+                            letterSpacing: '0.1em', textTransform: 'uppercase'
+                        }}>
+                            {currentIndex + 1}/{total}
+                        </span>
                     </div>
                 </div>
 
                 {/* Timer Bar */}
                 <div style={{
-                    width: '100%', height: '4px', backgroundColor: 'rgba(255,255,255,0.1)',
-                    borderRadius: '9999px', marginBottom: '1.5rem', overflow: 'hidden'
+                    width: '100%', height: '3px', backgroundColor: 'rgba(255,255,255,0.08)',
+                    borderRadius: '9999px', marginBottom: '1rem', overflow: 'hidden'
                 }}>
-                    <motion.div
-                        style={{ height: '100%', backgroundColor: timerColor, borderRadius: '9999px' }}
-                        animate={{ width: `${timerPercent}%` }}
-                        transition={{ duration: 0.5, ease: 'linear' }}
+                    <div
+                        style={{
+                            height: '100%', backgroundColor: timerColor, borderRadius: '9999px',
+                            width: `${timerPercent}%`,
+                            transition: 'width 0.5s linear, background-color 0.3s',
+                        }}
                     />
-                </div>
-
-                {/* Timer Number */}
-                <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{
-                        fontSize: '2rem', fontWeight: 900, color: timerColor,
-                        textShadow: `0 0 20px ${timerColor}40`
-                    }}>
-                        {timeLeft}s
-                    </span>
                 </div>
 
                 {/* Question Card */}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentIndex}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -30 }}
+                        transition={{ duration: 0.25 }}
                         style={{
                             backgroundColor: 'rgba(15, 23, 42, 0.9)',
                             border: '1px solid rgba(45, 106, 242, 0.3)',
-                            borderRadius: '1.5rem',
-                            padding: '2rem',
-                            marginBottom: '1.5rem',
-                            boxShadow: '0 0 40px rgba(45, 106, 242, 0.1)'
+                            borderRadius: '1rem',
+                            padding: '1.25rem 1.5rem',
+                            marginBottom: '0.75rem',
+                            boxShadow: '0 0 30px rgba(45, 106, 242, 0.08)'
                         }}
                     >
                         <p style={{
-                            fontSize: '1.25rem', fontWeight: 700, color: 'white',
-                            lineHeight: 1.5, textAlign: 'center'
+                            fontSize: 'clamp(0.9rem, 3.5vw, 1.2rem)', fontWeight: 700, color: 'white',
+                            lineHeight: 1.5, textAlign: 'center', margin: 0,
                         }}>
                             {currentQ.question}
                         </p>
                     </motion.div>
                 </AnimatePresence>
 
-                {/* Answer Options */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                {/* Answer Options - 2x2 grid, responsive */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: currentQ.options.length <= 2 ? '1fr' : '1fr 1fr',
+                    gap: '0.5rem',
+                }}>
                     {currentQ.options.map((option, idx) => {
                         const isSelected = selectedAnswer === idx;
                         const isCorrectAnswer = idx === currentQ.correctAnswer;
@@ -163,7 +209,7 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
                         const showCorrect = isRevealed && isCorrectAnswer;
 
                         let bgColor = 'rgba(15, 23, 42, 0.8)';
-                        let borderColor = 'rgba(45, 106, 242, 0.2)';
+                        let borderColor = 'rgba(45, 106, 242, 0.25)';
                         let textColor = 'white';
                         let shadow = 'none';
 
@@ -180,41 +226,43 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
                             borderColor = '#2d6af2';
                         }
 
-                        const labels = ['A', 'B', 'C', 'D'];
-
                         return (
                             <motion.button
                                 key={idx}
                                 whileHover={!isRevealed ? { scale: 1.02 } : {}}
-                                whileTap={!isRevealed ? { scale: 0.98 } : {}}
+                                whileTap={!isRevealed ? { scale: 0.96 } : {}}
                                 onClick={() => !isRevealed && handleReveal(idx)}
                                 disabled={isRevealed}
                                 style={{
                                     background: bgColor,
                                     border: `2px solid ${borderColor}`,
-                                    borderRadius: '1rem',
-                                    padding: '1rem 1.25rem',
+                                    borderRadius: '0.75rem',
+                                    padding: '0.75rem 1rem',
                                     textAlign: 'left',
                                     cursor: isRevealed ? 'default' : 'pointer',
                                     transition: 'all 0.2s',
                                     boxShadow: shadow,
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.75rem',
+                                    gap: '0.6rem',
                                     color: textColor,
+                                    minHeight: '3rem',
                                 }}
                             >
                                 <span style={{
-                                    width: '2rem', height: '2rem', borderRadius: '0.5rem',
+                                    width: '1.75rem', height: '1.75rem', borderRadius: '0.4rem',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.875rem', fontWeight: 900,
+                                    fontSize: '0.8rem', fontWeight: 900,
                                     backgroundColor: showCorrect ? '#00ff9d' : isWrongSelected ? '#ef4444' : 'rgba(45,106,242,0.2)',
                                     color: showCorrect || isWrongSelected ? 'black' : '#2d6af2',
                                     flexShrink: 0,
                                 }}>
                                     {showCorrect ? '✓' : isWrongSelected ? '✗' : labels[idx]}
                                 </span>
-                                <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+                                <span style={{
+                                    fontSize: 'clamp(0.8rem, 3vw, 0.95rem)', fontWeight: 600,
+                                    wordBreak: 'break-word',
+                                }}>
                                     {option}
                                 </span>
                             </motion.button>
@@ -224,13 +272,13 @@ export default function QuizOverlay({ questions, onComplete, roundNumber }: Quiz
 
                 {/* Score Display */}
                 <div style={{
-                    textAlign: 'center', marginTop: '1.5rem',
-                    fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8',
-                    letterSpacing: '0.2em', textTransform: 'uppercase'
+                    textAlign: 'center', marginTop: '0.75rem',
+                    fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8',
+                    letterSpacing: '0.15em', textTransform: 'uppercase'
                 }}>
-                    SCORE: <span style={{ color: '#00ff9d', fontSize: '1rem' }}>{totalScore}</span>
-                    <span style={{ margin: '0 0.75rem', color: 'rgba(148,163,184,0.3)' }}>|</span>
-                    CORRECT: <span style={{ color: '#2d6af2', fontSize: '1rem' }}>{correctCount}/{currentIndex + (isRevealed ? 1 : 0)}</span>
+                    SCORE: <span style={{ color: '#00ff9d', fontSize: '0.85rem' }}>{totalScore}</span>
+                    <span style={{ margin: '0 0.5rem', color: 'rgba(148,163,184,0.3)' }}>|</span>
+                    CORRECT: <span style={{ color: '#2d6af2', fontSize: '0.85rem' }}>{correctCount}/{currentIndex + (isRevealed ? 1 : 0)}</span>
                 </div>
             </div>
         </div>

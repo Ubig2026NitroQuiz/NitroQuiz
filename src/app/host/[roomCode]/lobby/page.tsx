@@ -730,63 +730,66 @@ export default function HostRoomPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Countdown Overlay — dark bg, smooth transitions */}
-            <AnimatePresence>
-                {countdown !== null && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center"
-                        style={{ willChange: 'opacity' }}
+            {/* Countdown Overlay — dark bg, smooth CSS transitions */}
+            {countdown !== null && (
+                <div
+                    className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center"
+                    style={{ willChange: 'opacity', animation: 'fadeIn 0.3s ease-out' }}
+                >
+                    {/* Racing lights */}
+                    <div className="flex gap-4 mb-10">
+                        {[0, 1, 2, 3, 4].map((i) => {
+                            const isLit = countdown <= (10 - i * 2);
+                            const isGo = countdown <= 0;
+                            return (
+                                <div
+                                    key={i}
+                                    className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2"
+                                    style={{
+                                        borderColor: isGo ? '#00ff9d' : isLit ? '#ef4444' : '#374151',
+                                        backgroundColor: isGo ? '#00ff9d' : isLit ? '#ef4444' : 'rgba(55, 65, 81, 0.3)',
+                                        boxShadow: isGo ? '0 0 30px rgba(0,255,157,0.8)' : isLit ? '0 0 25px rgba(239,68,68,0.7)' : 'none',
+                                        transform: isLit ? 'scale(1.1)' : 'scale(1)',
+                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Countdown number - CSS animation only */}
+                    <span
+                        key={countdown}
+                        className={`font-display text-[150px] md:text-[220px] font-black leading-none tracking-tighter ${
+                            countdown > 6 ? 'text-[#2d6af2]' : countdown > 3 ? 'text-yellow-400' : 'text-[#00ff9d]'
+                        } drop-shadow-[0_0_50px_currentColor]`}
+                        style={{
+                            animation: 'countdown-pop 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                            willChange: 'transform, opacity',
+                        }}
                     >
-                        {/* Racing lights */}
-                        <div className="flex gap-5 mb-10">
-                            {[0, 1, 2, 3, 4].map((i) => {
-                                const isLit = countdown <= (10 - i * 2);
-                                const isGo = countdown <= 0;
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 transition-all duration-500 ease-out ${
-                                            isGo ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_30px_rgba(0,255,157,0.8)]'
-                                            : isLit ? 'bg-red-500 border-red-400 shadow-[0_0_25px_rgba(239,68,68,0.7)]'
-                                            : 'bg-gray-800/60 border-gray-700'
-                                        }`}
-                                        style={{ willChange: 'background-color, box-shadow', transform: isLit ? 'scale(1.1)' : 'scale(1)', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                                    />
-                                );
-                            })}
-                        </div>
+                        {countdown > 0 ? countdown : "GO!"}
+                    </span>
 
-                        <AnimatePresence mode="wait">
-                            <motion.span
-                                key={countdown}
-                                initial={{ opacity: 0, scale: 1.6 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.7 }}
-                                transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                                style={{ willChange: 'transform, opacity' }}
-                                className={`font-display text-[150px] md:text-[220px] font-black leading-none tracking-tighter ${
-                                    countdown > 6 ? 'text-[#2d6af2]' : countdown > 3 ? 'text-yellow-400' : 'text-[#00ff9d]'
-                                } drop-shadow-[0_0_50px_currentColor]`}
-                            >
-                                {countdown > 0 ? countdown : "GO!"}
-                            </motion.span>
-                        </AnimatePresence>
+                    {countdown > 0 && (
+                        <p className="font-display text-xl md:text-2xl tracking-[0.3em] uppercase text-gray-500 mt-6">
+                            RACE STARTING
+                        </p>
+                    )}
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="font-display text-xl md:text-2xl tracking-[0.3em] uppercase text-gray-500 mt-6"
-                        >
-                            {countdown > 0 ? "RACE STARTING" : ""}
-                        </motion.p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <style>{`
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes countdown-pop {
+                            0% { transform: scale(1.5); opacity: 0; }
+                            60% { transform: scale(0.95); opacity: 1; }
+                            100% { transform: scale(1); opacity: 1; }
+                        }
+                    `}</style>
+                </div>
+            )}
         </div>
     );
 }

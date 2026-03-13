@@ -1881,14 +1881,42 @@ export default function GameSpeedPage() {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     // Normalize questions to QuizQuestion format
-                    const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => ({
-                        id: q.id || `q-${idx}`,
-                        question: q.question || q.text || q.pertanyaan || '',
-                        options: q.options || q.choices || q.pilihan || [],
-                        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer
-                            : typeof q.correct_answer === 'number' ? q.correct_answer
-                                : typeof q.answer === 'number' ? q.answer : 0,
-                    }));
+                    // DB format: { answers: [{id:"0", answer:"text"}, ...], correct: "3", question: "..." }
+                    const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => {
+                        let options: string[] = [];
+                        let correctAnswer = 0;
+
+                        // Handle DB format: answers is array of {id, answer} objects
+                        if (Array.isArray(q.answers) && q.answers.length > 0 && typeof q.answers[0] === 'object' && q.answers[0].answer) {
+                            options = q.answers.map((a: any) => a.answer || '');
+                            // correct is a string ID matching answers[].id
+                            if (q.correct !== undefined) {
+                                const correctId = String(q.correct);
+                                const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
+                                correctAnswer = correctIdx >= 0 ? correctIdx : 0;
+                            }
+                        }
+                        // Handle simple format: options is string[]
+                        else if (Array.isArray(q.options)) {
+                            options = q.options;
+                            correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer
+                                : typeof q.correct_answer === 'number' ? q.correct_answer
+                                    : typeof q.answer === 'number' ? q.answer : 0;
+                        }
+                        // Handle other formats
+                        else if (Array.isArray(q.choices)) {
+                            options = q.choices;
+                            correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
+                        }
+
+                        return {
+                            id: q.id || `q-${idx}`,
+                            question: q.question || q.text || q.pertanyaan || '',
+                            options,
+                            correctAnswer,
+                        };
+                    });
+                    console.log('[GameSpeed] Loaded quiz questions:', normalized.length, 'Sample:', normalized[0]);
                     setAllQuizQuestions(normalized);
                 }
             }
@@ -1985,7 +2013,7 @@ export default function GameSpeedPage() {
                 </div>
             )}
 
-            {/* Mobile Orientation Choice Overlay */}
+            {/* Mobile Orientation Choice Overlay - Premium UI */}
             {mounted && isMobile && assetsLoaded && !mobileOrientationChoice && (
                 <div style={{
                     position: 'fixed',
@@ -1998,32 +2026,60 @@ export default function GameSpeedPage() {
                     zIndex: 2500,
                     color: 'white',
                     fontFamily: 'var(--font-rajdhani)',
-                    padding: '2rem'
+                    padding: '1.5rem',
                 }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏎️</div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '2rem', textAlign: 'center', letterSpacing: '0.2rem', color: '#3b82f6' }}>CHOOSE MODE</h2>
+                    {/* Grid lines BG */}
+                    <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%',
+                        background: 'linear-gradient(transparent 0%, rgba(45,106,242,0.05) 1px, transparent 1px), linear-gradient(90deg, transparent 0%, rgba(45,106,242,0.05) 1px, transparent 1px)',
+                        backgroundSize: '50px 50px',
+                        transform: 'perspective(500px) rotateX(60deg)',
+                        transformOrigin: 'bottom',
+                        opacity: 0.4, pointerEvents: 'none',
+                    }} />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', maxWidth: '320px' }}>
+                    {/* Title */}
+                    <div style={{ textAlign: 'center', marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem', filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.3))' }}>🏎️</div>
+                        <h2 style={{
+                            fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase',
+                            letterSpacing: '0.3em', color: 'white', margin: 0,
+                            textShadow: '0 0 20px rgba(45,106,242,0.5)',
+                        }}>SELECT VIEW</h2>
+                        <p style={{ fontSize: '0.7rem', color: '#64748b', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: '0.5rem' }}>
+                            Choose your racing perspective
+                        </p>
+                    </div>
+
+                    {/* Cards */}
+                    <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '340px', position: 'relative', zIndex: 1 }}>
+                        {/* Portrait Card */}
                         <button
                             onClick={() => setMobileOrientationChoice('portrait')}
                             style={{
-                                padding: '1.5rem',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                border: '2px solid #3b82f6',
-                                borderRadius: '1.25rem',
-                                color: 'white',
-                                fontSize: '1.1rem',
-                                fontWeight: 900,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between'
+                                flex: 1, padding: '1.5rem 1rem',
+                                background: 'linear-gradient(135deg, rgba(45,106,242,0.15) 0%, rgba(45,106,242,0.05) 100%)',
+                                border: '2px solid rgba(45,106,242,0.4)',
+                                borderRadius: '1.25rem', color: 'white',
+                                cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', gap: '0.75rem',
+                                transition: 'all 0.2s',
                             }}
                         >
-                            <span>📱 PORTRAIT</span>
-                            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>Mobile Optimized</span>
+                            <div style={{
+                                width: '3rem', height: '4.5rem', borderRadius: '0.5rem',
+                                border: '2px solid #2d6af2', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(45,106,242,0.1)',
+                                boxShadow: '0 0 20px rgba(45,106,242,0.2)',
+                            }}>
+                                <span style={{ fontSize: '1.25rem' }}>📱</span>
+                            </div>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Portrait</span>
+                            <span style={{ fontSize: '0.6rem', color: '#64748b', letterSpacing: '0.1em' }}>SWIPE TO STEER</span>
                         </button>
 
+                        {/* Landscape Card */}
                         <button
                             onClick={() => {
                                 setMobileOrientationChoice('landscape');
@@ -2035,21 +2091,26 @@ export default function GameSpeedPage() {
                                 }
                             }}
                             style={{
-                                padding: '1.5rem',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                border: '2px solid #10b981',
-                                borderRadius: '1.25rem',
-                                color: 'white',
-                                fontSize: '1.1rem',
-                                fontWeight: 900,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between'
+                                flex: 1, padding: '1.5rem 1rem',
+                                background: 'linear-gradient(135deg, rgba(0,255,157,0.1) 0%, rgba(0,255,157,0.03) 100%)',
+                                border: '2px solid rgba(0,255,157,0.4)',
+                                borderRadius: '1.25rem', color: 'white',
+                                cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', gap: '0.75rem',
+                                transition: 'all 0.2s',
                             }}
                         >
-                            <span>🔄 LANDSCAPE</span>
-                            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>PC Classic UI</span>
+                            <div style={{
+                                width: '4.5rem', height: '3rem', borderRadius: '0.5rem',
+                                border: '2px solid #00ff9d', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(0,255,157,0.08)',
+                                boxShadow: '0 0 20px rgba(0,255,157,0.15)',
+                            }}>
+                                <span style={{ fontSize: '1.25rem', transform: 'rotate(90deg)' }}>📱</span>
+                            </div>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Landscape</span>
+                            <span style={{ fontSize: '0.6rem', color: '#64748b', letterSpacing: '0.1em' }}>BUTTON CONTROLS</span>
                         </button>
                     </div>
                 </div>
@@ -2479,20 +2540,73 @@ export default function GameSpeedPage() {
                 </div>
             )}
 
-            {/* Countdown Overlay - Clean Elegant Style */}
+            {/* Countdown Overlay - Dark bg, racing lights, consistent with host lobby */}
             {mounted && assetsLoaded && gameState === 'countdown' && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
-                    <div style={{ position: 'relative' }}>
-                        <div style={{
-                            fontSize: usePCLayout ? '20rem' : '10rem',
-                            fontWeight: 900,
-                            color: 'white',
-                            textShadow: usePCLayout ? '0 0 80px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.6), 0 10px 50px rgba(0, 0, 0, 0.5)' : '0 0 40px rgba(255, 255, 255, 1)',
-                            animation: 'countdown-scale 1s infinite cubic-bezier(0.18, 0.89, 0.32, 1.28)'
-                        }}>
-                            {countdown > 0 ? countdown : 'GO'}
-                        </div>
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 1000,
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+                    backdropFilter: 'blur(8px)',
+                    fontFamily: 'var(--font-rajdhani)',
+                }}>
+                    {/* Racing lights */}
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem' }}>
+                        {[0, 1, 2, 3, 4].map((i) => {
+                            const isLit = countdown <= (5 - i);
+                            const isGo = countdown <= 0;
+                            return (
+                                <div
+                                    key={i}
+                                    style={{
+                                        width: usePCLayout ? '2.5rem' : '1.75rem',
+                                        height: usePCLayout ? '2.5rem' : '1.75rem',
+                                        borderRadius: '50%',
+                                        border: `2px solid ${isGo ? '#00ff9d' : isLit ? '#ef4444' : '#374151'}`,
+                                        backgroundColor: isGo ? '#00ff9d' : isLit ? '#ef4444' : 'rgba(55, 65, 81, 0.3)',
+                                        boxShadow: isGo ? '0 0 25px rgba(0,255,157,0.7)' : isLit ? '0 0 20px rgba(239,68,68,0.6)' : 'none',
+                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        transform: isLit ? 'scale(1.15)' : 'scale(1)',
+                                    }}
+                                />
+                            );
+                        })}
                     </div>
+
+                    {/* Countdown number */}
+                    <div
+                        key={countdown}
+                        style={{
+                            fontSize: usePCLayout ? '14rem' : '8rem',
+                            fontWeight: 900,
+                            lineHeight: 1,
+                            color: countdown > 3 ? '#2d6af2' : countdown > 1 ? '#fbbf24' : '#00ff9d',
+                            textShadow: `0 0 60px currentColor`,
+                            animation: 'countdown-pop 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                            willChange: 'transform, opacity',
+                        }}
+                    >
+                        {countdown > 0 ? countdown : 'GO!'}
+                    </div>
+
+                    {/* Subtitle */}
+                    {countdown > 0 && (
+                        <div style={{
+                            fontSize: usePCLayout ? '1rem' : '0.7rem',
+                            letterSpacing: '0.3em', textTransform: 'uppercase',
+                            color: '#64748b', fontWeight: 900, marginTop: '1.5rem',
+                        }}>
+                            RACE STARTING
+                        </div>
+                    )}
+
+                    <style>{`
+                        @keyframes countdown-pop {
+                            0% { transform: scale(1.5); opacity: 0; }
+                            60% { transform: scale(0.95); opacity: 1; }
+                            100% { transform: scale(1); opacity: 1; }
+                        }
+                    `}</style>
                 </div>
             )}
 
