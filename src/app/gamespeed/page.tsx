@@ -2488,7 +2488,7 @@ export default function GameSpeedPage() {
                         maxWidth: isMobileLandscape ? '90%' : '38rem',
                         width: '90%'
                     }}>
-                        <img src="/assets/logo/gameforsmartlogo.png" alt="Logo" style={{ height: isMobileLandscape ? '2.5rem' : (usePCLayout ? '6rem' : '3rem'), width: 'auto', marginBottom: '0.5rem' }} />
+                        <img src="/assets/logo/logo1.png" alt="Logo" style={{ height: isMobileLandscape ? '2.5rem' : (usePCLayout ? '6rem' : '3rem'), width: 'auto', marginBottom: '0.5rem' }} />
                         <h1 style={{ fontSize: isMobileLandscape ? '2.2rem' : (usePCLayout ? '4rem' : '2.5rem'), fontWeight: 950, fontStyle: 'italic', marginBottom: '0.25rem', color: '#fff' }}>GET READY!</h1>
                         <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem'), fontSize: usePCLayout ? '1rem' : '0.7rem' }}>City Night Protocol Active</p>
 

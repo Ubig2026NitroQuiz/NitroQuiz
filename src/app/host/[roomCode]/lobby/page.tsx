@@ -386,8 +386,8 @@ export default function HostRoomPage() {
 
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-6">
-                    <Logo width={200} height={55} animated={false} withText={false} />
-                    <img src="/assets/logo/logo2.png" alt="Logo 2" className="h-10 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                    <img src="/assets/logo/logo1.png" alt="Logo 1" className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                    <img src="/assets/logo/logo2.png" alt="Logo 2" className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start relative">
@@ -491,7 +491,7 @@ export default function HostRoomPage() {
                                     </h2>
                                 </div>
 
-                                {/* Add Bot & Mute — inside player header */}
+                                {/* Add Bot, Select All, Delete & Mute — inside player header */}
                                 <div className="flex items-center gap-2">
                                     <Button
                                         onClick={simulateJoin}
@@ -501,6 +501,37 @@ export default function HostRoomPage() {
                                     >
                                         <Plus className="mr-1 h-3 w-3" /> Bot
                                     </Button>
+
+                                    {selectedPlayerIds.length > 0 && (
+                                        <>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleSelectAll}
+                                                className="text-[10px] font-display tracking-widest uppercase text-gray-400 hover:text-white h-8 px-2"
+                                            >
+                                                {selectedPlayerIds.length === participants.length ? (
+                                                    <><CheckSquare className="mr-1 h-3 w-3 text-[#00ff9d]" /> Deselect</>
+                                                ) : (
+                                                    <><Square className="mr-1 h-3 w-3" /> All</>
+                                                )}
+                                            </Button>
+
+                                            <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                    setIsBulkKickMode(true);
+                                                    setSelectedPlayer(null);
+                                                    setKickDialogOpen(true);
+                                                }}
+                                                className="bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white font-display text-[10px] tracking-widest uppercase border border-red-500/50 h-8 px-3"
+                                            >
+                                                <Trash2 className="mr-1 h-3 w-3" />
+                                                {selectedPlayerIds.length}
+                                            </Button>
+                                        </>
+                                    )}
+
                                     <button
                                         onClick={() => setIsMuted((p) => !p)}
                                         className={`p-1.5 border rounded-lg transition-all ${isMuted
@@ -511,38 +542,6 @@ export default function HostRoomPage() {
                                         {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
                                     </button>
                                 </div>
-
-                                {participants.length > 0 && (
-                                    <div className="flex items-center gap-2 pr-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleSelectAll}
-                                            className="text-xs font-display tracking-widest uppercase text-gray-400 hover:text-white"
-                                        >
-                                            {selectedPlayerIds.length === participants.length ? (
-                                                <><CheckSquare className="mr-2 h-4 w-4 text-[#00ff9d]" /> Deselect All</>
-                                            ) : (
-                                                <><Square className="mr-2 h-4 w-4" /> Select All</>
-                                            )}
-                                        </Button>
-
-                                        {selectedPlayerIds.length > 0 && (
-                                            <Button
-                                                size="sm"
-                                                onClick={() => {
-                                                    setIsBulkKickMode(true);
-                                                    setSelectedPlayer(null);
-                                                    setKickDialogOpen(true);
-                                                }}
-                                                className="bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white font-display text-xs tracking-widest uppercase border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                                            >
-                                                <Trash2 className="mr-2 h-3 w-3" />
-                                                Delete ({selectedPlayerIds.length})
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
                             </div>
 
                             <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
@@ -567,8 +566,8 @@ export default function HostRoomPage() {
                                                     className={`group relative bg-[#0a101f] border ${selectedPlayerIds.includes(player.id) ? 'border-[#00ff9d] bg-[#00ff9d]/5 shadow-[0_0_15px_rgba(0,255,157,0.3)]' : 'border-[#2d6af2]/20 hover:border-[#2d6af2] hover:shadow-[0_0_20px_rgba(45,106,242,0.3)]'} rounded-xl p-4 flex flex-col items-center transition-all hover:-translate-y-1 cursor-pointer overflow-hidden`}
                                                     onClick={(e) => toggleSelectPlayer(player.id, e)}
                                                 >
-                                                    {/* Selection Checkbox */}
-                                                    <div className="absolute top-2 left-2 z-20">
+                                                    {/* Selection Checkbox — visible on hover or when selected */}
+                                                    <div className={`absolute top-2 left-2 z-20 transition-opacity ${selectedPlayerIds.includes(player.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedPlayerIds.includes(player.id) ? 'bg-[#00ff9d] border-[#00ff9d] text-black' : 'border-[#2d6af2]/50 bg-black/50 text-transparent'}`}>
                                                             <Check className="w-3 h-3" strokeWidth={3} />
                                                         </div>
