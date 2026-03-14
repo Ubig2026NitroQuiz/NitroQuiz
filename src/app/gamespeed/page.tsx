@@ -1830,11 +1830,25 @@ export default function GameSpeedPage() {
 
     const endGame = () => {
         const roomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
+        
+        // Return to standard orientation
+        try {
+            if (screen.orientation && (screen.orientation as any).unlock) {
+                (screen.orientation as any).unlock();
+            }
+            if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch(() => { });
+            }
+        } catch (e) {
+            console.error("Failed to unlock orientation:", e);
+        }
+
         // Clean up quiz data from localStorage
         localStorage.removeItem('nitroquiz_game_questions');
         localStorage.removeItem('nitroquiz_game_roomCode');
         localStorage.removeItem('nitroquiz_game_sessionId');
         localStorage.removeItem('nitroquiz_game_quizId');
+        
         if (roomCode) {
             router.push(`/player/${roomCode}/podium`);
         } else {
@@ -2601,59 +2615,18 @@ export default function GameSpeedPage() {
                 />
             )}
 
-            {/* Victory Overlay - Premium Modern Style */}
+            {/* Loading / Connecting to Podium Screen */}
             {mounted && assetsLoaded && gameState === 'finished' && !showQuiz && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
-                    <div style={{
-                        backgroundColor: '#0f172a',
-                        padding: isMobileLandscape ? '1.25rem 2rem' : (usePCLayout ? '3rem' : '2rem'),
-                        borderRadius: usePCLayout ? '2.5rem' : '1.5rem',
-                        textAlign: 'center',
-                        boxShadow: '0 0 60px rgba(59, 130, 246, 0.4)',
-                        maxWidth: isMobileLandscape ? '30rem' : '35rem',
-                        width: '90%',
-                        color: 'white',
-                        fontFamily: 'var(--font-rajdhani)',
-                        border: '2px solid #3b82f6'
-                    }}>
-                        <div style={{ fontSize: isMobileLandscape ? '1.8rem' : (usePCLayout ? '5rem' : '3rem'), marginBottom: isMobileLandscape ? '0.2rem' : '1rem' }}>🏆</div>
-                        <h1 style={{ fontSize: isMobileLandscape ? '1.4rem' : (usePCLayout ? '4rem' : '2rem'), fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.25rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
-                        <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem'), fontSize: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1rem' : '0.7rem') }}>Racing Protocol: Complete</p>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: allQuizQuestions.length > 0 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: isMobileLandscape ? '0.5rem' : (usePCLayout ? '1.5rem' : '0.75rem'), marginBottom: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '1.5rem') }}>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Quiz Score</div>
-                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>{totalQuizScore}</div>
-                            </div>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Races Done</div>
-                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>{quizRound}</div>
-                            </div>
-                            {allQuizQuestions.length > 0 && (
-                                <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                    <div style={{ fontSize: '0.65rem', color: '#00ff9d', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Questions</div>
-                                    <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>{allQuizQuestions.length}</div>
-                                </div>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={endGame}
-                            style={{
-                                width: '100%',
-                                padding: isMobileLandscape ? '0.75rem' : (usePCLayout ? '1.5rem' : '1.25rem'),
-                                background: 'transparent',
-                                color: '#3b82f6',
-                                border: '2px solid #3b82f6',
-                                borderRadius: '0.75rem',
-                                fontWeight: 900,
-                                fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.5rem' : '1.25rem'),
-                                cursor: 'pointer'
-                            }}
-                        >
-                            RETURN TO BASE
-                        </button>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0f', fontFamily: 'var(--font-rajdhani)', color: 'white' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: '4rem', height: '4rem', border: '4px solid rgba(45, 106, 242, 0.3)', borderTopColor: '#2d6af2', borderRadius: '50%', margin: '0 auto 1.5rem', animation: 'spin 1s linear infinite' }}></div>
+                        <p style={{ color: '#2d6af2', fontSize: '1.25rem', letterSpacing: '0.2em', textTransform: 'uppercase', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>Establishing Signal...</p>
+                        <p style={{ color: '#64748b', fontSize: '0.75rem', letterSpacing: '0.1em', marginTop: '0.5rem', textTransform: 'uppercase' }}>Preparing podium data</p>
                     </div>
+                    <style>{`
+                        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+                    `}</style>
                 </div>
             )}
         </div>
