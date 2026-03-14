@@ -9,9 +9,10 @@ interface LogoProps {
     height?: number;
     withText?: boolean;
     animated?: boolean;
+    onLoad?: () => void;
 }
 
-export function Logo({ className = "", width = 200, height = 60, withText = true, animated = true }: LogoProps) {
+export function Logo({ className = "", width = 200, height = 60, withText = true, animated = true, onLoad }: LogoProps) {
     const content = (
         <div className={`flex flex-col items-center justify-center ${className}`}>
             <Image
@@ -21,6 +22,7 @@ export function Logo({ className = "", width = 200, height = 60, withText = true
                 height={height}
                 className="object-contain"
                 priority
+                onLoad={onLoad}
             />
             {withText && (
                 <p className="text-gray-300 text-[100px] md:text-xs font-display tracking-[0.3em] uppercase mt-2">

@@ -42,6 +42,7 @@ export default function HomePage() {
     const [user, setUser] = useState<User | null>(null);
     const [history, setHistory] = useState<GameHistory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [logoLoaded, setLogoLoaded] = useState(false);
 
     useEffect(() => {
         const currentUser = getUser();
@@ -73,12 +74,18 @@ export default function HomePage() {
         'umum',
     ];
 
-    if (isLoading) {
+    if (isLoading || !logoLoaded) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950">
                 <div className="text-center space-y-6 flex flex-col items-center">
-                    <Logo width={280} height={80} animated={true} />
-                    <div className="space-y-2">
+                    <div className={logoLoaded ? "opacity-100" : "opacity-0"}>
+                        <Logo width={280} height={80} animated={true} onLoad={() => setLogoLoaded(true)} />
+                    </div>
+                    {/* Fallback spinner if logo takes too long to load */}
+                    {!logoLoaded && (
+                        <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto absolute"></div>
+                    )}
+                    <div className="space-y-2 relative mt-16">
                         <h2 className="text-xl font-semibold text-white">Loading Dashboard</h2>
                         <p className="text-gray-400 text-sm">Preparing your racing stats...</p>
                     </div>

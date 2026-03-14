@@ -118,21 +118,22 @@ export default function GameSpeedPage() {
     const [stats, setStats] = useState({ speed: 0, nos: 100, lap: 1, totalLaps: 1 });
 
     // Countdown timer effect — uses setInterval, only triggers on gameState change
-    const countdownRef = useRef<number | null>(null);
+    const countdownRef = useRef<number>(5);
     useEffect(() => {
         if (gameState !== 'countdown') return;
 
-        // Capture current countdown value at effect start
-        let count = countdownRef.current ?? 5;
-        setCountdown(count);
+        // Reset display to whatever the ref says it should be (5 or 3)
+        setCountdown(countdownRef.current);
 
         const interval = setInterval(() => {
-            count--;
-            setCountdown(count);
-            if (count <= 0) {
-                clearInterval(interval);
-                setTimeout(() => { setGameState('playing'); }, 500);
-            }
+            setCountdown((prev) => {
+                const next = prev - 1;
+                if (next <= 0) {
+                    clearInterval(interval);
+                    setTimeout(() => { setGameState('playing'); }, 500);
+                }
+                return next;
+            });
         }, 1000);
 
         return () => clearInterval(interval);
@@ -1877,13 +1878,10 @@ export default function GameSpeedPage() {
         }
     };
 
-    // Auto-complete game after a few seconds
+    // Auto-complete game immediately when finished
     useEffect(() => {
         if (gameState === 'finished' && !showQuiz) {
-            const timer = setTimeout(() => {
-                endGame();
-            }, 3000); // 3 seconds before auto-redirect
-            return () => clearTimeout(timer);
+            endGame();
         }
     }, [gameState, showQuiz]);
 
@@ -2627,20 +2625,6 @@ export default function GameSpeedPage() {
                 />
             )}
 
-            {/* Loading / Connecting to Podium Screen */}
-            {mounted && assetsLoaded && gameState === 'finished' && !showQuiz && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0f', fontFamily: 'var(--font-rajdhani)', color: 'white' }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ width: '4rem', height: '4rem', border: '4px solid rgba(45, 106, 242, 0.3)', borderTopColor: '#2d6af2', borderRadius: '50%', margin: '0 auto 1.5rem', animation: 'spin 1s linear infinite' }}></div>
-                        <p style={{ color: '#2d6af2', fontSize: '1.25rem', letterSpacing: '0.2em', textTransform: 'uppercase', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>Establishing Signal...</p>
-                        <p style={{ color: '#64748b', fontSize: '0.75rem', letterSpacing: '0.1em', marginTop: '0.5rem', textTransform: 'uppercase' }}>Preparing podium data</p>
-                    </div>
-                    <style>{`
-                        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-                    `}</style>
-                </div>
-            )}
         </div>
     );
 }

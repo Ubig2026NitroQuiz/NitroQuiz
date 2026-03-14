@@ -150,8 +150,8 @@ export default function GameMonitorPage() {
       p.finished_at !== null || p.eliminated === true
     );
     if (allDone) {
-      // Small delay so last realtime update renders
-      setTimeout(() => handleEndRace(), 1500);
+      // Jump immediately
+      handleEndRace();
     }
   }, [participants, sessionId, isEnding]);
 
@@ -239,21 +239,6 @@ export default function GameMonitorPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden font-body text-white flex flex-col">
-      {/* Loading / Connecting to Podium Screen */}
-      {isEnding && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0f', fontFamily: 'var(--font-rajdhani)', color: 'white' }}>
-            <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '4rem', height: '4rem', border: '4px solid rgba(45, 106, 242, 0.3)', borderTopColor: '#2d6af2', borderRadius: '50%', margin: '0 auto 1.5rem', animation: 'spin 1s linear infinite' }}></div>
-                <p style={{ color: '#2d6af2', fontSize: '1.25rem', letterSpacing: '0.2em', textTransform: 'uppercase', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>Establishing Signal...</p>
-                <p style={{ color: '#64748b', fontSize: '0.75rem', letterSpacing: '0.1em', marginTop: '0.5rem', textTransform: 'uppercase' }}>Preparing podium data</p>
-            </div>
-            <style>{`
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-            `}</style>
-        </div>
-      )}
-
       {/* Dark Space & Grids Background */}
       <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#0a0a0f] to-[#050508] pointer-events-none"></div>
       <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.05)_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none"></div>

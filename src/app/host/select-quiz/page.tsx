@@ -41,6 +41,7 @@ export default function SelectQuizPage() {
     const [favorites, setFavorites] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'myquiz'>('all');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
     // Background state
     const [isFetching, setIsFetching] = useState(true);
@@ -48,11 +49,12 @@ export default function SelectQuizPage() {
 
     const itemsPerPage = 9;
 
-    // Get current user ID
+    // Get current user ID and Username
     useEffect(() => {
         const user = getUser();
         if (user) {
             setCurrentUserId(user.id);
+            setCurrentUsername(user.username);
         }
     }, []);
 
@@ -137,7 +139,7 @@ export default function SelectQuizPage() {
         let filtered = allItems;
 
         // Hide private quizzes unless current user is the creator
-        filtered = filtered.filter(q => q.isPublic || (currentUserId && q.creatorId === currentUserId));
+        filtered = filtered.filter(q => q.isPublic || (currentUserId && (q.creatorId === currentUserId || q.creatorId === currentUsername)));
 
         // Apply tab filter
         if (activeTab === 'favorites') {
@@ -145,8 +147,8 @@ export default function SelectQuizPage() {
         }
         // My Quiz: filter by current user's quizzes
         if (activeTab === 'myquiz') {
-            if (currentUserId) {
-                filtered = filtered.filter(q => q.creatorId === currentUserId);
+            if (currentUserId || currentUsername) {
+                filtered = filtered.filter(q => q.creatorId === currentUserId || q.creatorId === currentUsername);
             } else {
                 filtered = [];
             }
