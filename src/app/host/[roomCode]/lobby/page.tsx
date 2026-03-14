@@ -153,23 +153,51 @@ export default function HostRoomPage() {
         loadSessionAndParticipants();
     }, [roomCode]);
 
-    // Real-time subscription for new players
+    // Real-time subscription for new players + polling fallback
     useEffect(() => {
         if (!sessionId) return;
 
+        // Polling fallback: refresh participants every 3 seconds
+        const pollParticipants = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from("participants")
+                    .select("id, nickname, car_character, joined_at")
+                    .eq("session_id", sessionId);
+
+                if (!error && data) {
+                    setParticipants(data.map(p => ({
+                        id: p.id,
+                        nickname: p.nickname,
+                        car: p.car_character || "purple",
+                        joined_at: p.joined_at
+                    })));
+                }
+            } catch (e) {
+                console.error("Poll error:", e);
+            }
+        };
+
+        const pollInterval = setInterval(pollParticipants, 3000);
+
+        // Also set up realtime as primary (faster when it works)
         const channel = supabase
-            .channel(`host_lobby_${sessionId}`)
+            .channel(`lobby-participants-${sessionId}`)
             .on(
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionId}` },
                 (payload) => {
                     const newP = payload.new;
-                    setParticipants(prev => [...prev, {
-                        id: newP.id,
-                        nickname: newP.nickname,
-                        car: newP.car_character || "purple",
-                        joined_at: newP.joined_at
-                    }]);
+                    setParticipants(prev => {
+                        // Avoid duplicates from polling
+                        if (prev.some(p => p.id === newP.id)) return prev;
+                        return [...prev, {
+                            id: newP.id,
+                            nickname: newP.nickname,
+                            car: newP.car_character || "purple",
+                            joined_at: newP.joined_at
+                        }];
+                    });
                 }
             )
             .on(
@@ -180,9 +208,12 @@ export default function HostRoomPage() {
                     setParticipants(prev => prev.filter(p => p.id !== deletedId));
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`[Host Lobby] Realtime status: ${status}`);
+            });
 
         return () => {
+            clearInterval(pollInterval);
             supabase.removeChannel(channel);
         };
     }, [sessionId]);

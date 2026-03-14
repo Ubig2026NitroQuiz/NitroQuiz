@@ -91,22 +91,50 @@ export default function PlayerLobbyPage() {
                 }
 
                 setStatus("waiting");
+                setSessionId(sessionData.id);
 
                 // 4. Listen for game start (session status -> "active")
-                const channel = supabase.channel(`public:sessions:${sessionData.id}`)
+                // Realtime subscription
+                const channel = supabase.channel(`player-session-${sessionData.id}`)
                     .on(
                         'postgres_changes',
                         { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
                         (payload) => {
                             if (payload.new.status === "active") {
                                 setStatus("countdown");
-                                // Preload quiz questions from session
                                 preloadQuizData(sessionData.id);
                             }
                         }
-                    ).subscribe();
+                    ).subscribe((status) => {
+                        console.log(`[Player Lobby] Realtime status: ${status}`);
+                    });
+
+                // Polling fallback: check session status every 2 seconds
+                const sessId = sessionData.id;
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const { data } = await supabase
+                            .from("sessions")
+                            .select("status")
+                            .eq("id", sessId)
+                            .single();
+                        if (data?.status === "active") {
+                            setStatus(prev => {
+                                if (prev === "waiting") {
+                                    preloadQuizData(sessId);
+                                    return "countdown";
+                                }
+                                return prev;
+                            });
+                            clearInterval(pollInterval);
+                        }
+                    } catch (e) {
+                        console.error("Poll session error:", e);
+                    }
+                }, 2000);
 
                 cleanup = () => {
+                    clearInterval(pollInterval);
                     supabase.removeChannel(channel);
                 };
 
