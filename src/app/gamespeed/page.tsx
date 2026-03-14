@@ -1431,22 +1431,7 @@ export default function GameSpeedPage() {
         };
     }, [assetsLoaded, gameState === 'playing']); // Only re-run if playing state changes meaningfully for loop
 
-    // Countdown logic
-    useEffect(() => {
-        if (assetsLoaded && gameState === 'countdown') {
-            const timer = setInterval(() => {
-                setCountdown(prev => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        setGameState('playing');
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [assetsLoaded, gameState]);
+
 
     // Event Listeners
     useEffect(() => {
