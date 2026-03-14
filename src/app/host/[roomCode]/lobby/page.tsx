@@ -158,7 +158,7 @@ export default function HostRoomPage() {
         if (!sessionId) return;
 
         const channel = supabase
-            .channel('public:participants')
+            .channel(`host_lobby_${sessionId}`)
             .on(
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionId}` },
