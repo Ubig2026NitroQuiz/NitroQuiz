@@ -1231,7 +1231,7 @@ export default function GameSpeedPage() {
         });
 
         // Lap & Finish line check
-        if (position > trackLength - playerZ) {
+        if (position > trackLength - playerZ && gameState !== 'finished') {
             if (state.current.currentLap >= state.current.totalLaps) {
                 // Check if we have quiz questions remaining
                 if (allQuizQuestions.length > 0 && quizQuestionIndex < allQuizQuestions.length) {
@@ -1861,11 +1861,11 @@ export default function GameSpeedPage() {
         localStorage.removeItem('nitroquiz_game_quizId');
         
         if (roomCode) {
-            router.push(`/player/${roomCode}/podium`);
+            window.location.href = `/player/${roomCode}/podium`;
         } else {
-            router.push('/');
+            window.location.href = '/';
         }
-    }, [router]);
+    }, []);
 
     // Auto-complete game immediately when finished
     useEffect(() => {
@@ -2613,6 +2613,23 @@ export default function GameSpeedPage() {
                     roundNumber={quizRound}
                     onComplete={handleQuizComplete}
                 />
+            )}
+
+            {/* Finished/Transition Overlay */}
+            {gameState === 'finished' && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    backgroundColor: '#020617', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', color: '#00ff9d',
+                    fontFamily: 'var(--font-rajdhani)', textAlign: 'center'
+                }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}>
+                        BALAPAN SELESAI!
+                    </div>
+                    <div style={{ fontSize: '1rem', color: '#94a3b8', maxWidth: '300px' }}>
+                        Menyiapkan hasil klasemen dan mengarahkan ke podium...
+                    </div>
+                </div>
             )}
 
         </div>
