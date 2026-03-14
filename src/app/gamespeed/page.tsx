@@ -117,18 +117,26 @@ export default function GameSpeedPage() {
     const [countdown, setCountdown] = useState(5); // Countdown dari 5
     const [stats, setStats] = useState({ speed: 0, nos: 100, lap: 1, totalLaps: 1 });
 
-    // Countdown timer effect — ticks down whenever gameState is 'countdown'
+    // Countdown timer effect — uses setInterval, only triggers on gameState change
+    const countdownRef = useRef<number | null>(null);
     useEffect(() => {
         if (gameState !== 'countdown') return;
-        if (countdown <= 0) {
-            const goTimer = setTimeout(() => { setGameState('playing'); }, 500);
-            return () => clearTimeout(goTimer);
-        }
-        const timer = setTimeout(() => {
-            setCountdown(prev => prev - 1);
+
+        // Capture current countdown value at effect start
+        let count = countdownRef.current ?? 5;
+        setCountdown(count);
+
+        const interval = setInterval(() => {
+            count--;
+            setCountdown(count);
+            if (count <= 0) {
+                clearInterval(interval);
+                setTimeout(() => { setGameState('playing'); }, 500);
+            }
         }, 1000);
-        return () => clearTimeout(timer);
-    }, [gameState, countdown]);
+
+        return () => clearInterval(interval);
+    }, [gameState]);
     const [viewMode, setViewMode] = useState<'first' | 'third'>('third');
     const [assetsLoaded, setAssetsLoaded] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -1958,7 +1966,7 @@ export default function GameSpeedPage() {
             state.current.speed = 0;
             state.current.playerX = 0;
             state.current.nos = 100;
-            setCountdown(3);
+            countdownRef.current = 3;
             setGameState('countdown');
         }
     }, [quizQuestionIndex, allQuizQuestions.length, totalQuizScore, updateParticipantStatus]);
@@ -2518,7 +2526,7 @@ export default function GameSpeedPage() {
 
                         <button
                             onClick={() => {
-                                setCountdown(5);
+                                countdownRef.current = 5;
                                 setGameState('countdown');
                             }}
                             style={{

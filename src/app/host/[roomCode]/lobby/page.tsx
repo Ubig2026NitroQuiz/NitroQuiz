@@ -72,7 +72,22 @@ export default function HostRoomPage() {
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isLoadingRoom, setIsLoadingRoom] = useState(true);
+    const [logosLoaded, setLogosLoaded] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);
+
+    // Preload logos
+    useEffect(() => {
+        const logos = ['/assets/logo/logo1.png', '/assets/logo/logo2.png'];
+        let loaded = 0;
+        logos.forEach(src => {
+            const img = new Image();
+            img.onload = img.onerror = () => {
+                loaded++;
+                if (loaded >= logos.length) setLogosLoaded(true);
+            };
+            img.src = src;
+        });
+    }, []);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isMuted, setIsMuted] = useState(true);
@@ -358,7 +373,7 @@ export default function HostRoomPage() {
         }
     };
 
-    if (isLoadingRoom) {
+    if (isLoadingRoom || !logosLoaded) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] relative overflow-hidden font-display text-white">
                 <div className="text-center z-10">

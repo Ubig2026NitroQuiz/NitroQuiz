@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Trophy, Crown, Medal, Users, Clock, Star, ChevronRight, LayoutDashboard, House } from "lucide-react";
+import { Trophy, Crown, Medal, Users, Clock, Star, ChevronRight, LayoutDashboard, House, RotateCcw } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -304,6 +304,28 @@ export default function LeaderboardPage() {
                                 </tbody>
                             </table>
                         </div>
+                    </motion.div>
+                )}
+                {/* Back Buttons */}
+                {showResults && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 3 }}
+                        className="mt-8 text-center flex gap-4 justify-center items-center"
+                    >
+                        <Button
+                            onClick={() => router.push('/host/select-quiz')}
+                            className="bg-[#2d6af2]/20 border border-[#2d6af2]/50 text-white font-display text-xs px-6 py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(45,106,242,0.3)] hover:bg-[#2d6af2]/40 transition-all gap-2"
+                        >
+                            <House className="w-4 h-4" /> Home
+                        </Button>
+                        <Button
+                            onClick={() => router.push(`/host/${roomCode}/lobby`)}
+                            className="bg-[#00ff9d]/10 border border-[#00ff9d]/50 text-[#00ff9d] font-display text-xs px-6 py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(0,255,157,0.2)] hover:bg-[#00ff9d]/20 transition-all gap-2"
+                        >
+                            <RotateCcw className="w-4 h-4" /> Play Again
+                        </Button>
                     </motion.div>
                 )}
             </div>
