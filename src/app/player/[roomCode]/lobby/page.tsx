@@ -253,73 +253,80 @@ export default function PlayerLobbyPage() {
                 )}
 
                 {/* COUNTDOWN */}
-                <AnimatePresence mode="wait">
-                    {status === "countdown" && (
-                        <motion.div
-                            key="countdown"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
-                        >
-                            {/* Racing lights indicator */}
-                            <div className="flex gap-4 mb-10">
-                                {[0, 1, 2, 3, 4].map((i) => (
-                                    <motion.div
+                {status === "countdown" && (
+                    <div
+                        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
+                        style={{ animation: 'fadeIn 0.3s ease-out' }}
+                    >
+                        {/* Racing lights indicator */}
+                        <div className="flex gap-4 mb-10">
+                            {[0, 1, 2, 3, 4].map((i) => {
+                                const isLit = countdownValue <= (10 - i * 2);
+                                const isGo = countdownValue <= 0;
+                                return (
+                                    <div
                                         key={i}
-                                        className={`w-8 h-8 rounded-full border-2 transition-all duration-300 ${countdownValue <= (10 - i * 2)
-                                                ? 'bg-red-500 border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.8)]'
-                                                : 'bg-gray-800 border-gray-600'
-                                            } ${countdownValue <= 0 ? 'bg-[#00ff9d] border-[#00ff9d] shadow-[0_0_25px_rgba(0,255,157,0.8)]' : ''}`}
-                                        animate={countdownValue <= (10 - i * 2) ? { scale: [1, 1.2, 1] } : {}}
-                                        transition={{ duration: 0.3 }}
+                                        className="w-8 h-8 rounded-full border-2"
+                                        style={{
+                                            borderColor: isGo ? '#00ff9d' : isLit ? '#ef4444' : '#4b5563',
+                                            backgroundColor: isGo ? '#00ff9d' : isLit ? '#ef4444' : '#1f2937',
+                                            boxShadow: isGo ? '0 0 25px rgba(0,255,157,0.8)' : isLit ? '0 0 20px rgba(239,68,68,0.8)' : 'none',
+                                            transform: isLit ? 'scale(1.2)' : 'scale(1)',
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        }}
                                     />
-                                ))}
-                            </div>
+                                );
+                            })}
+                        </div>
 
-                            {/* Big countdown number */}
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={countdownValue}
-                                    initial={{ opacity: 0, scale: 2, y: -30 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.5, y: 30 }}
-                                    transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 15 }}
-                                    className="relative"
-                                >
-                                    <span className={`font-display text-[120px] md:text-[160px] font-black leading-none tracking-tighter ${getCountdownColor(countdownValue)} drop-shadow-[0_0_40px_currentColor]`}>
-                                        {countdownValue > 0 ? countdownValue : "GO!"}
-                                    </span>
-                                </motion.div>
-                            </AnimatePresence>
-
-                            {/* Status label */}
-                            <motion.p
-                                key={`label-${getCountdownLabel(countdownValue)}`}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="font-display text-lg tracking-[0.3em] uppercase text-gray-400 mt-6"
+                        {/* Big countdown number */}
+                        <div className="relative">
+                            <span
+                                key={countdownValue}
+                                className={`font-display text-[120px] md:text-[160px] font-black leading-none tracking-tighter ${getCountdownColor(countdownValue)} drop-shadow-[0_0_40px_currentColor]`}
+                                style={{
+                                    animation: 'countdown-pop 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                                    willChange: 'transform, opacity',
+                                    display: 'block'
+                                }}
                             >
-                                {getCountdownLabel(countdownValue)}
-                            </motion.p>
+                                {countdownValue > 0 ? countdownValue : "GO!"}
+                            </span>
+                        </div>
 
-                            {/* Pulsing ring effect */}
-                            <motion.div
-                                className="absolute w-64 h-64 rounded-full border border-[#2d6af2]/20"
-                                animate={{
-                                    scale: [1, 1.5, 1],
-                                    opacity: [0.3, 0, 0.3],
-                                }}
-                                transition={{
-                                    repeat: Infinity,
-                                    duration: 2,
-                                    ease: "easeInOut",
-                                }}
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        {/* Status label */}
+                        <p className="font-display text-lg tracking-[0.3em] uppercase text-gray-400 mt-6" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
+                            {getCountdownLabel(countdownValue)}
+                        </p>
 
+                        {/* Pulsing ring effect */}
+                        <div
+                            className="absolute w-64 h-64 rounded-full border border-[#2d6af2]/20"
+                            style={{ animation: 'pulseRing 2s ease-in-out infinite' }}
+                        />
+
+                        <style>{`
+                            @keyframes fadeIn {
+                                from { opacity: 0; }
+                                to { opacity: 1; }
+                            }
+                            @keyframes fadeInUp {
+                                from { opacity: 0; transform: translateY(10px); }
+                                to { opacity: 1; transform: translateY(0); }
+                            }
+                            @keyframes countdown-pop {
+                                0% { transform: scale(1.5) translateY(-30px); opacity: 0; }
+                                60% { transform: scale(0.95) translateY(5px); opacity: 1; }
+                                100% { transform: scale(1) translateY(0); opacity: 1; }
+                            }
+                            @keyframes pulseRing {
+                                0% { transform: scale(1); opacity: 0.3; }
+                                50% { transform: scale(1.5); opacity: 0; }
+                                100% { transform: scale(1); opacity: 0.3; }
+                            }
+                        `}</style>
+                    </div>
+                )}
                 {/* GO! */}
                 {status === "go" && (
                     <motion.div

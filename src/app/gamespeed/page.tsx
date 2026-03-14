@@ -1825,37 +1825,6 @@ export default function GameSpeedPage() {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // --- DEBUG OVERLAY ---
-        // Menampilkan indikator debug posisi dan keberadaan aset
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(10, logicalH - 80, 200, 70); // Posisi di pojok bawah kiri map
-
-        ctx.font = 'bold 12px monospace';
-        ctx.textAlign = 'left';
-
-        // 1. Current Distance (Meters)
-        const currentSegIdx = Math.floor(position / SEGMENT_LENGTH);
-        const distanceMeters = currentSegIdx * 10; // Compressed distance: 1 Segment = 10 virtual meters
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`DIST: ${distanceMeters}m`, 20, logicalH - 60);
-
-        // 2. Check Asset at this location
-        // Search in TRACK_ASSETS for any asset at this index +/- 1 (tolerance)
-        const nearbyAsset = TRACK_ASSETS.find(a => Math.abs(a.z - currentSegIdx) <= 1);
-
-        if (nearbyAsset) {
-            const assetName = nearbyAsset.src.split('/').pop() || 'Unknown';
-            ctx.fillStyle = '#4ade80'; // Green for success
-            ctx.fillText(`ASSET CHECK: TRUE`, 20, logicalH - 40);
-            ctx.fillStyle = '#facc15'; // Yellow for name
-            ctx.fillText(`OBJ: ${assetName}`, 20, logicalH - 20);
-        } else {
-            ctx.fillStyle = '#ef4444'; // Red for false
-            ctx.fillText(`ASSET CHECK: FALSE`, 20, logicalH - 40);
-            ctx.fillStyle = '#94a3b8'; // Gray
-            ctx.fillText(`OBJ: None`, 20, logicalH - 20);
-        }
-
         ctx.restore();
     };
 
@@ -1872,6 +1841,16 @@ export default function GameSpeedPage() {
             router.push('/');
         }
     };
+
+    // Auto-complete game after a few seconds
+    useEffect(() => {
+        if (gameState === 'finished' && !showQuiz) {
+            const timer = setTimeout(() => {
+                endGame();
+            }, 3000); // 3 seconds before auto-redirect
+            return () => clearTimeout(timer);
+        }
+    }, [gameState, showQuiz]);
 
     // Load quiz questions from localStorage (preloaded by player lobby)
     useEffect(() => {
@@ -2279,7 +2258,10 @@ export default function GameSpeedPage() {
                                         transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
                                         zIndex: 10
                                     }}>
-                                        {miniMapMinimized ? '🔍' : '↔️'}
+                                        <div style={{ position: 'relative', width: '12px', height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div style={{ position: 'absolute', width: '100%', height: '2px', backgroundColor: 'white', borderRadius: '1px' }} />
+                                            {miniMapMinimized && <div style={{ position: 'absolute', width: '2px', height: '100%', backgroundColor: 'white', borderRadius: '1px' }} />}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -2577,7 +2559,7 @@ export default function GameSpeedPage() {
                     <div
                         key={countdown}
                         style={{
-                            fontSize: usePCLayout ? '14rem' : '8rem',
+                            fontSize: usePCLayout ? '8rem' : '5rem',
                             fontWeight: 900,
                             lineHeight: 1,
                             color: countdown > 3 ? '#2d6af2' : countdown > 1 ? '#fbbf24' : '#00ff9d',

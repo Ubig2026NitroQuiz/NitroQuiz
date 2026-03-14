@@ -131,12 +131,39 @@ export default function PlayerLeaderboardPage() {
         return `${m}:${s}`;
     };
 
+    const allFinished = participants.length > 0 && participants.every(p => p.finished_at || p.eliminated);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] font-display text-white">
                 <div className="text-center z-10">
                     <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
                     <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">Establishing Signal...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!allFinished) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0f] font-display text-white relative overflow-hidden">
+                <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#0a0a0f] to-[#050508] pointer-events-none" />
+                <div className="text-center z-10 px-4">
+                    <div className="relative w-24 h-24 mx-auto mb-8">
+                        <div className="absolute inset-0 border-r-4 border-b-4 border-transparent border-l-[#00ff9d] border-t-[#00ff9d] rounded-full animate-spin mix-blend-screen" style={{ animationDuration: '1.5s' }}></div>
+                        <div className="absolute inset-2 border-r-4 border-b-4 border-transparent border-l-[#2d6af2] border-t-[#2d6af2] rounded-full animate-spin mix-blend-screen" style={{ animationDuration: '2s', animationDirection: 'reverse' }}></div>
+                        <div className="absolute inset-0 flex items-center justify-center text-3xl">🏁</div>
+                    </div>
+                    <h2 className="text-[#00ff9d] text-2xl md:text-3xl font-black tracking-widest uppercase mb-4 drop-shadow-[0_0_15px_rgba(0,255,157,0.5)]">Mission Complete</h2>
+                    <p className="text-gray-400 text-sm md:text-base tracking-[0.2em] uppercase mb-8">Waiting for other racers to finish...</p>
+                    
+                    <div className="bg-black/50 border border-white/10 rounded-xl p-4 max-w-xs mx-auto backdrop-blur-md">
+                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Your Preliminary Stats</p>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-400">Score:</span>
+                            <span className="text-[#00ff9d] font-mono font-bold">{rankedPlayers.find(p => p.nickname === currentUser?.username)?.score.toLocaleString() || '0'}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
