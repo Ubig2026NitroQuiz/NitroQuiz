@@ -42,6 +42,7 @@ export default function SelectQuizPage() {
     const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'myquiz'>('all');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+    const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
 
     // Background state
     const [isFetching, setIsFetching] = useState(true);
@@ -49,12 +50,38 @@ export default function SelectQuizPage() {
 
     const itemsPerPage = 9;
 
-    // Get current user ID and Username
+    // Get current user ID and Username, and map to public.profiles.id
     useEffect(() => {
         const user = getUser();
         if (user) {
             setCurrentUserId(user.id);
             setCurrentUsername(user.username);
+
+            // Fetch true profile ID from Supabase
+            const fetchProfile = async () => {
+                try {
+                    // If the user's ID is a valid UUID (likely from Google OAuth)
+                    if (user.id && user.id.includes('-') && user.id.length > 20) {
+                        const { data } = await supabaseCentral
+                            .from('profiles')
+                            .select('id')
+                            .eq('auth_user_id', user.id)
+                            .single();
+                        if (data) setCurrentProfileId(data.id);
+                    } else if (user.username) {
+                        // If it's a mocked 'user-timestamp' but they used a real username
+                        const { data } = await supabaseCentral
+                            .from('profiles')
+                            .select('id')
+                            .eq('username', user.username)
+                            .single();
+                        if (data) setCurrentProfileId(data.id);
+                    }
+                } catch (err) {
+                    console.error('Failed to map profile id', err);
+                }
+            };
+            fetchProfile();
         }
     }, []);
 
@@ -139,15 +166,19 @@ export default function SelectQuizPage() {
         let filtered = allItems;
 
         // Hide private quizzes unless current user is the creator
-        filtered = filtered.filter(q => q.isPublic || (currentUserId && (q.creatorId === currentUserId || q.creatorId === currentUsername)));
+        filtered = filtered.filter(q => q.isPublic || (currentProfileId && q.creatorId === currentProfileId) || (currentUserId && (q.creatorId === currentUserId || q.creatorId === currentUsername)));
 
         // Apply tab filter
         if (activeTab === 'favorites') {
             filtered = filtered.filter(q => favorites.includes(q.id));
         }
-        // My Quiz: filter by current user's quizzes
+        // My Quiz: filter by current user's authentic profile id
         if (activeTab === 'myquiz') {
-            if (currentUserId || currentUsername) {
+            if (currentProfileId) {
+                // strict match by authentic Supabase profile ID
+                filtered = filtered.filter(q => q.creatorId === currentProfileId);
+            } else if (currentUserId || currentUsername) {
+                // fallback if profile not yet loaded or doesn't exist
                 filtered = filtered.filter(q => q.creatorId === currentUserId || q.creatorId === currentUsername);
             } else {
                 filtered = [];
@@ -170,7 +201,7 @@ export default function SelectQuizPage() {
 
         setQuizzes(filtered);
         setCurrentPage(1);
-    }, [allItems, searchQuery, selectedCategory, activeTab, favorites, currentUserId]);
+    }, [allItems, searchQuery, selectedCategory, activeTab, favorites, currentUserId, currentUsername, currentProfileId]);
 
     const paginatedQuizzes = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
