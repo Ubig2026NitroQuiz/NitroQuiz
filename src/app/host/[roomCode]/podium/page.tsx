@@ -146,11 +146,18 @@ export default function LeaderboardPage() {
                 {/* Floating Side Buttons */}
                 <div className="fixed left-3 md:left-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-50">
                     <Button
-                        onClick={() => router.push('/')}
+                        onClick={() => router.push('/host/select-quiz')}
                         className="w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#2d6af2]/50 hover:bg-[#2d6af2]/20 hover:scale-110 flex items-center justify-center text-[#2d6af2] shadow-[0_0_15px_rgba(45,106,242,0.4)] transition-all"
                         title="Home"
                     >
                         <House size={20} />
+                    </Button>
+                    <Button
+                        onClick={() => router.push(`/host/${roomCode}/lobby`)}
+                        className="w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#00ff9d]/50 hover:bg-[#00ff9d]/20 hover:scale-110 flex items-center justify-center text-[#00ff9d] shadow-[0_0_15px_rgba(0,255,157,0.4)] transition-all"
+                        title="Play Again"
+                    >
+                        <RotateCcw size={20} />
                     </Button>
                 </div>
 
@@ -306,28 +313,7 @@ export default function LeaderboardPage() {
                         </div>
                     </motion.div>
                 )}
-                {/* Back Buttons */}
-                {showResults && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3 }}
-                        className="mt-8 text-center flex gap-4 justify-center items-center"
-                    >
-                        <Button
-                            onClick={() => router.push('/host/select-quiz')}
-                            className="bg-[#2d6af2]/20 border border-[#2d6af2]/50 text-white font-display text-xs px-6 py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(45,106,242,0.3)] hover:bg-[#2d6af2]/40 transition-all gap-2"
-                        >
-                            <House className="w-4 h-4" /> Home
-                        </Button>
-                        <Button
-                            onClick={() => router.push(`/host/${roomCode}/lobby`)}
-                            className="bg-[#00ff9d]/10 border border-[#00ff9d]/50 text-[#00ff9d] font-display text-xs px-6 py-4 rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(0,255,157,0.2)] hover:bg-[#00ff9d]/20 transition-all gap-2"
-                        >
-                            <RotateCcw className="w-4 h-4" /> Play Again
-                        </Button>
-                    </motion.div>
-                )}
+                {/* Back Buttons completely removed and moved to floating sidebar */}
             </div>
         </div>
     );
