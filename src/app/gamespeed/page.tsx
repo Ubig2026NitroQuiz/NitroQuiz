@@ -1835,7 +1835,11 @@ export default function GameSpeedPage() {
         ctx.restore();
     };
 
-    const endGame = () => {
+    const hasEndedRef = useRef(false);
+    const endGame = useCallback(() => {
+        if (hasEndedRef.current) return;
+        hasEndedRef.current = true;
+
         const roomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
         
         // Return to standard orientation
@@ -1861,14 +1865,14 @@ export default function GameSpeedPage() {
         } else {
             router.push('/');
         }
-    };
+    }, [router]);
 
     // Auto-complete game immediately when finished
     useEffect(() => {
         if (gameState === 'finished' && !showQuiz) {
             endGame();
         }
-    }, [gameState, showQuiz]);
+    }, [gameState, showQuiz, endGame]);
 
     // Load quiz questions from localStorage (preloaded by player lobby)
     useEffect(() => {
@@ -1928,7 +1932,6 @@ export default function GameSpeedPage() {
         setTotalQuizScore(newScore);
         const nextIndex = quizQuestionIndex + QUESTIONS_PER_ROUND;
         setQuizQuestionIndex(nextIndex);
-        setShowQuiz(false);
 
         // Sync progress to Supabase (host monitor reads this)
         const isFinishedNow = nextIndex >= allQuizQuestions.length;
@@ -1943,7 +1946,9 @@ export default function GameSpeedPage() {
             // All questions done!
             setAllQuizDone(true);
             setGameState('finished');
+            endGame(); // Direct jump, leave showQuiz=true so it covers the screen during transition
         } else {
+            setShowQuiz(false); // Only hide quiz overlay if we still have racing to do
             // Reset race for the next round
             state.current.position = 0;
             state.current.speed = 0;
@@ -1952,7 +1957,7 @@ export default function GameSpeedPage() {
             countdownRef.current = 3;
             setGameState('countdown');
         }
-    }, [quizQuestionIndex, allQuizQuestions.length, totalQuizScore, updateParticipantStatus]);
+    }, [quizQuestionIndex, allQuizQuestions.length, totalQuizScore, updateParticipantStatus, endGame]);
 
     // Get current quiz questions for this round
     const currentRoundQuestions = allQuizQuestions.slice(quizQuestionIndex, quizQuestionIndex + QUESTIONS_PER_ROUND);
