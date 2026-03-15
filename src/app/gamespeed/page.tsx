@@ -1007,6 +1007,9 @@ export default function GameSpeedPage() {
         // Centrifugal
         nextPlayerX = nextPlayerX - (dx * speedPercent * playerSegment.curve * 0.2); // Dikurangi untuk centrifugal lebih halus
 
+        // Pembatas jalan (Batas maksimum tidak bisa dipalu / keluar lintasan terlalu jauh)
+        nextPlayerX = Util.limit(nextPlayerX, -1.5, 1.5);
+
         // Speed & NOS Logic
         let nextSpeed = speed;
         let nextNos = state.current.nos;
