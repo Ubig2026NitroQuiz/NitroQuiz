@@ -1,148 +1,58 @@
-export default [
+const trackAssets = [
     {
-        "z": 50,
+        "z": 60,
         "side": "left",
         "src": "/assets/material/kiri_jalan/1baliho.webp"
     },
     {
-        "z": 60,
+        "z": 80,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1bsi.webp"
     },
     {
-        "z": 60,
-        "side": "left",
-        "src": "/assets/material/bangku/1.png"
-    },
-    {
-        "z": 65,
-        "side": "right",
-        "src": "/assets/material/vending/2.webp"
-    },
-    {
-        "z": 70,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 75,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
         "z": 90,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1basmallah.webp"
-    },
-    {
-        "z": 100,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/1burgerking.webp"
-    },
-    {
-        "z": 100,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/tempat_sampah/1.webp"
     },
     {
         "z": 105,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
-    },
-    {
-        "z": 110,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 115,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 130,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/1gacoan.webp"
-    },
-    {
-        "z": 130,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/1cgv.webp"
-    },
-    {
-        "z": 140,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 145,
-        "side": "right",
         "src": "/assets/material/vending/2.webp"
     },
     {
-        "z": 150,
+        "z": 120,
         "side": "left",
         "src": "/assets/material/pohon/4.webp"
     },
     {
-        "z": 155,
+        "z": 135,
         "side": "right",
         "src": "/assets/material/pohon/4.webp"
     },
     {
-        "z": 170,
+        "z": 160,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1gameforsmart.webp"
+        "src": "/assets/material/kiri_jalan/1basmallah.webp"
     },
     {
-        "z": 170,
+        "z": 160,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1indosat.png"
-    },
-    {
-        "z": 180,
-        "side": "left",
-        "src": "/assets/material/bangku/1.png"
-    },
-    {
-        "z": 185,
-        "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/kanan_jalan/1burgerking.webp"
     },
     {
         "z": 190,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/vending/1.webp"
     },
     {
-        "z": 195,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 210,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/1ganesha.webp"
-    },
-    {
-        "z": 210,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/1kemendikbud.webp"
-    },
-    {
-        "z": 220,
-        "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
-    },
-    {
-        "z": 225,
+        "z": 205,
         "side": "right",
         "src": "/assets/material/bangku/1.png"
     },
     {
-        "z": 230,
+        "z": 220,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 235,
@@ -150,299 +60,119 @@ export default [
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 250,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/1mcc.webp"
-    },
-    {
-        "z": 260,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/1lawson.webp"
-    },
-    {
         "z": 260,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/kiri_jalan/1gacoan.webp"
     },
     {
-        "z": 265,
+        "z": 280,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
-    },
-    {
-        "z": 270,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 275,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/kanan_jalan/1cgv.webp"
     },
     {
         "z": 290,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1ruangguru.webp"
-    },
-    {
-        "z": 300,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/1matos.webp"
-    },
-    {
-        "z": 300,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 305,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/tempat_sampah/2.webp"
     },
     {
-        "z": 310,
+        "z": 320,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 315,
-        "side": "right",
         "src": "/assets/material/pohon/4.webp"
     },
     {
-        "z": 330,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/1ubig.webp"
-    },
-    {
-        "z": 340,
+        "z": 335,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1pocari.webp"
-    },
-    {
-        "z": 340,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 345,
-        "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
-    },
-    {
-        "z": 350,
-        "side": "left",
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 355,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 370,
+        "z": 360,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2cgv.webp"
+        "src": "/assets/material/kiri_jalan/1gameforsmart.webp"
     },
     {
         "z": 380,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1shell.webp"
-    },
-    {
-        "z": 380,
-        "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
-    },
-    {
-        "z": 385,
-        "side": "right",
-        "src": "/assets/material/bangku/1.png"
+        "src": "/assets/material/kanan_jalan/1indosat.png"
     },
     {
         "z": 390,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/vending/1.webp"
     },
     {
-        "z": 395,
+        "z": 405,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 410,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/2indosat.png"
+        "src": "/assets/material/tempat_sampah/2.webp"
     },
     {
         "z": 420,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2baliho.webp"
-    },
-    {
-        "z": 420,
-        "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
-    },
-    {
-        "z": 425,
-        "side": "right",
-        "src": "/assets/material/vending/2.webp"
-    },
-    {
-        "z": 430,
         "side": "left",
         "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 435,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 450,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/2kemendikbud.webp"
-    },
-    {
-        "z": 450,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2basmallah.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 460,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/kiri_jalan/1ganesha.webp"
     },
     {
-        "z": 465,
+        "z": 480,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
-    },
-    {
-        "z": 470,
-        "side": "left",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 475,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/kanan_jalan/1kemendikbud.webp"
     },
     {
         "z": 490,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2lawson.webp"
-    },
-    {
-        "z": 500,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2burgerking.webp"
-    },
-    {
-        "z": 500,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 505,
         "side": "right",
-        "src": "/assets/material/bangku/1.png"
-    },
-    {
-        "z": 510,
-        "side": "left",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 515,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 530,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/2matos.webp"
-    },
-    {
-        "z": 530,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2gacoan.webp"
-    },
-    {
-        "z": 540,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 545,
-        "side": "right",
         "src": "/assets/material/toko_koran/2.webp"
     },
     {
-        "z": 550,
+        "z": 520,
         "side": "left",
         "src": "/assets/material/pohon/4.webp"
     },
     {
-        "z": 555,
+        "z": 535,
         "side": "right",
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 570,
+        "z": 560,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2pocari.webp"
+        "src": "/assets/material/kiri_jalan/1mcc.webp"
     },
     {
         "z": 580,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2gramedia.webp"
-    },
-    {
-        "z": 580,
-        "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 585,
-        "side": "right",
-        "src": "/assets/material/bangku/1.png"
+        "src": "/assets/material/kanan_jalan/1lawson.webp"
     },
     {
         "z": 590,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/vending/1.webp"
     },
     {
-        "z": 595,
+        "z": 605,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 610,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/2shell.webp"
-    },
-    {
-        "z": 610,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2mcc.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 620,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 625,
-        "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
-    },
-    {
-        "z": 630,
-        "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 635,
@@ -450,49 +180,19 @@ export default [
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 650,
+        "z": 660,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/3bsi.webp"
-    },
-    {
-        "z": 650,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2ruangguru.webp"
+        "src": "/assets/material/kiri_jalan/1ruangguru.webp"
     },
     {
         "z": 660,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/1matos.webp"
+    },
+    {
+        "z": 690,
         "side": "left",
         "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 665,
-        "side": "right",
-        "src": "/assets/material/vending/2.webp"
-    },
-    {
-        "z": 670,
-        "side": "left",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 675,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 690,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/3mcc.webp"
-    },
-    {
-        "z": 690,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/2ubig.webp"
-    },
-    {
-        "z": 700,
-        "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
     },
     {
         "z": 705,
@@ -500,97 +200,37 @@ export default [
         "src": "/assets/material/bangku/1.png"
     },
     {
-        "z": 710,
+        "z": 720,
         "side": "left",
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 715,
+        "z": 735,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 730,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/alfamart_kiri.png"
-    },
-    {
-        "z": 740,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/3indosat.png"
-    },
-    {
-        "z": 740,
-        "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 745,
-        "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
-    },
-    {
-        "z": 750,
-        "side": "left",
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 755,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 770,
+        "z": 760,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/amanda_kiri.png"
+        "src": "/assets/material/kiri_jalan/1ubig.webp"
     },
     {
-        "z": 770,
+        "z": 760,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/3ruangguru.webp"
-    },
-    {
-        "z": 780,
-        "side": "left",
-        "src": "/assets/material/bangku/1.png"
-    },
-    {
-        "z": 785,
-        "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/kanan_jalan/1pocari.webp"
     },
     {
         "z": 790,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 795,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 810,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/bca-kiri.png"
-    },
-    {
-        "z": 810,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/advan-kanan.webp"
-    },
-    {
-        "z": 820,
-        "side": "left",
         "src": "/assets/material/toko_koran/1.webp"
     },
     {
-        "z": 825,
+        "z": 805,
         "side": "right",
         "src": "/assets/material/vending/2.webp"
     },
     {
-        "z": 830,
+        "z": 820,
         "side": "left",
         "src": "/assets/material/pohon/2.webp"
     },
@@ -600,149 +240,59 @@ export default [
         "src": "/assets/material/pohon/4.webp"
     },
     {
-        "z": 850,
+        "z": 860,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/bsi-kiri.png"
+        "src": "/assets/material/kiri_jalan/2cgv.webp"
     },
     {
         "z": 860,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/alfamart_kanan.png"
-    },
-    {
-        "z": 860,
-        "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 865,
-        "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
-    },
-    {
-        "z": 870,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 875,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/kanan_jalan/1shell.webp"
     },
     {
         "z": 890,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/burgerbangor-kiri.webp"
-    },
-    {
-        "z": 890,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/amanda-kanan.png"
-    },
-    {
-        "z": 900,
-        "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
-    },
-    {
-        "z": 905,
-        "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
-    },
-    {
-        "z": 910,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 915,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 930,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/eiger-kiri.webp"
-    },
-    {
-        "z": 930,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/bca-kanan.png"
-    },
-    {
-        "z": 940,
-        "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
-    },
-    {
-        "z": 945,
-        "side": "right",
-        "src": "/assets/material/vending/2.webp"
-    },
-    {
-        "z": 950,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 955,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 970,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/esteh_kiri.png"
-    },
-    {
-        "z": 970,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/bri-kanan.png"
-    },
-    {
-        "z": 980,
-        "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 985,
-        "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
-    },
-    {
-        "z": 990,
-        "side": "left",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 995,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 1010,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/hokben-kiri.webp"
-    },
-    {
-        "z": 1010,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/bsi-kanan.png"
-    },
-    {
-        "z": 1020,
         "side": "left",
         "src": "/assets/material/vending/1.webp"
     },
     {
-        "z": 1025,
+        "z": 905,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/toko_koran/2.webp"
     },
     {
-        "z": 1030,
+        "z": 920,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 935,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 960,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/2indosat.png"
+    },
+    {
+        "z": 960,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/2baliho.webp"
+    },
+    {
+        "z": 990,
+        "side": "left",
+        "src": "/assets/material/bangku/1.png"
+    },
+    {
+        "z": 1005,
+        "side": "right",
+        "src": "/assets/material/tempat_sampah/2.webp"
+    },
+    {
+        "z": 1020,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1035,
@@ -750,303 +300,364 @@ export default [
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 1050,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/indihome-kiri.png"
-    },
-    {
-        "z": 1050,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/erafone_kanan.png"
-    },
-    {
         "z": 1060,
         "side": "left",
+        "src": "/assets/material/kiri_jalan/2kemendikbud.webp"
+    },
+    {
+        "z": 1080,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/2basmallah.webp"
+    },
+    {
+        "z": 1090,
+        "side": "left",
         "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 1065,
-        "side": "right",
-        "src": "/assets/material/vending/2.webp"
-    },
-    {
-        "z": 1070,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1075,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 1090,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/mandiri-kiri.jpg"
-    },
-    {
-        "z": 1090,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/esteh_kanan.png"
-    },
-    {
-        "z": 1100,
-        "side": "left",
-        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1105,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
-        "z": 1110,
+        "z": 1120,
         "side": "left",
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 1115,
+        "z": 1135,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 1130,
+        "z": 1160,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/tehbotol-kiri.webp"
-    },
-    {
-        "z": 1130,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/hokben-kanan.webp"
-    },
-    {
-        "z": 1140,
-        "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 1145,
-        "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
-    },
-    {
-        "z": 1150,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1155,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1170,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/tomoro-kiri.jpeg"
-    },
-    {
-        "z": 1170,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/indihome-kanan.png"
+        "src": "/assets/material/kiri_jalan/2lawson.webp"
     },
     {
         "z": 1180,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 1185,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/kanan_jalan/2burgerking.webp"
     },
     {
         "z": 1190,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1195,
-        "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 1210,
-        "side": "left",
-        "src": "/assets/material/kiri_jalan/wardah-kiri.webp"
-    },
-    {
-        "z": 1220,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/indomart_kanan.png"
-    },
-    {
-        "z": 1220,
-        "side": "left",
         "src": "/assets/material/bangku/1.png"
     },
     {
-        "z": 1225,
+        "z": 1205,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
-        "z": 1230,
+        "z": 1220,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1235,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 1260,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/kapalapi-kanan.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1260,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/kiri_jalan/2matos.webp"
     },
     {
-        "z": 1265,
+        "z": 1260,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/kanan_jalan/2gacoan.webp"
     },
     {
-        "z": 1270,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1275,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1300,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/mandiri-kanan.jpg"
-    },
-    {
-        "z": 1300,
+        "z": 1290,
         "side": "left",
         "src": "/assets/material/toko_koran/1.webp"
     },
     {
         "z": 1305,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/tempat_sampah/2.webp"
     },
     {
-        "z": 1310,
+        "z": 1320,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 1315,
-        "side": "right",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1330,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/tehbotol-kanan.webp"
-    },
-    {
-        "z": 1340,
-        "side": "left",
-        "src": "/assets/material/vending/1.webp"
-    },
-    {
-        "z": 1345,
-        "side": "right",
-        "src": "/assets/material/bangku/1.png"
-    },
-    {
-        "z": 1350,
-        "side": "left",
-        "src": "/assets/material/pohon/4.webp"
-    },
-    {
-        "z": 1355,
+        "z": 1335,
         "side": "right",
         "src": "/assets/material/pohon/2.webp"
     },
     {
-        "z": 1380,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/tomoro-kanan.webp"
-    },
-    {
-        "z": 1380,
+        "z": 1360,
         "side": "left",
-        "src": "/assets/material/bangku/1.png"
+        "src": "/assets/material/kiri_jalan/2pocari.webp"
     },
     {
-        "z": 1385,
+        "z": 1380,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/kanan_jalan/2gramedia.webp"
     },
     {
         "z": 1390,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
-        "z": 1395,
+        "z": 1405,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/toko_koran/2.webp"
     },
     {
         "z": 1420,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/wardah-kanan.webp"
-    },
-    {
-        "z": 1420,
-        "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
-    },
-    {
-        "z": 1425,
-        "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
-    },
-    {
-        "z": 1430,
         "side": "left",
         "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1435,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
-    },
-    {
-        "z": 1450,
-        "side": "right",
-        "src": "/assets/material/kanan_jalan/xl_kanan.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1460,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/kiri_jalan/2shell.webp"
     },
     {
-        "z": 1465,
+        "z": 1480,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/kanan_jalan/2mcc.webp"
     },
     {
-        "z": 1470,
+        "z": 1490,
+        "side": "left",
+        "src": "/assets/material/bangku/1.png"
+    },
+    {
+        "z": 1505,
+        "side": "right",
+        "src": "/assets/material/tempat_sampah/2.webp"
+    },
+    {
+        "z": 1520,
         "side": "left",
         "src": "/assets/material/pohon/4.webp"
     },
     {
-        "z": 1475,
+        "z": 1535,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 1560,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/3bsi.webp"
+    },
+    {
+        "z": 1580,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/2ruangguru.webp"
+    },
+    {
+        "z": 1590,
+        "side": "left",
+        "src": "/assets/material/bangku/1.png"
+    },
+    {
+        "z": 1605,
+        "side": "right",
+        "src": "/assets/material/toko_koran/2.webp"
+    },
+    {
+        "z": 1620,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 1635,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 1660,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/3mcc.webp"
+    },
+    {
+        "z": 1660,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/2ubig.webp"
+    },
+    {
+        "z": 1690,
+        "side": "left",
+        "src": "/assets/material/toko_koran/1.webp"
+    },
+    {
+        "z": 1705,
+        "side": "right",
+        "src": "/assets/material/vending/2.webp"
+    },
+    {
+        "z": 1720,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 1735,
         "side": "right",
         "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 1760,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/alfamart_kiri.png"
+    },
+    {
+        "z": 1780,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/3indosat.png"
+    },
+    {
+        "z": 1790,
+        "side": "left",
+        "src": "/assets/material/vending/1.webp"
+    },
+    {
+        "z": 1805,
+        "side": "right",
+        "src": "/assets/material/vending/2.webp"
+    },
+    {
+        "z": 1820,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 1835,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 1860,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/amanda_kiri.png"
+    },
+    {
+        "z": 1880,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/3ruangguru.webp"
+    },
+    {
+        "z": 1890,
+        "side": "left",
+        "src": "/assets/material/tempat_sampah/1.webp"
+    },
+    {
+        "z": 1905,
+        "side": "right",
+        "src": "/assets/material/toko_koran/2.webp"
+    },
+    {
+        "z": 1920,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 1935,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 1960,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/bca-kiri.png"
+    },
+    {
+        "z": 1980,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/alfamart_kanan.png"
+    },
+    {
+        "z": 1990,
+        "side": "left",
+        "src": "/assets/material/tempat_sampah/1.webp"
+    },
+    {
+        "z": 2005,
+        "side": "right",
+        "src": "/assets/material/toko_koran/2.webp"
+    },
+    {
+        "z": 2020,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 2035,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 2060,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/bsi-kiri.png"
+    },
+    {
+        "z": 2060,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/amanda_kanan.png"
+    },
+    {
+        "z": 2090,
+        "side": "left",
+        "src": "/assets/material/toko_koran/1.webp"
+    },
+    {
+        "z": 2105,
+        "side": "right",
+        "src": "/assets/material/bangku/1.png"
+    },
+    {
+        "z": 2120,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 2135,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 2160,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/esteh_kiri.png"
+    },
+    {
+        "z": 2160,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/bca-kanan.png"
+    },
+    {
+        "z": 2190,
+        "side": "left",
+        "src": "/assets/material/vending/1.webp"
+    },
+    {
+        "z": 2205,
+        "side": "right",
+        "src": "/assets/material/tempat_sampah/2.webp"
+    },
+    {
+        "z": 2220,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 2235,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
     }
 ];
+export default trackAssets;
