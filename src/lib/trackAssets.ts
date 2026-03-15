@@ -22,7 +22,7 @@ const trackAssets = [
     {
         "z": 85,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 92,
@@ -117,7 +117,7 @@ const trackAssets = [
     {
         "z": 221,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 232,
@@ -142,7 +142,7 @@ const trackAssets = [
     {
         "z": 257,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 264,
@@ -177,7 +177,7 @@ const trackAssets = [
     {
         "z": 307,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 318,
@@ -202,7 +202,7 @@ const trackAssets = [
     {
         "z": 343,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 350,
@@ -215,7 +215,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1ubig.webp"
     },
     {
-        "z": 361,
+        "z": 366,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1pocari.webp"
     },
@@ -245,7 +245,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2cgv.webp"
     },
     {
-        "z": 404,
+        "z": 409,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1shell.webp"
     },
@@ -275,7 +275,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2indosat.png"
     },
     {
-        "z": 447,
+        "z": 452,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2baliho.webp"
     },
@@ -292,7 +292,7 @@ const trackAssets = [
     {
         "z": 472,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 479,
@@ -322,12 +322,12 @@ const trackAssets = [
     {
         "z": 515,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 522,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 533,
@@ -335,7 +335,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2lawson.webp"
     },
     {
-        "z": 533,
+        "z": 538,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2burgerking.webp"
     },
@@ -357,7 +357,7 @@ const trackAssets = [
     {
         "z": 565,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 576,
@@ -365,7 +365,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2matos.webp"
     },
     {
-        "z": 581,
+        "z": 576,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2gacoan.webp"
     },
@@ -382,7 +382,7 @@ const trackAssets = [
     {
         "z": 601,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 608,
@@ -417,7 +417,7 @@ const trackAssets = [
     {
         "z": 651,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 662,
@@ -425,7 +425,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2shell.webp"
     },
     {
-        "z": 662,
+        "z": 667,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2mcc.webp"
     },
@@ -455,7 +455,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/3bsi.webp"
     },
     {
-        "z": 710,
+        "z": 705,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2ruangguru.webp"
     },
@@ -485,7 +485,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/3mcc.webp"
     },
     {
-        "z": 753,
+        "z": 748,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2ubig.webp"
     },
@@ -515,7 +515,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/alfamart_kiri.png"
     },
     {
-        "z": 791,
+        "z": 796,
         "side": "right",
         "src": "/assets/material/kanan_jalan/3indosat.png"
     },
@@ -532,12 +532,12 @@ const trackAssets = [
     {
         "z": 816,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 823,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 834,
@@ -545,7 +545,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/amanda_kiri.png"
     },
     {
-        "z": 839,
+        "z": 834,
         "side": "right",
         "src": "/assets/material/kanan_jalan/3ruangguru.webp"
     },
@@ -562,7 +562,7 @@ const trackAssets = [
     {
         "z": 859,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 866,
@@ -592,7 +592,7 @@ const trackAssets = [
     {
         "z": 902,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 909,
@@ -605,7 +605,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/bsi-kiri.png"
     },
     {
-        "z": 925,
+        "z": 920,
         "side": "right",
         "src": "/assets/material/kanan_jalan/amanda_kanan.png"
     },
@@ -622,7 +622,7 @@ const trackAssets = [
     {
         "z": 945,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 952,
@@ -657,7 +657,7 @@ const trackAssets = [
     {
         "z": 995,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1006,
@@ -695,7 +695,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/mandiri-kiri.png"
     },
     {
-        "z": 1049,
+        "z": 1054,
         "side": "right",
         "src": "/assets/material/kanan_jalan/bsi-kanan.png"
     },
@@ -712,7 +712,7 @@ const trackAssets = [
     {
         "z": 1074,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1081,
@@ -742,7 +742,7 @@ const trackAssets = [
     {
         "z": 1117,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1124,
@@ -777,7 +777,7 @@ const trackAssets = [
     {
         "z": 1167,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1178,
@@ -802,7 +802,7 @@ const trackAssets = [
     {
         "z": 1203,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1210,
@@ -815,7 +815,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1gacoan.webp"
     },
     {
-        "z": 1221,
+        "z": 1226,
         "side": "right",
         "src": "/assets/material/kanan_jalan/mandiri-kanan.png"
     },
@@ -837,7 +837,7 @@ const trackAssets = [
     {
         "z": 1253,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1264,
@@ -862,7 +862,7 @@ const trackAssets = [
     {
         "z": 1289,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1296,
@@ -892,7 +892,7 @@ const trackAssets = [
     {
         "z": 1332,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1339,
@@ -922,7 +922,7 @@ const trackAssets = [
     {
         "z": 1375,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1382,
@@ -935,7 +935,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1ruangguru.webp"
     },
     {
-        "z": 1393,
+        "z": 1398,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1indosat.png"
     },
@@ -982,12 +982,12 @@ const trackAssets = [
     {
         "z": 1461,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1468,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1479,
@@ -1012,7 +1012,7 @@ const trackAssets = [
     {
         "z": 1504,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1511,
@@ -1025,7 +1025,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2indosat.png"
     },
     {
-        "z": 1522,
+        "z": 1527,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1matos.webp"
     },
@@ -1042,7 +1042,7 @@ const trackAssets = [
     {
         "z": 1547,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1554,
@@ -1055,7 +1055,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2kemendikbud.webp"
     },
     {
-        "z": 1565,
+        "z": 1570,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1pocari.webp"
     },
@@ -1072,12 +1072,12 @@ const trackAssets = [
     {
         "z": 1590,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1597,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1608,
@@ -1085,7 +1085,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2lawson.webp"
     },
     {
-        "z": 1608,
+        "z": 1613,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1shell.webp"
     },
@@ -1102,7 +1102,7 @@ const trackAssets = [
     {
         "z": 1633,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1640,
@@ -1132,7 +1132,7 @@ const trackAssets = [
     {
         "z": 1676,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1683,
@@ -1192,7 +1192,7 @@ const trackAssets = [
     {
         "z": 1762,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1769,
@@ -1222,7 +1222,7 @@ const trackAssets = [
     {
         "z": 1805,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1812,
@@ -1257,7 +1257,7 @@ const trackAssets = [
     {
         "z": 1855,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1866,
@@ -1265,7 +1265,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/alfamart_kiri.png"
     },
     {
-        "z": 1871,
+        "z": 1866,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2mcc.webp"
     },
@@ -1282,7 +1282,7 @@ const trackAssets = [
     {
         "z": 1891,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1898,
@@ -1295,7 +1295,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/amanda_kiri.png"
     },
     {
-        "z": 1914,
+        "z": 1909,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2ruangguru.webp"
     },
@@ -1312,7 +1312,7 @@ const trackAssets = [
     {
         "z": 1934,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1941,
@@ -1325,7 +1325,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/bca-kiri.png"
     },
     {
-        "z": 1957,
+        "z": 1952,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2ubig.webp"
     },
@@ -1342,12 +1342,12 @@ const trackAssets = [
     {
         "z": 1977,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1984,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1995,
@@ -1355,7 +1355,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/bsi-kiri.png"
     },
     {
-        "z": 1995,
+        "z": 2000,
         "side": "right",
         "src": "/assets/material/kanan_jalan/3indosat.png"
     },
@@ -1407,7 +1407,7 @@ const trackAssets = [
     {
         "z": 2070,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 2081,
@@ -1415,7 +1415,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/indihome-kiri.png"
     },
     {
-        "z": 2086,
+        "z": 2081,
         "side": "right",
         "src": "/assets/material/kanan_jalan/alfamart_kanan.png"
     },
@@ -1437,7 +1437,7 @@ const trackAssets = [
     {
         "z": 2113,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 2124,
@@ -1475,7 +1475,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/tomoro-kiri.png"
     },
     {
-        "z": 2172,
+        "z": 2167,
         "side": "right",
         "src": "/assets/material/kanan_jalan/bca-kanan.png"
     },
@@ -1497,7 +1497,7 @@ const trackAssets = [
     {
         "z": 2199,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     }
 ];
 export default trackAssets;
