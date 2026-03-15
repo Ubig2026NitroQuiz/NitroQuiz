@@ -12,17 +12,17 @@ const trackAssets = [
     {
         "z": 72,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 78,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 85,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 92,
@@ -42,17 +42,17 @@ const trackAssets = [
     {
         "z": 115,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 121,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 128,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 135,
@@ -72,22 +72,22 @@ const trackAssets = [
     {
         "z": 158,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 164,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 171,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 178,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 189,
@@ -95,19 +95,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1gameforsmart.webp"
     },
     {
-        "z": 189,
+        "z": 194,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1indosat.png"
     },
     {
         "z": 201,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 207,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 214,
@@ -117,7 +117,7 @@ const trackAssets = [
     {
         "z": 221,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 232,
@@ -137,17 +137,17 @@ const trackAssets = [
     {
         "z": 250,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 257,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 264,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 275,
@@ -167,17 +167,17 @@ const trackAssets = [
     {
         "z": 293,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 300,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 307,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 318,
@@ -192,17 +192,17 @@ const trackAssets = [
     {
         "z": 330,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 336,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 343,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 350,
@@ -222,12 +222,12 @@ const trackAssets = [
     {
         "z": 373,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 379,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 386,
@@ -237,7 +237,7 @@ const trackAssets = [
     {
         "z": 393,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 404,
@@ -245,19 +245,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2cgv.webp"
     },
     {
-        "z": 409,
+        "z": 404,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1shell.webp"
     },
     {
         "z": 416,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 422,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 429,
@@ -275,19 +275,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2indosat.png"
     },
     {
-        "z": 452,
+        "z": 447,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2baliho.webp"
     },
     {
         "z": 459,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 465,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 472,
@@ -305,19 +305,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2kemendikbud.webp"
     },
     {
-        "z": 490,
+        "z": 495,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2basmallah.webp"
     },
     {
         "z": 502,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 508,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 515,
@@ -342,7 +342,7 @@ const trackAssets = [
     {
         "z": 545,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 551,
@@ -365,19 +365,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2matos.webp"
     },
     {
-        "z": 576,
+        "z": 581,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2gacoan.webp"
     },
     {
         "z": 588,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 594,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 601,
@@ -407,12 +407,12 @@ const trackAssets = [
     {
         "z": 637,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 644,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 651,
@@ -432,12 +432,12 @@ const trackAssets = [
     {
         "z": 674,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 680,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 687,
@@ -455,29 +455,29 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/3bsi.webp"
     },
     {
-        "z": 705,
+        "z": 710,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2ruangguru.webp"
     },
     {
         "z": 717,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 723,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 730,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 737,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 748,
@@ -485,14 +485,14 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/3mcc.webp"
     },
     {
-        "z": 748,
+        "z": 753,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2ubig.webp"
     },
     {
         "z": 760,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 766,
@@ -507,7 +507,7 @@ const trackAssets = [
     {
         "z": 780,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 791,
@@ -515,7 +515,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/alfamart_kiri.png"
     },
     {
-        "z": 796,
+        "z": 791,
         "side": "right",
         "src": "/assets/material/kanan_jalan/3indosat.png"
     },
@@ -527,12 +527,12 @@ const trackAssets = [
     {
         "z": 809,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 816,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 823,
@@ -545,29 +545,29 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/amanda_kiri.png"
     },
     {
-        "z": 834,
+        "z": 839,
         "side": "right",
         "src": "/assets/material/kanan_jalan/3ruangguru.webp"
     },
     {
         "z": 846,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 852,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 859,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 866,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 877,
@@ -575,14 +575,14 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/bca-kiri.png"
     },
     {
-        "z": 882,
+        "z": 877,
         "side": "right",
         "src": "/assets/material/kanan_jalan/alfamart_kanan.png"
     },
     {
         "z": 889,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 895,
@@ -592,7 +592,7 @@ const trackAssets = [
     {
         "z": 902,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 909,
@@ -612,12 +612,12 @@ const trackAssets = [
     {
         "z": 932,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 938,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 945,
@@ -635,14 +635,14 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/esteh_kiri.png"
     },
     {
-        "z": 963,
+        "z": 968,
         "side": "right",
         "src": "/assets/material/kanan_jalan/bca-kanan.png"
     },
     {
         "z": 975,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 981,
@@ -665,24 +665,24 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/indihome-kiri.png"
     },
     {
-        "z": 1006,
+        "z": 1011,
         "side": "right",
         "src": "/assets/material/kanan_jalan/bri-kanan.png"
     },
     {
         "z": 1018,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1024,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1031,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1038,
@@ -707,12 +707,12 @@ const trackAssets = [
     {
         "z": 1067,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1074,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1081,
@@ -737,12 +737,12 @@ const trackAssets = [
     {
         "z": 1110,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1117,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1124,
@@ -755,19 +755,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1baliho.webp"
     },
     {
-        "z": 1140,
+        "z": 1135,
         "side": "right",
         "src": "/assets/material/kanan_jalan/esteh_kanan.png"
     },
     {
         "z": 1147,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1153,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1160,
@@ -777,7 +777,7 @@ const trackAssets = [
     {
         "z": 1167,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1178,
@@ -785,7 +785,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1basmallah.webp"
     },
     {
-        "z": 1183,
+        "z": 1178,
         "side": "right",
         "src": "/assets/material/kanan_jalan/indihome-kanan.png"
     },
@@ -797,12 +797,12 @@ const trackAssets = [
     {
         "z": 1196,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1203,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1210,
@@ -815,7 +815,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1gacoan.webp"
     },
     {
-        "z": 1226,
+        "z": 1221,
         "side": "right",
         "src": "/assets/material/kanan_jalan/mandiri-kanan.png"
     },
@@ -827,12 +827,12 @@ const trackAssets = [
     {
         "z": 1239,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1246,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1253,
@@ -852,22 +852,22 @@ const trackAssets = [
     {
         "z": 1276,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1282,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1289,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1296,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1307,
@@ -887,12 +887,12 @@ const trackAssets = [
     {
         "z": 1325,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1332,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1339,
@@ -905,19 +905,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1mcc.webp"
     },
     {
-        "z": 1355,
+        "z": 1350,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1cgv.webp"
     },
     {
         "z": 1362,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1368,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1375,
@@ -942,22 +942,22 @@ const trackAssets = [
     {
         "z": 1405,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1411,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1418,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1425,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1436,
@@ -965,14 +965,14 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/1ubig.webp"
     },
     {
-        "z": 1436,
+        "z": 1441,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1kemendikbud.webp"
     },
     {
         "z": 1448,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1454,
@@ -987,7 +987,7 @@ const trackAssets = [
     {
         "z": 1468,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1479,
@@ -1002,12 +1002,12 @@ const trackAssets = [
     {
         "z": 1491,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1497,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1504,
@@ -1017,7 +1017,7 @@ const trackAssets = [
     {
         "z": 1511,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1522,
@@ -1032,17 +1032,17 @@ const trackAssets = [
     {
         "z": 1534,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1540,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1547,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1554,
@@ -1055,7 +1055,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2kemendikbud.webp"
     },
     {
-        "z": 1570,
+        "z": 1565,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1pocari.webp"
     },
@@ -1067,7 +1067,7 @@ const trackAssets = [
     {
         "z": 1583,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1590,
@@ -1085,29 +1085,29 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2lawson.webp"
     },
     {
-        "z": 1613,
+        "z": 1608,
         "side": "right",
         "src": "/assets/material/kanan_jalan/1shell.webp"
     },
     {
         "z": 1620,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1626,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1633,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1640,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1651,
@@ -1122,12 +1122,12 @@ const trackAssets = [
     {
         "z": 1663,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1669,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1676,
@@ -1145,24 +1145,24 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2pocari.webp"
     },
     {
-        "z": 1694,
+        "z": 1699,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2basmallah.webp"
     },
     {
         "z": 1706,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1712,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1719,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1726,
@@ -1175,7 +1175,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/2shell.webp"
     },
     {
-        "z": 1742,
+        "z": 1737,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2burgerking.webp"
     },
@@ -1187,7 +1187,7 @@ const trackAssets = [
     {
         "z": 1755,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1762,
@@ -1197,7 +1197,7 @@ const trackAssets = [
     {
         "z": 1769,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1780,
@@ -1212,22 +1212,22 @@ const trackAssets = [
     {
         "z": 1792,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1798,
         "side": "right",
-        "src": "/assets/material/vending/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1805,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1812,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1823,
@@ -1235,19 +1235,19 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/3mcc.webp"
     },
     {
-        "z": 1823,
+        "z": 1828,
         "side": "right",
         "src": "/assets/material/kanan_jalan/2gramedia.webp"
     },
     {
         "z": 1835,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1841,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1848,
@@ -1272,7 +1272,7 @@ const trackAssets = [
     {
         "z": 1878,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1884,
@@ -1287,7 +1287,7 @@ const trackAssets = [
     {
         "z": 1898,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1909,
@@ -1302,22 +1302,22 @@ const trackAssets = [
     {
         "z": 1921,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1927,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1934,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1941,
         "side": "right",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 1952,
@@ -1337,17 +1337,17 @@ const trackAssets = [
     {
         "z": 1970,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 1977,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1984,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 1995,
@@ -1362,7 +1362,7 @@ const trackAssets = [
     {
         "z": 2007,
         "side": "left",
-        "src": "/assets/material/vending/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2013,
@@ -1372,7 +1372,7 @@ const trackAssets = [
     {
         "z": 2020,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 2027,
@@ -1385,7 +1385,7 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/esteh_kiri.png"
     },
     {
-        "z": 2038,
+        "z": 2043,
         "side": "right",
         "src": "/assets/material/kanan_jalan/3ruangguru.webp"
     },
@@ -1397,17 +1397,17 @@ const trackAssets = [
     {
         "z": 2056,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2063,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 2070,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 2081,
@@ -1415,24 +1415,24 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/indihome-kiri.png"
     },
     {
-        "z": 2081,
+        "z": 2086,
         "side": "right",
         "src": "/assets/material/kanan_jalan/alfamart_kanan.png"
     },
     {
         "z": 2093,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2099,
         "side": "right",
-        "src": "/assets/material/tempat_sampah/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2106,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 2113,
@@ -1445,14 +1445,14 @@ const trackAssets = [
         "src": "/assets/material/kiri_jalan/mandiri-kiri.png"
     },
     {
-        "z": 2129,
+        "z": 2124,
         "side": "right",
         "src": "/assets/material/kanan_jalan/amanda_kanan.png"
     },
     {
         "z": 2136,
         "side": "left",
-        "src": "/assets/material/tempat_sampah/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2142,
@@ -1462,7 +1462,7 @@ const trackAssets = [
     {
         "z": 2149,
         "side": "left",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     },
     {
         "z": 2156,
@@ -1482,22 +1482,22 @@ const trackAssets = [
     {
         "z": 2179,
         "side": "left",
-        "src": "/assets/material/toko_koran/1.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2185,
         "side": "right",
-        "src": "/assets/material/toko_koran/2.webp"
+        "src": "/assets/material/bangku/1.png"
     },
     {
         "z": 2192,
         "side": "left",
-        "src": "/assets/material/pohon/4.webp"
+        "src": "/assets/material/pohon/2.webp"
     },
     {
         "z": 2199,
         "side": "right",
-        "src": "/assets/material/pohon/2.webp"
+        "src": "/assets/material/pohon/4.webp"
     }
 ];
 export default trackAssets;
