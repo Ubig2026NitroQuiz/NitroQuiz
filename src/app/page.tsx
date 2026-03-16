@@ -205,10 +205,17 @@ export default function Home() {
 
   return (
     <div className="bg-[#0b101a] text-white min-h-screen relative overflow-hidden font-body selection:bg-[#2d6af2] selection:text-white flex flex-col">
-      <div className="fixed inset-0 z-0 city-silhouette pointer-events-none"></div>
-      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#0b101a] via-transparent to-[#2d6af2]/10 pointer-events-none"></div>
-      <div className="fixed bottom-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#2d6af2]/10 via-[#0b101a]/50 to-[#0b101a] pointer-events-none z-0"></div>
-      <div className="fixed bottom-0 w-full h-1/2 bg-[linear-gradient(transparent_0%,rgba(255,204,0,0.1)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(255,204,0,0.1)_1px,transparent_1px)] bg-[length:60px_60px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom z-0 pointer-events-none opacity-20"></div>
+      {/* Main Background Image */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+        style={{ 
+          backgroundImage: 'url("/assets/backgorund/homepage_bg.png")',
+          backgroundAttachment: 'fixed'
+        }}
+      ></div>
+      
+      {/* Overlays to ensure readability and mood */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#0b101a] via-[#0b101a]/40 to-transparent pointer-events-none"></div>
       <div className="scanlines"></div>
 
       {/* Top Bar: Logo1 left, Logo2 right */}
