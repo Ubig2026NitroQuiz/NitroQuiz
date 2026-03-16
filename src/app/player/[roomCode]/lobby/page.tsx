@@ -8,13 +8,13 @@ import { Loader2, Zap, Users, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const carGifs = [
-    "/assets/car/car1_v2.webp",
-    "/assets/car/car2_v2.webp",
-    "/assets/car/car3_v2.webp",
-    "/assets/car/car4_v2.webp",
-    "/assets/car/car5_v2.webp",
+    "/assets/characters/scloski/showroom/showroom1.png",
+    "/assets/characters/scloski/showroom/showroom2.png",
+    "/assets/characters/scloski/showroom/showroom1.png",
+    "/assets/characters/scloski/showroom/showroom2.png",
+    "/assets/characters/scloski/showroom/showroom1.png",
 ];
-const carNames = ["PURPLE RACER", "WHITE FLASH", "BLACK PHANTOM", "AQUA SURGE", "BLUE BOLT"];
+const carNames = ["SCHLOSKI RACER", "SCHLOSKI ELITE", "SCHLOSKI RACER", "SCHLOSKI ELITE", "SCHLOSKI RACER"];
 const carMap = ["purple", "white", "black", "aqua", "blue"];
 
 export default function PlayerLobbyPage() {
@@ -24,7 +24,7 @@ export default function PlayerLobbyPage() {
 
     const [status, setStatus] = useState<"loading" | "waiting" | "countdown" | "go" | "error">("loading");
     const [errorMessage, setErrorMessage] = useState("");
-    const [assignedCar, setAssignedCar] = useState<string>("/assets/car/car1_v2.webp");
+    const [assignedCar, setAssignedCar] = useState<string>("/assets/characters/scloski/showroom/showroom1.png");
     const [assignedCarIndex, setAssignedCarIndex] = useState<number>(0);
     const [countdownValue, setCountdownValue] = useState(10);
     const [sessionId, setSessionId] = useState<string | null>(null);
@@ -131,8 +131,11 @@ export default function PlayerLobbyPage() {
     };
 
     const carImageMap: Record<string, string> = {
-        purple: "/assets/car/car1_v2.webp", white: "/assets/car/car2_v2.webp",
-        black: "/assets/car/car3_v2.webp", aqua: "/assets/car/car4_v2.webp", blue: "/assets/car/car5_v2.webp",
+        purple: "/assets/characters/scloski/showroom/showroom1.png", 
+        white: "/assets/characters/scloski/showroom/showroom2.png",
+        black: "/assets/characters/scloski/showroom/showroom1.png", 
+        aqua: "/assets/characters/scloski/showroom/showroom2.png", 
+        blue: "/assets/characters/scloski/showroom/showroom1.png",
     };
 
     const changeCar = () => {
