@@ -378,7 +378,7 @@ export default function GameMonitorPage() {
                           <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                           <img 
-                            src={logoImageMap[baseCar] || "/assets/logo/logo1.png"} 
+                            src={logoImageMap[baseCar] || "/assets/characters/scloski/logo/logo1.png"} 
                             alt="Avatar" 
                             className="w-full h-full object-contain p-1 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" 
                           />

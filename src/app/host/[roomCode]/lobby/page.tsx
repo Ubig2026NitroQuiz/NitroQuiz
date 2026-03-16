@@ -61,7 +61,16 @@ interface Participant {
     nickname: string;
     car: string;
     joined_at: string;
+    avatar_url?: string | null;
 }
+
+const logoImageMap: Record<string, string> = {
+    purple: "/assets/characters/scloski/logo/logo1.png",
+    white: "/assets/characters/scloski/logo/logo1.png",
+    black: "/assets/characters/scloski/logo/logo1.png",
+    aqua: "/assets/characters/scloski/logo/logo1.png",
+    blue: "/assets/characters/scloski/logo/logo1.png",
+};
 
 export default function HostRoomPage() {
     const params = useParams();
@@ -145,7 +154,7 @@ export default function HostRoomPage() {
                     // Fetch existing participants
                     const { data: participantsData, error: pError } = await supabase
                         .from("participants")
-                        .select("id, nickname, car_character, joined_at")
+                        .select("id, nickname, car_character, joined_at, avatar_url")
                         .eq("session_id", sessionData.id);
 
                     if (!pError && participantsData) {
@@ -153,7 +162,8 @@ export default function HostRoomPage() {
                             id: p.id,
                             nickname: p.nickname,
                             car: p.car_character || "purple",
-                            joined_at: p.joined_at
+                            joined_at: p.joined_at,
+                            avatar_url: p.avatar_url
                         }));
                         setParticipants(mappedPlayers);
                     }
@@ -177,7 +187,7 @@ export default function HostRoomPage() {
             try {
                 const { data, error } = await supabase
                     .from("participants")
-                    .select("id, nickname, car_character, joined_at")
+                    .select("id, nickname, car_character, joined_at, avatar_url")
                     .eq("session_id", sessionId);
 
                 if (!error && data) {
@@ -185,7 +195,8 @@ export default function HostRoomPage() {
                         id: p.id,
                         nickname: p.nickname,
                         car: p.car_character || "purple",
-                        joined_at: p.joined_at
+                        joined_at: p.joined_at,
+                        avatar_url: p.avatar_url
                     })));
                 }
             } catch (e) {
@@ -210,7 +221,8 @@ export default function HostRoomPage() {
                             id: newP.id,
                             nickname: newP.nickname,
                             car: newP.car_character || "purple",
-                            joined_at: newP.joined_at
+                            joined_at: newP.joined_at,
+                            avatar_url: newP.avatar_url
                         }];
                     });
                 }
@@ -592,12 +604,17 @@ export default function HostRoomPage() {
 
                                                     <div className="relative mb-3 w-full flex justify-center">
                                                         <div className="absolute inset-0 bg-[#2d6af2]/20 blur-xl rounded-full scale-50 group-hover:scale-100 transition-transform duration-500"></div>
-                                                        {/* <img
-                                                            src={carGifMap[player.car] || "/assets/car/car5_v2.webp"}
-                                                            alt={player.nickname}
-                                                            className="w-24 h-16 object-contain relative z-10 drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
-                                                        /> */}
-                                                        <p className="text-6xl">🏎️</p>
+                                                        <div className="w-20 h-20 rounded-full border-2 border-[#2d6af2]/30 bg-black/40 overflow-hidden flex items-center justify-center p-0 shadow-inner relative z-10">
+                                                            {player.avatar_url ? (
+                                                                <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <img 
+                                                                    src={logoImageMap[player.car.replace("-bot", "")] || "/assets/characters/scloski/logo/logo1.png"} 
+                                                                    alt="Logo" 
+                                                                    className="w-full h-full object-contain p-2" 
+                                                                />
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="w-full text-center relative z-10 max-w-full">

@@ -117,7 +117,9 @@ export default function Home() {
 
         if (session?.user) {
           const u = getUser();
-          if (!u || u.id !== session.user.id) {
+          const sessionAvatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture || "";
+          
+          if (!u || u.id !== session.user.id || u.avatar !== sessionAvatar) {
             const newUser: User = {
               id: session.user.id,
               username:
@@ -125,10 +127,10 @@ export default function Home() {
                 session.user.email?.split("@")[0] ||
                 "Racer",
               email: session.user.email || "",
-              avatar: session.user.user_metadata.avatar_url || session.user.user_metadata.picture || "",
-              totalPoints: 0,
-              gamesPlayed: 0,
-              createdAt: new Date().toISOString(),
+              avatar: sessionAvatar,
+              totalPoints: u?.totalPoints || 0,
+              gamesPlayed: u?.gamesPlayed || 0,
+              createdAt: u?.createdAt || new Date().toISOString(),
             };
             saveUser(newUser);
             setUser(newUser);
