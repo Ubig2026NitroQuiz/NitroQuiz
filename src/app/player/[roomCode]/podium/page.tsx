@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Trophy, Crown, Medal, Users, Clock, Star, ChevronRight, House, RotateCcw, BarChart2, LogOut } from "lucide-react";
+import { Trophy, Crown, Medal, Users, Clock, Star, ChevronRight, House, RotateCcw, BarChart2, LogOut, Home, RotateCcwIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -376,7 +376,7 @@ export default function PlayerLeaderboardPage() {
                         {/* ── LEFT card — WIDER (280px), 3 section layout, bigger text ── */}
                         <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.2, type:"spring", stiffness:90 }}
                             className="absolute z-10 flex items-center"
-                            style={{ top:'60px', left:'28px', bottom:'60px', width:'280px' }}>
+                            style={{ top:'60px', left:'150px', bottom:'60px', width:'260px' }}>
                             <div className="w-full rounded-2xl overflow-hidden flex flex-col"
                                 style={{
                                     background: 'transparent',
@@ -421,7 +421,7 @@ export default function PlayerLeaderboardPage() {
 
                         {/* CENTER: Car — adjusted for wider left panel */}
                         <div className="absolute z-10 flex items-center justify-center"
-                            style={{ top:'60px', left:'330px', right:'270px', bottom:'60px' }}>
+                            style={{ top:'60px', left:'425px', right:'425px', bottom:'60px' }}>
                             <motion.div className="relative" initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3, type:"spring", stiffness:80 }}>
                                 <motion.img src={currentPlayerCarSrc} alt="Your Car" className="object-contain"
                                     style={{ width:'clamp(300px,38vw,540px)', maxHeight:'54vh', filter:'drop-shadow(0 20px 50px rgba(0,0,0,0.4))' }}
@@ -435,7 +435,7 @@ export default function PlayerLeaderboardPage() {
                         <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.25, type:"spring", stiffness:90 }}
                             className="absolute z-10 flex flex-col p-[22px]"
                             style={{ 
-                                top:'150px', right:'28px', bottom:'60px', width:'280px',
+                                top:'150px', right:'150px', bottom:'60px', width:'260px',
                                 background: 'rgba(160,180,210,0.12)',
                                 border: '1px solid rgba(220,230,250,0.18)',
                                 backdropFilter: 'blur(32px) saturate(1.4)',
@@ -469,17 +469,31 @@ export default function PlayerLeaderboardPage() {
                     </>
                 )}
 
-                {/* Bottom bar */}
-                <div className="absolute bottom-8 inset-x-0 z-20 flex items-center justify-center gap-4 pointer-events-auto">
+                {/* Left floating button — Home */}
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
                     <button onClick={() => router.push('/')}
-                        className="w-[52px] h-[52px] flex items-center justify-center rounded-xl active:scale-95 transition-all flex-shrink-0"
-                        style={{ background:'rgba(180,30,50,0.15)', border:'1px solid rgba(200,40,60,0.35)', color:'#f87171', backdropFilter: 'blur(8px)' }}>
-                        <LogOut className="w-5 h-5" />
+                        className="w-[52px] h-[52px] flex items-center justify-center rounded-full active:scale-95 transition-all"
+                        style={{
+                            background: 'rgba(10,18,35,0.85)',
+                            border: '2px solid #2d6af2',
+                            color: '#2d6af2',
+                            boxShadow: '0 0 18px rgba(45,106,242,0.6), inset 0 0 10px rgba(45,106,242,0.15)',
+                        }}>
+                        <Home className="w-5 h-5" />
                     </button>
+                </div>
+
+                {/* Right floating button — Play Again */}
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
                     <button onClick={() => router.push(`/player/${roomCode}/lobby`)}
-                        className="flex items-center justify-center gap-2 px-10 h-[52px] rounded-xl font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all"
-                        style={{ background:'linear-gradient(135deg,#0fa8c4,#0880b8)', boxShadow:'0 0 20px rgba(15,168,196,0.3)' }}>
-                        <RotateCcw className="w-4 h-4" /> PLAY AGAIN
+                        className="w-[52px] h-[52px] flex items-center justify-center rounded-full active:scale-95 transition-all"
+                        style={{
+                            background: 'rgba(10,18,35,0.85)',
+                            border: '2px solid #00ff9d',
+                            color: '#00ff9d',
+                            boxShadow: '0 0 18px rgba(0,255,157,0.6), inset 0 0 10px rgba(0,255,157,0.15)',
+                        }}>
+                        <RotateCcwIcon className="w-5 h-5" />
                     </button>
                 </div>
             </div>
