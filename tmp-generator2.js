@@ -21,9 +21,8 @@ try {
 }
 
 let trackAssets = [];
-let currentZ = 50;
-
-const maxLen = Math.max(kananFiles.length, kiriFiles.length);
+let currentZ = 60; // Start at segment 60
+const MAX_Z = 2200; // Finish line is around 2250
 
 const miscLeft = [
     "/assets/material/bangku/1.png"
@@ -33,57 +32,65 @@ const miscRight = [
     "/assets/material/bangku/1.png"
 ];
 
-const randomMisc = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const pohon = ["/assets/material/pohon/2.webp", "/assets/material/pohon/4.webp"];
 
-// Spread assets out
-for (let i = 0; i < maxLen; i++) {
+const randomMisc = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+let idxKiri = 0;
+let idxKanan = 0;
+
+while (currentZ <= MAX_Z) {
     // Add Left Building
-    if (i < kiriFiles.length) {
+    if (kiriFiles.length > 0) {
         trackAssets.push({
             z: currentZ,
             side: 'left',
-            src: `/assets/material/kiri_jalan/${kiriFiles[i]}`
+            src: `/assets/material/kiri_jalan/${kiriFiles[idxKiri]}`
         });
+        idxKiri = (idxKiri + 1) % kiriFiles.length;
     }
-
+    
     // Add Right Building
-    if (i < kananFiles.length) {
+    if (kananFiles.length > 0) {
         trackAssets.push({
-            z: currentZ + (Math.random() > 0.5 ? 10 : 0), // Slight stagger
+            z: currentZ + (Math.random() > 0.5 ? 5 : 0), // Slight stagger
             side: 'right',
-            src: `/assets/material/kanan_jalan/${kananFiles[i]}`
+            src: `/assets/material/kanan_jalan/${kananFiles[idxKanan]}`
         });
+        idxKanan = (idxKanan + 1) % kananFiles.length;
     }
 
-    // Add decorations between buildings
+    // Add first wave of decorations (vending machines/benches)
     trackAssets.push({
-        z: currentZ + 10,
+        z: currentZ + 12,
         side: 'left',
         src: randomMisc(miscLeft)
     });
-
+    
     trackAssets.push({
-        z: currentZ + 15,
+        z: currentZ + 18,
         side: 'right',
         src: randomMisc(miscRight)
     });
-
+    
+    // Add Trees between buildings
     trackAssets.push({
-        z: currentZ + 20,
+        z: currentZ + 25,
         side: 'left',
         src: randomMisc(pohon)
     });
-
+    
     trackAssets.push({
-        z: currentZ + 25,
+        z: currentZ + 32,
         side: 'right',
         src: randomMisc(pohon)
     });
 
-    currentZ += 40;
+    // Advance Z by 43 segments to make it closely packed like before (was +40 earlier) but distinct
+    currentZ += 43;
 }
 
-// Ensure trackLength bounds are respected in the game, currentZ is the max Z
-fs.writeFileSync(path.join(basePath, 'src/lib/trackAssets.json'), JSON.stringify(trackAssets, null, 4));
-console.log('Done generating trackAssets.json. Total items:', trackAssets.length, 'Max Z:', currentZ);
+const fileContent = `const trackAssets = ${JSON.stringify(trackAssets, null, 4)};\nexport default trackAssets;\n`;
+
+fs.writeFileSync(path.join(basePath, 'src/lib/trackAssets.ts'), fileContent);
+console.log('Done generating trackAssets.ts. Total items:', trackAssets.length, 'Max Z:', currentZ);
