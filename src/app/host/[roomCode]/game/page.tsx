@@ -24,6 +24,14 @@ const monitorGifMap: Record<string, string> = {
   blue: "/assets/characters/scloski/monitor/monitor1.gif",
 };
 
+const logoImageMap: Record<string, string> = {
+  purple: "/assets/characters/scloski/logo/logo1.png",
+  white: "/assets/characters/scloski/logo/logo1.png",
+  black: "/assets/characters/scloski/logo/logo1.png",
+  aqua: "/assets/characters/scloski/logo/logo1.png",
+  blue: "/assets/characters/scloski/logo/logo1.png",
+};
+
 interface Participant {
   id: string;
   nickname: string;
@@ -369,7 +377,11 @@ export default function GameMonitorPage() {
                         {player.avatar_url ? (
                           <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
-                          <img src={carSrc} alt="Avatar" className="w-full h-full object-contain p-2 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
+                          <img 
+                            src={logoImageMap[baseCar] || "/assets/logo/logo1.png"} 
+                            alt="Avatar" 
+                            className="w-full h-full object-contain p-1 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" 
+                          />
                         )}
                       </div>
                     {/* Rank specific badge/circle */}
@@ -426,7 +438,7 @@ export default function GameMonitorPage() {
                         ) : (
                           <div className="w-24 drop-shadow-[0_0_15px_rgba(0,195,255,0.4)] transition-transform group-hover/car:scale-110">
                             <img 
-                              src={monitorGifMap[baseCar] || carSrc} 
+                              src={monitorGifMap[baseCar] || "/assets/characters/scloski/monitor/monitor1.gif"} 
                               alt="car" 
                               className="w-full h-auto object-contain" 
                             />

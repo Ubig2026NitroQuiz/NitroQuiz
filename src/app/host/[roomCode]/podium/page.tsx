@@ -16,6 +16,14 @@ const carImageMap: Record<string, string> = {
     blue: "/assets/characters/scloski/showroom/showroom1.png",
 };
 
+const logoImageMap: Record<string, string> = {
+    purple: "/assets/characters/scloski/logo/logo1.png",
+    white: "/assets/characters/scloski/logo/logo1.png",
+    black: "/assets/characters/scloski/logo/logo1.png",
+    aqua: "/assets/characters/scloski/logo/logo1.png",
+    blue: "/assets/characters/scloski/logo/logo1.png",
+};
+
 interface Participant {
     id: string;
     nickname: string;
@@ -289,8 +297,8 @@ export default function LeaderboardPage() {
                                                                         return <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />;
                                                                     }
                                                                     const baseCar = (player.car_character || "purple").replace('-bot', '');
-                                                                    const carSrc = carImageMap[baseCar] || carImageMap["purple"];
-                                                                    return <img src={carSrc} alt="car" className="w-full h-full object-contain p-0.5" />;
+                                                                    const logoSrc = logoImageMap[baseCar] || "/assets/logo/logo1.png";
+                                                                    return <img src={logoSrc} alt="car" className="w-full h-full object-contain p-0.5" />;
                                                                 })()}
                                                             </div>
                                                             <p className={`font-display tracking-wider uppercase text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'}`}>
