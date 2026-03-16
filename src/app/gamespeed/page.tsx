@@ -686,11 +686,23 @@ export default function GameSpeedPage() {
         const destW = scale * worldWidth * (width / 2);
         const destH = destW * (sprite.height / sprite.width);
 
-        // Clamp sprite dimensions to prevent extreme sizes
+        // Clamp sprite dimensions to prevent extreme sizes but PRESERVE aspect ratio
         const maxSpriteW = width * 0.8;
         const maxSpriteH = height * 0.6;
-        const clampedW = Math.min(destW, maxSpriteW);
-        const clampedH = Math.min(destH, maxSpriteH);
+        let clampedW = destW;
+        let clampedH = destH;
+
+        if (clampedW > maxSpriteW) {
+            const ratio = maxSpriteW / clampedW;
+            clampedW = maxSpriteW;
+            clampedH = clampedH * ratio;
+        }
+
+        if (clampedH > maxSpriteH) {
+            const ratio = maxSpriteH / clampedH;
+            clampedH = maxSpriteH;
+            clampedW = clampedW * ratio;
+        }
 
         destX = destX + (clampedW * (offsetX || 0));
         // Improved vertical positioning - sprites sit on the road
@@ -994,6 +1006,9 @@ export default function GameSpeedPage() {
 
         // Centrifugal
         nextPlayerX = nextPlayerX - (dx * speedPercent * playerSegment.curve * 0.2); // Dikurangi untuk centrifugal lebih halus
+
+        // Pembatas jalan (Batas maksimum tidak bisa dipalu / keluar lintasan terlalu jauh)
+        nextPlayerX = Util.limit(nextPlayerX, -1.5, 1.5);
 
         // Speed & NOS Logic
         let nextSpeed = speed;
