@@ -80,11 +80,16 @@ export default function Home() {
 
         // Also check Supabase session (OAuth users)
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           if (session?.user) {
             const newUser: User = {
               id: session.user.id,
-              username: session.user.user_metadata.full_name || session.user.email?.split("@")[0] || "Racer",
+              username:
+                session.user.user_metadata.full_name ||
+                session.user.email?.split("@")[0] ||
+                "Racer",
               email: session.user.email || "",
               totalPoints: 0,
               gamesPlayed: 0,
@@ -208,10 +213,15 @@ export default function Home() {
 
       {/* Top Bar: Logo1 left, Logo2 right */}
       <div className="fixed top-0 left-0 right-0 z-[90] px-4 md:px-6 py-3 flex items-center justify-between pointer-events-none">
-        <div className="pointer-events-auto">
-          {/* <Logo width={140} height={40} withText={false} animated={false} />
-        </div>
-        <div className="pointer-events-auto mr-16 md:mr-20"> */}
+        {/* Logo kiri (jika ingin dipakai nanti) */}
+        {/* 
+  <div className="pointer-events-auto">
+    <Logo width={140} height={40} withText={false} animated={false} />
+  </div>
+  */}
+
+        {/* Logo kanan */}
+        <div className="pointer-events-auto mr-16 md:mr-20">
           <Image
             src="/assets/logo/logo2.png"
             alt="GameForSmart.com"
@@ -231,10 +241,11 @@ export default function Home() {
         >
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all duration-300 border ${isDropdownOpen
+            className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all duration-300 border ${
+              isDropdownOpen
                 ? "bg-[#2d6af2] border-[#2d6af2] text-white shadow-[0_0_20px_rgba(45,106,242,0.5)]"
                 : "bg-black/40 backdrop-blur-md border-white/10 text-gray-400 hover:text-white hover:border-white/20"
-              }`}
+            }`}
           >
             {isDropdownOpen ? (
               <X className="w-5 h-5" />
@@ -300,9 +311,7 @@ export default function Home() {
                     </span>
                   </button>
 
-                  <button
-                    className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group opacity-50 cursor-not-allowed"
-                  >
+                  <button className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group opacity-50 cursor-not-allowed">
                     <div className="p-2 rounded-xl bg-gray-500/10 transition-colors">
                       <DownloadIcon className="w-4 h-4 text-[#2d6af2]" />
                     </div>
@@ -459,7 +468,14 @@ export default function Home() {
 
       <main className="relative z-20 flex flex-col items-center justify-center min-h-screen w-full max-w-7xl mx-auto p-4 md:p-8">
         <header className="text-center mb-12 relative z-30 w-full flex flex-col items-center">
-          <Logo width={400} height={120} withText={false} />
+          <Image
+            src="/assets/logo/logo1.png"
+            alt="GameForSmart Logo"
+            width={400}
+            height={120}
+            className="object-contain"
+            priority
+          />
         </header>
 
         <div className="flex flex-col md:flex-row gap-8 lg:gap-16 w-full justify-center items-stretch max-w-5xl">
