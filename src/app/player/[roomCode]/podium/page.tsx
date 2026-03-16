@@ -51,6 +51,7 @@ export default function PlayerLeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showResults, setShowResults] = useState(false);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<"result" | "stats">("result");
 
   const currentUser = getUser();
@@ -59,7 +60,7 @@ export default function PlayerLeaderboardPage() {
     try {
       const { data: sessionData, error: sessionError } = await supabase
         .from("sessions")
-        .select("id, question_limit")
+        .select("id, question_limit, status")
         .eq("game_pin", roomCode)
         .single();
 
@@ -70,6 +71,8 @@ export default function PlayerLeaderboardPage() {
 
       if (sessionData.question_limit)
         setTotalQuestions(sessionData.question_limit);
+      
+      setSessionStatus(sessionData.status);
 
       const { data: pData, error: pError } = await supabase
         .from("participants")
@@ -190,8 +193,9 @@ export default function PlayerLeaderboardPage() {
   };
 
   const allFinished =
-    participants.length > 0 &&
-    participants.every((p) => p.finished_at || p.eliminated);
+    sessionStatus === "finished" ||
+    (participants.length > 0 &&
+      participants.every((p) => p.finished_at || p.eliminated));
 
   const MobileBG = () => (
     <div className="fixed inset-0 z-0 pointer-events-none">
@@ -861,19 +865,42 @@ export default function PlayerLeaderboardPage() {
                   overflow: "hidden",
                 }}
               >
-                {/* Logo — darker bg */}
+                {/* Profile Section — darker bg */}
                 <div
-                  className="flex flex-col items-center justify-center px-6 py-8 flex-shrink-0"
+                  className="flex flex-col items-center justify-center px-6 py-10 flex-shrink-0"
                   style={{
                     background: "rgba(10,15,30,0.55)",
                     borderBottom: "1px solid rgba(255,255,255,0.1)",
                   }}
                 >
-                  <img
-                    src="/assets/logo/logo1.png"
-                    alt="Logo"
-                    className="h-12 object-contain opacity-90"
-                  />
+                  <div className="relative mb-4">
+                    <div
+                      className="w-28 h-28 rounded-full flex items-center justify-center relative z-10"
+                      style={{
+                        background: "rgba(45,106,242,0.15)",
+                        border: "2.5px solid rgba(45,106,242,0.5)",
+                        boxShadow: "0 0 30px rgba(45,106,242,0.25)",
+                      }}
+                    >
+                      <motion.img
+                        src={currentPlayerCarSrc}
+                        alt="Profile"
+                        className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(45,106,242,0.5)]"
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 4,
+                          ease: "easeInOut",
+                        }}
+                      />
+                    </div>
+                    <div className="absolute inset-[-8px] rounded-full border border-[#2d6af2]/20 animate-pulse" />
+                  </div>
+                  <div className="bg-[#2d6af2]/20 px-3 py-1 rounded-full border border-[#2d6af2]/40">
+                    <p className="text-[10px] font-bold text-[#00d4ff] uppercase tracking-widest">
+                      RACER PROFILE
+                    </p>
+                  </div>
                 </div>
                 {/* Player name + Status — transparent, no divider between them */}
                 <div className="flex flex-col items-center justify-center gap-6 px-6 py-10 flex-1">

@@ -238,249 +238,223 @@ export default function GameMonitorPage() {
   }, [participants]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden font-body text-white flex flex-col">
+    <div className="min-h-screen bg-[#050508] relative overflow-hidden font-rajdhani text-white flex flex-col">
       {/* Dark Space & Grids Background */}
       <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#0a0a0f] to-[#050508] pointer-events-none"></div>
-      <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.05)_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none"></div>
-      <div className="scanlines z-10 opacity-30 pointer-events-none"></div>
+      
+      {/* Fine Grid lines */}
+      <div 
+        className="fixed inset-0 z-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(45,106,242,0.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(45,106,242,0.15) 1px, transparent 1px)
+          `,
+          backgroundSize: '30px 30px'
+        }}
+      />
+
+      {/* Decorative vertical lines / stripes from image */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-10">
+        <div className="absolute left-10 top-0 bottom-0 w-[1px] bg-blue-500" />
+        <div className="absolute left-12 top-0 bottom-0 w-[1px] bg-blue-500/50" />
+      </div>
+
+      <div className="scanlines z-10 opacity-10 pointer-events-none"></div>
 
       {/* Header / HUD */}
       <motion.div
-        initial={{ opacity: 0, y: -40 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{
-          duration: 0.6,
-          type: "spring",
-          stiffness: 100,
-          damping: 14,
-        }}
-        className="relative z-20 w-full px-6 py-4 flex items-center justify-between border-b border-[#2d6af2]/20 bg-black/40 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+        className="relative z-20 w-full px-8 py-3 flex items-center justify-between border-b border-white/5 bg-black/60 backdrop-blur-xl"
       >
-        <div className="flex items-center gap-6">
-          <div className="pointer-events-auto">
-            {/* <Logo width={140} height={40} withText={false} animated={false} />
-                            </div>
-                            <div className="pointer-events-auto mr-16 md:mr-20"> */}
-            <Image
-              src="/assets/logo/logo2.png"
-              alt="GameForSmart.com"
-              width={240}
-              height={60}
-              className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(45,106,242,0.3)]"
-              priority
-            />
-          </div>
-
-          <div className="hidden md:flex items-center gap-2 bg-[#2d6af2]/10 border border-[#2d6af2]/30 px-4 py-2 rounded-lg">
-            <Users size={16} className="text-[#2d6af2]" />
-            <span className="font-display tracking-widest text-[#2d6af2]">
+        <div className="flex items-center gap-4">
+          <Image
+            src="/assets/logo/logo2.png"
+            alt="NitroQuiz"
+            width={200}
+            height={50}
+            className="object-contain drop-shadow-[0_0_8px_rgba(45,106,242,0.5)]"
+            priority
+          />
+          
+          <div className="flex items-center gap-2 bg-[#1a2235] border border-[#2d6af2]/30 px-3 py-1.5 rounded-lg shadow-[inset_0_0_10px_rgba(45,106,242,0.1)]">
+            <Users size={14} className="text-[#2d6af2]" />
+            <span className="font-orbitron text-xs tracking-widest text-blue-400">
               {participants.length}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
-          {/* Timer */}
-          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 px-6 py-2 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-            <Clock
-              size={20}
-              className={
-                timeLeft < 60 ? "text-red-500 animate-pulse" : "text-white"
-              }
-            />
-            <span
-              className={`font-display text-2xl tracking-widest ${timeLeft < 60 ? "text-red-500" : "text-white"}`}
-            >
-              {formatTime(timeLeft)}
-            </span>
+        <div className="flex items-center gap-6">
+          {/* Digital Timer Box */}
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-blue-500/20 rounded-xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative flex items-center gap-3 bg-[#0a0f1e] border-2 border-blue-500/50 px-6 py-2 rounded-xl shadow-[0_0_20px_rgba(45,106,242,0.4)]">
+              <span className={`font-orbitron text-3xl tracking-[0.15em] ${timeLeft < 60 ? "text-red-500 animate-pulse" : "text-blue-400"}`} style={{ textShadow: '0 0 10px currentColor' }}>
+                {formatTime(timeLeft)}
+              </span>
+            </div>
           </div>
 
-          <Button
+          <button
             onClick={handleEndRace}
             disabled={isEnding}
-            className={`bg-red-500 hover:bg-red-600 text-white font-display text-sm px-8 py-5 rounded-lg border-2 shadow-[0_0_15px_rgba(239,68,68,0.5)] uppercase tracking-widest transition-all ${isEnding ? "border-red-500 opacity-80 cursor-not-allowed" : "border-red-400"}`}
+            style={{
+                background: 'linear-gradient(135deg, #991b1b 0%, #450a0a 100%)',
+                boxShadow: '0 0 20px rgba(220, 38, 38, 0.4)'
+            }}
+            className={`relative group px-8 py-3 rounded-lg border border-red-500/50 overflow-hidden transition-all active:scale-95 ${isEnding ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-400'}`}
           >
-            {isEnding ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ENDING...
-              </span>
-            ) : (
-              "END RACE"
-            )}
-          </Button>
+            <div className="absolute inset-0 bg-red-600/20 group-hover:bg-red-600/30 transition-colors" />
+            <span className="relative z-10 font-orbitron text-xs font-bold tracking-[0.2em] text-red-100">
+              {isEnding ? "ENDING..." : "END RACE"}
+            </span>
+          </button>
         </div>
       </motion.div>
 
       {/* Main Tracks Area */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{
-          duration: 0.6,
-          delay: 0.1,
-          type: "spring",
-          stiffness: 100,
-          damping: 14,
-        }}
-        className="relative z-20 flex-1 w-full mx-auto p-4 md:p-8 overflow-y-auto custom-scrollbar"
-      >
-        <div className="max-w-7xl mx-auto space-y-4">
+      <div className="relative z-20 flex-1 w-full mx-auto p-6 overflow-y-auto custom-scrollbar">
+        <div className="max-w-6xl mx-auto space-y-3">
+          {/* Leaderboard Title from image */}
+          <div className="flex justify-end pr-4">
+             <span className="font-orbitron text-[10px] tracking-[0.3em] text-blue-500/60 uppercase">Leaderboard</span>
+          </div>
+
           <AnimatePresence>
             {rankedParticipants.map((player, index) => {
-              // Calculate progress percentage (avoiding division by zero)
-              const rawProgress =
-                totalQuestions > 0
-                  ? (player.current_question / totalQuestions) * 100
-                  : 0;
-              // Cap at 100% just in case
+              const rawProgress = totalQuestions > 0 ? (player.current_question / totalQuestions) * 100 : 0;
               const progress = Math.min(100, Math.max(0, rawProgress));
-
               const isFinished = player.finished_at !== null || progress >= 100;
+              
+              const baseCar = (player.car_character || "purple").replace("-bot", "");
+              const carSrc = carImageMap[baseCar] || carImageMap["purple"];
 
               return (
                 <motion.div
                   key={player.id}
                   layout
-                  initial={{ opacity: 0, x: -50 }}
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="relative flex items-center bg-gradient-to-r from-[#0a101f] to-[#111827] border border-[#2d6af2]/20 rounded-2xl p-4 overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)] group"
+                  className="relative flex items-center bg-[#0d1425]/80 backdrop-blur-md border border-white/5 rounded-xl px-6 py-3 group hover:border-blue-500/30 transition-all shadow-xl"
+                  style={{
+                    background: 'linear-gradient(90deg, #111b33 0%, #0d121f 100%)'
+                  }}
                 >
-                  {/* Position Indicator */}
-                  <div className="w-12 flex-shrink-0 flex justify-center z-10">
-                    {index === 0 && participants.length > 1 && progress > 0 ? (
-                      <Trophy
-                        className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]"
-                        size={28}
+                  {/* Subtle edge glow for top 3 */}
+                  {index < 3 && (
+                    <div className={`absolute inset-y-0 left-0 w-1 ${index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-slate-300' : 'bg-amber-700'} shadow-[0_0_10px_currentColor]`} />
+                  )}
+
+                  {/* Rank */}
+                  <div className="w-14 flex-shrink-0 flex items-center justify-center">
+                    <span className={`font-orbitron text-2xl font-black italic ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-amber-700' : 'text-white/20'}`}>
+                      #{index + 1}
+                    </span>
+                  </div>
+
+                  {/* Avatar Slot */}
+                  <div className="relative mr-6">
+                    <div className="w-16 h-16 rounded-full border-2 border-white/5 bg-black/40 overflow-hidden flex items-center justify-center p-2 shadow-inner">
+                        <img src={carSrc} alt="Avatar" className="w-full h-full object-contain drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
+                    </div>
+                    {/* Rank specific badge/circle */}
+                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border border-white/20 flex items-center justify-center text-[10px] font-bold ${index === 0 ? 'bg-yellow-500 text-black' : 'bg-[#1a2235] text-white'}`}>
+                      {index + 1}
+                    </div>
+                  </div>
+
+                  {/* Player Stats */}
+                  <div className="w-44 flex-shrink-0 flex flex-col justify-center gap-0.5">
+                    <h3 className="font-orbitron text-sm font-bold tracking-widest text-white/90 truncate uppercase">{player.nickname}</h3>
+                    <div className="flex items-center gap-1.5">
+                       <span className="text-yellow-500 text-xs">⭐</span>
+                       <span className="font-mono text-xs text-blue-400 font-bold">{player.score.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Visual Track Area (The SVG Wavy line logic from image) */}
+                  <div className="flex-1 relative h-16 mx-4 flex items-center">
+                    {/* Decorative wavy lines mimicking the image */}
+                    <svg className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-full w-full opacity-20" preserveAspectRatio="none">
+                      <path 
+                        d="M 0 30 Q 50 10 100 30 T 200 30 T 300 30 T 400 30 T 500 30" 
+                        stroke="#2d6af2" 
+                        strokeWidth="2" 
+                        fill="none" 
+                        vectorEffect="non-scaling-stroke"
+                        className="animate-pulse"
                       />
-                    ) : (
-                      <span className="font-display text-2xl text-white/40 group-hover:text-white/80 transition-colors">
-                        #{index + 1}
-                      </span>
-                    )}
-                  </div>
+                    </svg>
 
-                  {/* Player Info */}
-                  <div className="w-40 flex-shrink-0 space-y-1 z-10 px-2 border-r border-white/10">
-                    <p
-                      className="font-display text-white text-base truncate uppercase tracking-wider block"
-                      title={player.nickname}
-                    >
-                      {player.nickname}
-                    </p>
-                    <p className="font-mono text-[#00ff9d] text-sm font-bold flex items-center gap-1">
-                      <span>⭐</span>
-                      {player.score.toLocaleString()}
-                    </p>
-                  </div>
-
-                  {/* The Track Container */}
-                  <div className="flex-1 relative h-[60px] mx-6 flex items-center z-10">
-                    {/* Physical Track Background */}
-                    <div className="absolute inset-x-0 h-4 bg-gray-900 rounded-full border border-gray-700 shadow-inner flex items-center overflow-hidden">
-                      {/* Dashed Line inside asphalt */}
-                      <div
-                        className="w-full h-[2px] bg-auto"
-                        style={{
-                          backgroundImage:
-                            "linear-gradient(to right, rgba(255,255,255,0.2) 50%, transparent 50%)",
-                          backgroundSize: "20px 100%",
-                        }}
-                      ></div>
+                    {/* Progress Track Line */}
+                    <div className="absolute inset-x-0 h-[2px] bg-white/5">
+                        <motion.div 
+                          className="h-full bg-blue-500 shadow-[0_0_10px_#3b82f6]"
+                          animate={{ width: `${progress}%` }}
+                        />
                     </div>
 
-                    {/* Finish Line Checkered */}
-                    <div className="absolute right-0 w-6 bottom-0 top-0 overflow-hidden flex flex-wrap content-start">
-                      <div className="w-full h-full opacity-60 bg-[linear-gradient(45deg,transparent_25%,#fff_25%,#fff_50%,transparent_50%,transparent_75%,#fff_75%,#fff_100%)] bg-[length:10px_10px]"></div>
-                    </div>
-
-                    {/* Moving Car Absolute Element */}
+                    {/* Moving Car */}
                     <motion.div
-                      className="absolute left-0 z-20 flex items-center justify-center -ml-6"
+                      className="absolute left-0 z-20 flex items-center justify-center -ml-10"
                       animate={{ left: `${progress}%` }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 40,
-                        damping: 15,
-                      }}
+                      transition={{ type: "spring", stiffness: 45, damping: 15 }}
                     >
-                      <div className="relative transform hover:scale-110 transition-transform">
-                        {/* Fire Exhaust Glow behind car */}
-                        <div className="absolute top-1/2 left-0 w-16 h-8 bg-[#00ff9d]/30 blur-md rounded-full -translate-y-1/2 -translate-x-10 animate-pulse"></div>
-
+                      <div className="relative group/car">
+                        {/* Speed lines/trails */}
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 w-20 h-8 bg-gradient-to-r from-transparent to-blue-500/20 blur-sm pointer-events-none" />
+                        
                         {player.eliminated ? (
-                          <div className="w-16 h-12 flex items-center justify-center bg-red-500/20 rounded-full border border-red-500">
-                            <Skull className="text-red-500" />
+                          <div className="w-16 h-12 flex items-center justify-center bg-red-500/20 rounded-full border border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                            <Skull className="text-red-500" size={24} />
                           </div>
                         ) : (
-                          (() => {
-                            const baseCar = (
-                              player.car_character || "purple"
-                            ).replace("-bot", "");
-                            const carSrc =
-                              carImageMap[baseCar] || carImageMap["purple"];
-                            return (
-                              <div className="w-20 sm:w-24 group-hover:scale-110 drop-shadow-[0_0_15px_rgba(0,195,255,0.3)] transition-all">
-                                <img
-                                  src={carSrc}
-                                  alt="car"
-                                  className="w-full h-auto object-contain"
-                                />
-                              </div>
-                            );
-                          })()
+                          <div className="w-24 drop-shadow-[0_0_15px_rgba(0,195,255,0.4)] transition-transform group-hover/car:scale-110">
+                            <img src={carSrc} alt="car" className="w-full h-auto object-contain" />
+                          </div>
                         )}
-
-                        {/* Mini pop-up for progress text */}
-                        <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/80 px-2 py-0.5 rounded border border-[#2d6af2]/50 shadow-lg">
-                          <span className="font-display text-[10px] text-[#2d6af2] tracking-widest">
-                            {player.current_question}/{totalQuestions}
-                          </span>
-                        </div>
                       </div>
                     </motion.div>
                   </div>
 
-                  {/* Finish Status */}
-                  <div className="w-28 flex-shrink-0 flex justify-end z-10">
-                    {isFinished ? (
-                      <div className="bg-[#00ff9d]/20 border border-[#00ff9d]/50 px-3 py-1.5 rounded-lg text-[#00ff9d] font-display text-[10px] tracking-widest animate-pulse w-full text-center shadow-[0_0_15px_rgba(0,255,157,0.3)]">
-                        FINISHED
-                      </div>
-                    ) : player.eliminated ? (
-                      <div className="bg-red-500/20 border border-red-500/50 px-3 py-1.5 rounded-lg text-red-500 font-display text-[10px] tracking-widest w-full text-center">
-                        CRASHED
-                      </div>
-                    ) : player.minigame ? (
-                      <div className="bg-blue-500/20 border border-blue-500/50 px-3 py-1.5 rounded-lg text-blue-400 font-display text-[10px] tracking-widest animate-pulse w-full text-center shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-                        ANSWERING
-                      </div>
-                    ) : (
-                      <div className="border border-white/10 px-3 py-1.5 rounded-lg text-gray-500 font-display text-[10px] tracking-widest w-full text-center opacity-50">
-                        RACING
-                      </div>
-                    )}
+                  {/* Progress Detail */}
+                  <div className="w-24 flex-shrink-0 flex flex-col items-center justify-center border-l border-white/5">
+                    <span className="text-[10px] text-white/30 uppercase font-black tracking-tighter">LAP</span>
+                    <div className="flex items-center gap-1.5 font-orbitron font-bold">
+                        <span className="text-sm text-white/80">{player.current_question}/{totalQuestions}</span>
+                        <Flag size={14} className="text-emerald-400" />
+                    </div>
                   </div>
 
-                  {/* Position 1 Highlight glow */}
-                  {index === 0 && participants.length > 1 && progress > 0 && (
-                    <div className="absolute inset-0 border-2 border-yellow-400/30 rounded-2xl pointer-events-none animate-pulse"></div>
-                  )}
+                  {/* Status Indicator */}
+                  <div className="w-32 flex-shrink-0 flex justify-end pl-4">
+                    <div className={`
+                      px-4 py-1.5 rounded-full text-[10px] font-orbitron font-black tracking-[0.2em] uppercase text-center w-full border
+                      ${isFinished ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 
+                        player.eliminated ? 'bg-red-500/10 border-red-500/40 text-red-400' :
+                        player.minigame ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 animate-pulse' :
+                        'bg-white/5 border-white/10 text-white/40'}
+                    `}>
+                      {isFinished ? 'FINISH' : player.eliminated ? 'CRASHED' : player.minigame ? 'QUIZ' : 'RACING'}
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
 
           {participants.length === 0 && (
-            <div className="h-64 flex flex-col items-center justify-center text-gray-500 bg-black/40 rounded-3xl border border-white/5">
-              <Clock size={48} className="mb-4 opacity-50 text-[#2d6af2]" />
-              <p className="font-display tracking-[0.2em] text-lg uppercase text-[#2d6af2]/70">
-                Waiting for Grid Protocol...
+            <div className="h-64 flex flex-col items-center justify-center text-gray-700 bg-black/20 rounded-2xl border border-white/5 border-dashed">
+              <Users size={40} className="mb-4 opacity-20" />
+              <p className="font-orbitron tracking-[0.4em] text-xs uppercase opacity-30">
+                Waiting for Grid...
               </p>
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
