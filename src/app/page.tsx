@@ -91,6 +91,7 @@ export default function Home() {
                 session.user.email?.split("@")[0] ||
                 "Racer",
               email: session.user.email || "",
+              avatar: session.user.user_metadata.avatar_url || session.user.user_metadata.picture || "",
               totalPoints: 0,
               gamesPlayed: 0,
               createdAt: new Date().toISOString(),
@@ -124,6 +125,7 @@ export default function Home() {
                 session.user.email?.split("@")[0] ||
                 "Racer",
               email: session.user.email || "",
+              avatar: session.user.user_metadata.avatar_url || session.user.user_metadata.picture || "",
               totalPoints: 0,
               gamesPlayed: 0,
               createdAt: new Date().toISOString(),

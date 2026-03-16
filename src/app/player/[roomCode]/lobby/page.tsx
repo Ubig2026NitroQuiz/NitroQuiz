@@ -55,7 +55,8 @@ export default function PlayerLobbyPage() {
                 if (!existingP) {
                     const { error: insertError } = await supabase.from("participants").insert({
                         session_id: sessionData.id, user_id: user.id || null,
-                        nickname: user.username, car_character: carChoice, score: 0, minigame: false
+                        nickname: user.username, car_character: carChoice, score: 0, minigame: false,
+                        avatar_url: user.avatar || null
                     });
                     if (insertError) { setStatus("error"); setErrorMessage("Failed to enter room. " + insertError.message); return; }
                 }

@@ -9,11 +9,19 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 
 const carImageMap: Record<string, string> = {
-  purple: "/assets/car/car1_v2.webp",
-  white: "/assets/car/car2_v2.webp",
-  black: "/assets/car/car3_v2.webp",
-  aqua: "/assets/car/car4_v2.webp",
-  blue: "/assets/car/car5_v2.webp",
+  purple: "/assets/characters/scloski/showroom/showroom1.png",
+  white: "/assets/characters/scloski/showroom/showroom2.png",
+  black: "/assets/characters/scloski/showroom/showroom1.png",
+  aqua: "/assets/characters/scloski/showroom/showroom2.png",
+  blue: "/assets/characters/scloski/showroom/showroom1.png",
+};
+
+const monitorGifMap: Record<string, string> = {
+  purple: "/assets/characters/scloski/monitor/monitor1.gif",
+  white: "/assets/characters/scloski/monitor/monitor1.gif",
+  black: "/assets/characters/scloski/monitor/monitor1.gif",
+  aqua: "/assets/characters/scloski/monitor/monitor1.gif",
+  blue: "/assets/characters/scloski/monitor/monitor1.gif",
 };
 
 interface Participant {
@@ -26,6 +34,7 @@ interface Participant {
   eliminated: boolean;
   minigame?: boolean;
   user_id?: string | null;
+  avatar_url?: string | null;
 }
 
 export default function GameMonitorPage() {
@@ -356,9 +365,13 @@ export default function GameMonitorPage() {
 
                   {/* Avatar Slot */}
                   <div className="relative mr-6">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/5 bg-black/40 overflow-hidden flex items-center justify-center p-2 shadow-inner">
-                        <img src={carSrc} alt="Avatar" className="w-full h-full object-contain drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
-                    </div>
+                      <div className="w-16 h-16 rounded-full border-2 border-white/5 bg-black/40 overflow-hidden flex items-center justify-center p-0 shadow-inner">
+                        {player.avatar_url ? (
+                          <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={carSrc} alt="Avatar" className="w-full h-full object-contain p-2 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
+                        )}
+                      </div>
                     {/* Rank specific badge/circle */}
                     <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border border-white/20 flex items-center justify-center text-[10px] font-bold ${index === 0 ? 'bg-yellow-500 text-black' : 'bg-[#1a2235] text-white'}`}>
                       {index + 1}
@@ -412,7 +425,11 @@ export default function GameMonitorPage() {
                           </div>
                         ) : (
                           <div className="w-24 drop-shadow-[0_0_15px_rgba(0,195,255,0.4)] transition-transform group-hover/car:scale-110">
-                            <img src={carSrc} alt="car" className="w-full h-auto object-contain" />
+                            <img 
+                              src={monitorGifMap[baseCar] || carSrc} 
+                              alt="car" 
+                              className="w-full h-auto object-contain" 
+                            />
                           </div>
                         )}
                       </div>
