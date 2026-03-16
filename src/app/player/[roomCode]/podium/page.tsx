@@ -435,7 +435,7 @@ export default function PlayerLeaderboardPage() {
                         <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.25, type:"spring", stiffness:90 }}
                             className="absolute z-10 flex flex-col p-[22px]"
                             style={{ 
-                                top:'150px', right:'140px', bottom:'60px', width:'260px',
+                                top:'150px', right:'150px', bottom:'60px', width:'260px',
                                 background: 'rgba(160,180,210,0.12)',
                                 border: '1px solid rgba(220,230,250,0.18)',
                                 backdropFilter: 'blur(32px) saturate(1.4)',
