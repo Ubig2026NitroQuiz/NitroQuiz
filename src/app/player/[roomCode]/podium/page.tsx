@@ -299,7 +299,7 @@ export default function PlayerLeaderboardPage() {
           <div className="relative z-10 flex flex-col min-h-screen px-4 pt-8 pb-8">
             <div className="flex justify-center mb-5 flex-shrink-0">
               <img
-                src="/assets/logo.png"
+                src="/assets/logo/logo1.png"
                 alt="NitroQuiz"
                 className="h-14 object-contain drop-shadow-[0_0_30px_rgba(45,106,242,0.8)]"
               />
@@ -463,7 +463,7 @@ export default function PlayerLeaderboardPage() {
           >
             <div className="flex justify-center mb-5 flex-shrink-0">
               <img
-                src="/assets/logo.png"
+                src="/assets/logo/logo1.png"
                 alt="NitroQuiz"
                 className="h-14 object-contain drop-shadow-[0_0_30px_rgba(45,106,242,0.8)]"
               />
@@ -489,7 +489,7 @@ export default function PlayerLeaderboardPage() {
               <div className="flex justify-center pt-10 pb-4">
                 <motion.img
                   src={currentPlayerCarSrc}
-                  alt="rocket"
+                  alt="Your car"
                   className="w-36 h-36 object-contain drop-shadow-[0_0_28px_rgba(45,106,242,0.45)]"
                   animate={{ y: [0, -9, 0] }}
                   transition={{
