@@ -9,11 +9,19 @@ import { supabase } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 
 const carImageMap: Record<string, string> = {
-    purple: "/assets/car/car1_v2.webp",
-    white: "/assets/car/car2_v2.webp",
-    black: "/assets/car/car3_v2.webp",
-    aqua: "/assets/car/car4_v2.webp",
-    blue: "/assets/car/car5_v2.webp",
+    purple: "/assets/characters/scloski/showroom/showroom1.png",
+    white: "/assets/characters/scloski/showroom/showroom2.png",
+    black: "/assets/characters/scloski/showroom/showroom1.png",
+    aqua: "/assets/characters/scloski/showroom/showroom2.png",
+    blue: "/assets/characters/scloski/showroom/showroom1.png",
+};
+
+const logoImageMap: Record<string, string> = {
+    purple: "/assets/characters/scloski/logo/logo1.png",
+    white: "/assets/characters/scloski/logo/logo1.png",
+    black: "/assets/characters/scloski/logo/logo1.png",
+    aqua: "/assets/characters/scloski/logo/logo1.png",
+    blue: "/assets/characters/scloski/logo/logo1.png",
 };
 
 interface Participant {
@@ -25,6 +33,7 @@ interface Participant {
     finished_at: string | null;
     duration: number;
     eliminated: boolean;
+    avatar_url?: string | null;
 }
 
 export default function LeaderboardPage() {
@@ -284,9 +293,12 @@ export default function LeaderboardPage() {
                                                         <div className="flex items-center gap-2 sm:gap-3">
                                                             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center text-lg shadow-inner overflow-hidden flex-shrink-0">
                                                                 {player.eliminated ? "💀" : (() => {
+                                                                    if (player.avatar_url) {
+                                                                        return <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />;
+                                                                    }
                                                                     const baseCar = (player.car_character || "purple").replace('-bot', '');
-                                                                    const carSrc = carImageMap[baseCar] || carImageMap["purple"];
-                                                                    return <img src={carSrc} alt="car" className="w-full h-full object-contain p-0.5" />;
+                                                                    const logoSrc = logoImageMap[baseCar] || "/assets/logo/logo1.png";
+                                                                    return <img src={logoSrc} alt="car" className="w-full h-full object-contain p-0.5" />;
                                                                 })()}
                                                             </div>
                                                             <p className={`font-display tracking-wider uppercase text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'}`}>
