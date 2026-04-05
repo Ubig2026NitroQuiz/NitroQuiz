@@ -114,7 +114,26 @@ export default function LeaderboardPage() {
     };
 
     fetchResults();
-  }, [roomCode]);
+
+    const channel = supabase
+      .channel(`host_leaderboard_guards_${roomCode}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "sessions", filter: `game_pin=eq.${roomCode}` },
+        (payload) => {
+          if (payload.new.status === "active") {
+            router.push(`/host/${roomCode}/monitor`);
+          } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
+            router.push(`/host/${roomCode}/lobby`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomCode, router]);
 
   const rankedPlayers = [...participants].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;

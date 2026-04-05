@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Timer, Trophy, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Check, X, Timer, Trophy, ArrowRight, Loader2, Sparkles, Clock, List, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from "react-i18next";
+import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
+import { generateXID } from '@/lib/id-generator';
 
 // Reuse QuizQuestion type
 export interface QuizQuestion {
@@ -14,111 +16,203 @@ export interface QuizQuestion {
     options: string[];
     correctAnswer: number;
     imageUrl?: string;
+    originalDoc?: any;
 }
 
 export default function QuizPage() {
     const router = useRouter();
     const params = useParams();
     const { t } = useTranslation();
-    const roomCodeFromParams = params?.roomCode as string;
+    const roomCodeFromParams = (params?.roomCode as string)?.toUpperCase();
     const [mounted, setMounted] = useState(false);
     const [questions, setQuestions] = useState<QuizQuestion[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [score, setScore] = useState(0);
-    const [questionsAnsweredInRound, setQuestionsAnsweredInRound] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [roomCode, setRoomCode] = useState<string | null>(roomCodeFromParams || null);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [statusText, setStatusText] = useState(t("player_quiz.round_complete"));
+    const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
 
     const QUESTIONS_PER_ROUND = 3;
 
     useEffect(() => {
         setMounted(true);
-        const storedQuestions = localStorage.getItem('nitroquiz_game_questions');
-        const storedIndex = localStorage.getItem('nitroquiz_game_questionIndex');
-        const storedScore = localStorage.getItem('nitroquiz_game_score');
-        const storedRoom = localStorage.getItem('nitroquiz_game_roomCode');
-        const storedSession = localStorage.getItem('nitroquiz_game_sessionId');
+        syncServerTime();
 
-        if (storedQuestions) {
-            try {
-                const parsed = JSON.parse(storedQuestions);
-                const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => {
-                    if (q.options && typeof q.correctAnswer === 'number') return q as QuizQuestion;
-                    
-                    let options: string[] = [];
-                    let correctAnswer = 0;
-                    if (Array.isArray(q.answers)) {
-                        options = q.answers.map((a: any) => a.answer || '');
-                        const correctId = String(q.correct);
-                        const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
-                        correctAnswer = correctIdx >= 0 ? correctIdx : 0;
-                    } else if (Array.isArray(q.options)) {
-                        options = q.options;
-                        correctAnswer = q.correctAnswer ?? 0;
-                    }
-                    return {
-                        id: q.id || `q-${idx}`,
-                        question: q.question || q.text || '',
-                        options,
-                        correctAnswer,
-                        imageUrl: q.image_url || undefined
-                    };
-                });
-                setQuestions(normalized);
-            } catch (e) {
-                console.error("Failed to parse questions", e);
+        const fetchLatestData = async () => {
+            const participantId = localStorage.getItem('nitroquiz_game_participantId');
+            const storedRoom = localStorage.getItem('nitroquiz_game_roomCode');
+            const roomToUse = roomCodeFromParams || storedRoom;
+
+            if (!participantId || !roomToUse) {
+                console.warn("Quiz: No participantId or roomCode found, redirecting home.");
+                router.push('/');
+                return;
             }
-        } else {
-            router.push('/');
-        }
 
-        if (storedIndex) setCurrentIndex(parseInt(storedIndex, 10));
-        if (storedScore) setScore(parseInt(storedScore, 10));
-        setRoomCode(storedRoom);
-        setSessionId(storedSession);
+            try {
+                // 1. Fetch Session Info (Questions & Status)
+                const { data: sessionData, error: sessError } = await supabase
+                    .from('sessions')
+                    .select('id, status, current_questions, difficulty')
+                    .eq('game_pin', roomToUse)
+                    .single();
 
-        const route = `/player/${roomCode || roomCodeFromParams}/game`;
-        router.prefetch(route);
+                if (sessError || !sessionData) {
+                    router.push('/');
+                    return;
+                }
 
-        // Notify Monitor that player is in Quiz mode
-        const participantId = localStorage.getItem('nitroquiz_game_participantId');
-        if (participantId) {
-            supabase.from('participants').update({ minigame: true }).eq('id', participantId).then();
-        }
-    }, [router]);
+                // 2. Fetch Participant Info (Progress & Guard)
+                const { data: pData, error: pError } = await supabase
+                    .from('participants')
+                    .select('score, current_question, minigame, finished_at')
+                    .eq('id', participantId)
+                    .single();
+
+                if (pError || !pData) {
+                    router.push('/');
+                    return;
+                }
+
+                // Guard: If DB says minigame is TRUE, you should be in the RACE
+                if (pData.minigame === true && !pData.finished_at) {
+                    router.push(`/player/${roomToUse}/game`);
+                    return;
+                }
+
+                // Session Status Guard
+                if (sessionData.status === 'finished' || sessionData.status === 'completed') {
+                    router.push(`/player/${roomToUse}/result`);
+                    return;
+                }
+
+                // Update Local State from DB
+                setSessionId(sessionData.id);
+                setRoomCode(roomToUse);
+                setScore(pData.score || 0);
+                setCurrentIndex(pData.current_question || 0);
+
+                // Initialize Questions
+                let rawQuestions = sessionData.current_questions;
+                if (typeof rawQuestions === 'string') {
+                    try { rawQuestions = JSON.parse(rawQuestions); } catch (e) { }
+                }
+
+                if (Array.isArray(rawQuestions)) {
+                    const normalized: QuizQuestion[] = rawQuestions.map((q: any, idx: number) => {
+                        if (q.options && typeof q.correctAnswer === 'number') return q as QuizQuestion;
+
+                        let options: string[] = [];
+                        let correctAnswer = 0;
+                        if (Array.isArray(q.answers)) {
+                            options = q.answers.map((a: any) => a.answer || '');
+                            const correctId = String(q.correct);
+                            const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
+                            correctAnswer = correctIdx >= 0 ? correctIdx : 0;
+                        } else if (Array.isArray(q.options)) {
+                            options = q.options;
+                            correctAnswer = q.correctAnswer ?? 0;
+                        }
+                        return {
+                            id: q.id || `q-${idx}`,
+                            question: q.question || q.text || '',
+                            options,
+                            correctAnswer,
+                            imageUrl: q.image_url || undefined,
+                            originalDoc: q
+                        };
+                    });
+                    setQuestions(normalized);
+
+                    // Keep cache updated
+                    localStorage.setItem('nitroquiz_game_questions', JSON.stringify(rawQuestions));
+                    localStorage.setItem('nitroquiz_game_sessionId', sessionData.id);
+                    localStorage.setItem('nitroquiz_game_roomCode', roomToUse);
+                    localStorage.setItem('nitroquiz_game_difficulty', sessionData.difficulty || 'easy');
+                }
+
+            } catch (err) {
+                console.error("Quiz Initialization Error:", err);
+                router.push('/');
+            }
+        };
+
+        fetchLatestData();
+
+        // Prefetch game assets
+        const gameRoute = `/player/${roomCodeFromParams}/game`;
+        router.prefetch(gameRoute);
+
+    }, [router, roomCodeFromParams]);
 
     useEffect(() => {
         // No auto timer needed anymore, progress is completely player-driven
-    }, [questions.length, currentIndex, isAnswered, questionsAnsweredInRound]);
+    }, [questions.length, currentIndex, isAnswered]);
 
     const handleAnswer = async (optionIndex: number) => {
         if (isAnswered) return;
 
         const currentQ = questions[currentIndex];
         const correct = optionIndex === currentQ.correctAnswer;
-        
+
         setSelectedOption(optionIndex);
         setIsAnswered(true);
 
         const earnedPoints = correct ? Math.ceil(100 / questions.length) : 0;
         const newScore = Math.min(100, score + earnedPoints);
         setScore(newScore);
-        
+
         localStorage.setItem('nitroquiz_game_score', newScore.toString());
 
         const participantId = localStorage.getItem('nitroquiz_game_participantId');
         if (participantId) {
             try {
-                await supabase
+                // Fetch the current state from Supabase to prevent overwriting
+                const { data: currentData } = await supabase
                     .from('participants')
-                    .update({ 
-                        score: newScore,
-                        current_question: currentIndex + 1
-                    })
-                    .eq('id', participantId);
+                    .select('answers, correct, score, current_question')
+                    .eq('id', participantId)
+                    .single();
+
+                if (currentData) {
+                    let currentAnswers: any[] = [];
+                    if (currentData.answers) {
+                        try {
+                            currentAnswers = typeof currentData.answers === 'string'
+                                ? JSON.parse(currentData.answers)
+                                : currentData.answers;
+                        } catch (e) { }
+                    }
+
+                    // Extract strict raw IDs from original dictionary
+                    let answer_id = "";
+                    if (currentQ.originalDoc?.answers?.[optionIndex]?.id) {
+                        answer_id = currentQ.originalDoc.answers[optionIndex].id;
+                    }
+
+                    const newEntry = {
+                        id: generateXID(),
+                        correct: correct,
+                        answer_id: answer_id,
+                        question_id: currentQ.id
+                    };
+
+                    const updatedAnswers = [...currentAnswers, newEntry];
+                    const updatedCorrect = (currentData.correct || 0) + (correct ? 1 : 0);
+
+                    await supabase
+                        .from('participants')
+                        .update({
+                            answers: updatedAnswers,
+                            correct: updatedCorrect,
+                            score: newScore,
+                            current_question: currentIndex + 1
+                        })
+                        .eq('id', participantId);
+                }
             } catch (e) {
                 console.error("Failed to update score/lap in DB", e);
             }
@@ -129,39 +223,77 @@ export default function QuizPage() {
         }, 800); // Shorter transition for more competitive feel
     };
 
-    const nextQuestion = () => {
+    const nextQuestion = async () => {
         const nextIdx = currentIndex + 1;
-        const nextRoundCount = questionsAnsweredInRound + 1;
         
-        setCurrentIndex(nextIdx);
-        setQuestionsAnsweredInRound(nextRoundCount);
-        setIsAnswered(false);
-        setSelectedOption(null);
-        
-        localStorage.setItem('nitroquiz_game_questionIndex', nextIdx.toString());
+        // 1-based logic for round checks
+        const isRoundEnd = nextIdx % QUESTIONS_PER_ROUND === 0;
+        const isEndOfQuiz = nextIdx >= questions.length;
 
-        if (nextRoundCount >= QUESTIONS_PER_ROUND || nextIdx >= questions.length) {
-            if (nextIdx >= questions.length) {
+        if (isRoundEnd || isEndOfQuiz) {
+            // Update DB state to Racing BEFORE redirecting
+            const participantId = localStorage.getItem('nitroquiz_game_participantId');
+            if (participantId) {
+                try {
+                    await supabase
+                        .from('participants')
+                        .update({ 
+                            minigame: true, // Back to Racing
+                            current_question: nextIdx // Save progress
+                        })
+                        .eq('id', participantId);
+                } catch (e) {
+                    console.error("Critical error during quiz transition:", e);
+                }
+            }
+
+            if (isEndOfQuiz) {
                 setStatusText(t("player_quiz.quiz_finished"));
             } else {
                 setStatusText(t("player_quiz.round_complete"));
             }
+
+            // Immediately redirect
+            router.push(`/player/${roomCode}/game`);
+            return;
         }
+
+        // Only update locally if we're not redirecting
+        setCurrentIndex(nextIdx);
+        setIsAnswered(false);
+        setSelectedOption(null);
+        localStorage.setItem('nitroquiz_game_questionIndex', nextIdx.toString());
     };
 
-    // Listen for Host ending the game
+    // Real-time Guards: Session status and Minigame status
     useEffect(() => {
         const sessId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_sessionId') : null;
-        if (!sessId) return;
+        const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+        if (!sessId || !participantId) return;
 
         const channel = supabase
-            .channel(`player_quiz_session_${sessId}`)
+            .channel(`player_quiz_guards_${participantId}`)
+            // Listen for Session changes
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessId}` },
                 (payload) => {
-                    if (payload.new.status === 'finished' || payload.new.status === 'completed') {
+                    const status = payload.new.status;
+                    if (status === 'finished' || status === 'completed') {
                         router.push(`/player/${roomCode || roomCodeFromParams}/result`);
+                    } else if (status === 'waiting' || status === 'lobby') {
+                        router.push(`/player/${roomCode || roomCodeFromParams}/waiting`);
+                    }
+                }
+            )
+            // Listen for Participant changes (Minigame Guard)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` },
+                (payload) => {
+                    // If minigame is true, player should be on the race track
+                    if (payload.new.minigame === true && !payload.new.finished_at) {
+                        router.push(`/player/${roomCode || roomCodeFromParams}/game`);
                     }
                 }
             )
@@ -172,53 +304,67 @@ export default function QuizPage() {
         };
     }, [router, roomCode, roomCodeFromParams]);
 
-    // Auto-redirect
+    // Global Timer Realtime Synchronization
+    useEffect(() => {
+        if (!sessionId) return;
+
+        const fetchAndStartTimer = async () => {
+            const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessionId).single();
+            if (!data?.started_at) return;
+
+            const interval = setInterval(() => {
+                const start = new Date(data.started_at).getTime();
+                const now = getSyncedServerTime();
+                const elapsedSeconds = Math.floor((now - start) / 1000);
+                const remaining = Math.max(0, (data.total_time_minutes || 5) * 60 - elapsedSeconds);
+
+                setGlobalTimeLeft(remaining);
+
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    // Automatically redirect to game (which will then redirect to result handling) or result
+                    router.push(`/player/${roomCode || roomCodeFromParams}/result`);
+                }
+            }, 1000);
+
+            return interval;
+        };
+
+        let intervalId: NodeJS.Timeout | undefined;
+        fetchAndStartTimer().then(id => { intervalId = id; });
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [sessionId, router, roomCode, roomCodeFromParams]);
+
+    // Robust Guard: Auto-redirect if we land on a "Game Phase" index or end of quiz
     useEffect(() => {
         if (!mounted || questions.length === 0) return;
 
         const isFinished = currentIndex >= questions.length;
-        const isRoundEnd = questionsAnsweredInRound >= QUESTIONS_PER_ROUND;
+        const isRacingPhase = currentIndex > 0 && currentIndex % QUESTIONS_PER_ROUND === 0;
 
-        if (isFinished || isRoundEnd) {
-            const finalizeStatus = async () => {
-                if (isFinished && sessionId) {
-                    const participantId = localStorage.getItem('nitroquiz_game_participantId');
-                    if (participantId) {
-                        try {
-                            await supabase.from('participants').update({
-                                finished_at: new Date().toISOString()
-                            }).eq('id', participantId);
-                        } catch (e) {
-                            console.error("Failed to set finished_at", e);
-                        }
-                    }
-                }
-            };
-            finalizeStatus();
-
-            const timer = setTimeout(() => {
-                if (isFinished) {
-                    router.push(`/player/${roomCode || roomCodeFromParams}/result`);
-                } else {
-                    router.push(`/player/${roomCode || roomCodeFromParams}/game`);
-                }
-            }, 800);
-
-            return () => clearTimeout(timer);
+        if (isFinished || isRacingPhase) {
+            if (isFinished) {
+                router.push(`/player/${roomCode || roomCodeFromParams}/result`);
+            } else {
+                router.push(`/player/${roomCode || roomCodeFromParams}/game`);
+            }
         }
-    }, [questionsAnsweredInRound, currentIndex, questions.length, mounted, router, roomCode, roomCodeFromParams]);
+    }, [currentIndex, questions.length, mounted]);
 
-    if (!mounted || questions.length === 0 || currentIndex >= questions.length && questionsAnsweredInRound < QUESTIONS_PER_ROUND) {
+    if (!mounted || questions.length === 0 || (currentIndex >= questions.length && (currentIndex % QUESTIONS_PER_ROUND !== 0))) {
         return <div className="min-h-screen bg-[#04060f]" />;
     }
 
-    if (questionsAnsweredInRound >= QUESTIONS_PER_ROUND || currentIndex >= questions.length) {
+    if ((currentIndex > 0 && currentIndex % QUESTIONS_PER_ROUND === 0) || currentIndex >= questions.length) {
         return (
             <div className="min-h-screen bg-[#04060f] flex items-center justify-center text-white font-rajdhani">
                 <div className="flex flex-col items-center gap-6">
                     <div className="relative">
-                         <div className="w-16 h-16 border-4 border-[#2d6af2]/10 border-t-[#2d6af2] rounded-full animate-spin" />
-                         <Trophy className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-[#2d6af2]/40" />
+                        <div className="w-16 h-16 border-4 border-[#2d6af2]/10 border-t-[#2d6af2] rounded-full animate-spin" />
+                        <Trophy className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-[#2d6af2]/40" />
                     </div>
                     <p className="text-[#2d6af2] text-base font-bold uppercase tracking-[0.4em] animate-pulse">
                         {t("player_quiz.establishing_signal")}
@@ -234,89 +380,116 @@ export default function QuizPage() {
     const OPTION_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']; // A=blue, B=amber, C=red, D=purple
 
     return (
-        <div className="min-h-[100dvh] w-full bg-[#04060f] text-white font-rajdhani overflow-hidden relative flex flex-col items-center justify-center p-2 sm:p-5">
+        <div className="min-h-[100dvh] w-full bg-[#07091a] text-white font-rajdhani overflow-hidden relative flex flex-col items-center justify-center p-3 md:p-6">
             {/* Background Effects */}
-            <div className="absolute inset-0 z-0 bg-transparent blur-[120px] pointer-events-none" />
-            
-            <div className="w-full max-w-3xl mx-auto relative z-10 flex flex-col items-center justify-center">
-                {/* Main Card */}
-                <div className="w-full bg-[#0c1225]/80 backdrop-blur-3xl border border-[#1e2d4d]/50 rounded-xl md:rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                    
-                    {/* Progress Bar Top */}
-                    <div className="w-full h-1.5 bg-[#0a0f1e]">
-                        <motion.div 
-                            className="h-full bg-gradient-to-r from-[#00ff9d] to-[#3b82f6]"
-                            style={{ boxShadow: '0 0 10px rgba(0,255,157,0.5)' }}
+            <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#07091a] to-[#050508] pointer-events-none" />
+            <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.03)_1px,transparent_1px)] bg-[length:35px_35px] pointer-events-none" />
+
+            <div className="w-full max-w-4xl mx-auto relative z-10 flex flex-col items-center">
+                {/* Main Glass Panel */}
+                <div className="w-full bg-[#0c1225]/40 backdrop-blur-xl border border-white/5 rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-2xl">
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-1 bg-white/5">
+                        <motion.div
+                            className="h-full bg-gradient-to-r from-[#2d6af2] to-[#00ff9d]"
+                            style={{ boxShadow: '0 0 10px rgba(45,106,242,0.4)' }}
                             initial={{ width: `${((currentIndex) / questions.length) * 100}%` }}
                             animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
                             transition={{ duration: 0.5, ease: "easeInOut" }}
                         />
                     </div>
 
-                    {/* Card Header: Question X/Y | SCORE */}
-                    <div className="flex items-center justify-between px-3 md:px-7 pt-3 md:pt-6 pb-1 md:pb-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[#00ff9d] text-sm md:text-xl font-black uppercase tracking-widest">{t("player_quiz.question", { current: currentIndex + 1 })}</span>
-                            <span className="text-gray-500 text-xs md:text-base font-bold">/ {questions.length}</span>
+                    {/* Clean Header Grid - Scaled Down */}
+                    <div className="grid grid-cols-3 items-center px-4 md:px-10 py-3 md:py-5 border-b border-white/5">
+                        {/* LEFT: Questions Count */}
+                        <div className="flex flex-col">
+                            <span className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] text-[#2d6af2] font-black">
+                                {t("player_quiz.questions_label") || "Questions"}
+                            </span>
+                            <div className="flex items-baseline gap-1 md:gap-1.5">
+                                <span className="text-lg md:text-2xl font-black text-white leading-none">{(currentIndex + 1).toString().padStart(2, '0')}</span>
+                                <span className="text-[10px] md:text-base font-bold text-white/20">/ {questions.length.toString().padStart(2, '0')}</span>
+                            </div>
                         </div>
 
-                        <div className="flex items-baseline gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                            <span className="text-gray-400 text-[10px] md:text-xs font-bold uppercase tracking-widest">{t("player_quiz.score")}</span>
-                            <span className="text-white text-sm md:text-base font-black">{score}</span>
+                        {/* CENTER: Timer Pill - Scaled Down */}
+                        <div className="flex justify-center">
+                            {globalTimeLeft !== null && (
+                                <div className={`flex items-center px-4 md:px-8 py-1.5 md:py-2.5 rounded-lg md:rounded-full bg-white/[0.03] border transition-all duration-300 ${globalTimeLeft <= 30
+                                    ? 'border-red-500/40 bg-red-500/5 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]'
+                                    : 'border-white/10 text-white'
+                                    }`}>
+                                    <span
+                                        className="text-base md:text-2xl font-black tracking-widest leading-none"
+                                        style={{ fontFamily: 'Orbitron, sans-serif' }}
+                                    >
+                                        {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* RIGHT: Score Status - Scaled Down */}
+                        <div className="flex flex-col items-end">
+                            <span className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] text-[#f59e0b] font-black text-right">
+                                {t("player_quiz.score_label") || "Score"}
+                            </span>
+                            <div className="flex items-center h-auto">
+                                <span className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">{score}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="px-3 md:px-7 pb-3 md:pb-8 pt-2 md:pt-3">
-                        {/* Question Text & Image */}
+                    <div className="px-5 md:px-12 py-5 md:py-10">
+                        {/* Question Content */}
                         <AnimatePresence mode="wait">
-                            <motion.div 
+                            <motion.div
                                 key={currentIndex}
-                                initial={{ y: 15, opacity: 0 }}
+                                initial={{ y: 10, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -15, opacity: 0 }}
-                                className="mb-3 md:mb-6"
+                                exit={{ y: -10, opacity: 0 }}
+                                className="mb-6 md:mb-10 flex flex-col items-center"
                             >
                                 {currentQ.imageUrl && (
-                                    <div className="w-full rounded-xl overflow-hidden mb-3 md:mb-5 border border-white/10 relative pb-[40%] md:pb-[56.25%]">
-                                        <img src={currentQ.imageUrl} alt="Quiz visual" className="absolute inset-0 w-full h-full object-cover" />
+                                    <div className="w-full max-w-lg rounded-xl overflow-hidden mb-5 md:mb-8 border border-white/5 shadow-lg">
+                                        <img src={currentQ.imageUrl} alt="Quiz visual" className="w-full h-auto object-contain max-h-[30vh] md:max-h-[40vh]" />
                                     </div>
                                 )}
-                                <h3 className="text-sm md:text-xl font-bold leading-snug text-gray-100 text-center text-balance">
+                                <h3 className="text-base md:text-2xl font-black leading-tight text-white text-center text-balance max-w-3xl tracking-tight">
                                     {currentQ.question}
                                 </h3>
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* Options Grid - always 2 columns on all screens */}
-                        <div className="grid grid-cols-2 gap-2 md:gap-3">
+                        {/* Options Grid - Scaled Down */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6">
                             {currentQ.options.map((option, idx) => {
                                 const isSelected = selectedOption === idx;
                                 const optionColor = OPTION_COLORS[idx] || OPTION_COLORS[0];
                                 const letter = String.fromCharCode(65 + idx);
-                                
+
                                 return (
                                     <motion.button
                                         key={`${currentIndex}-${idx}`}
-                                        whileHover={!isAnswered ? { scale: 1.02 } : {}}
-                                        whileTap={!isAnswered ? { scale: 0.98 } : {}}
+                                        whileHover={!isAnswered ? { scale: 1.01, backgroundColor: 'rgba(255,255,255,0.02)' } : {}}
+                                        whileTap={!isAnswered ? { scale: 0.99 } : {}}
                                         onClick={() => handleAnswer(idx)}
                                         disabled={isAnswered}
-                                        className={`w-full group relative py-2 md:py-4 px-3 md:px-5 rounded-lg md:rounded-xl border text-left flex items-center gap-2 md:gap-4 transition-all duration-200 ${
-                                            isSelected 
-                                            ? 'bg-[#1a2744] border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.02]' 
-                                            : 'bg-black/40 border-white/5 hover:border-white/10 hover:bg-white/5'
-                                        }`}
+                                        className={`w-full group relative py-3 md:py-5 px-4 md:px-8 rounded-xl md:rounded-22 border text-left flex items-center gap-3 md:gap-6 transition-all duration-300 ${isSelected
+                                            ? 'bg-white/0 border-white/20 shadow-lg'
+                                            : 'bg-white/[0.01] border-white/[0.03] hover:border-white/10'
+                                            }`}
                                     >
-                                        {/* Letter Badge */}
-                                        <div 
-                                            className="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center font-black text-sm md:text-lg flex-shrink-0 text-white shadow-lg"
+                                        <div
+                                            className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center font-black text-lg md:text-xl flex-shrink-0 text-white shadow-lg relative z-10"
                                             style={{ backgroundColor: optionColor }}
                                         >
+                                            <div className="absolute inset-0 " />
                                             {letter}
                                         </div>
-                                        
-                                        {/* Option Text */}
-                                        <span className={`text-xs md:text-base font-medium flex-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+
+                                        <span className={`text-sm md:text-xl font-bold flex-1 tracking-tight ${isSelected ? 'text-white' : 'text-gray-200'}`}>
                                             {option}
                                         </span>
                                     </motion.button>

@@ -38,6 +38,7 @@
     "recharts": "^3.6.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
+    "xid-js": "^1.0.1",
     "zod": "^4.3.5"
   },
   "devDependencies": {

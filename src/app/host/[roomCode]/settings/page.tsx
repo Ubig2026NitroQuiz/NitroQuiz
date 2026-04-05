@@ -102,15 +102,8 @@ export default function SettingsPage() {
         try {
             const limit = parseInt(questionCount);
             const selectedQuestions = shuffleArray(quizDetail.questions).slice(0, limit);
-            
-            // 1. Clean up any existing session with the same game_pin (Idempotency)
-            // This prevents unique constraint violations if the host re-enters this flow.
-            console.log(`[handleCreateRoom] Cleaning up existing sessions for pin: ${roomCode}`);
-            await supabase.from('sessions').delete().eq('game_pin', roomCode);
 
             const sessionPayload = {
-                game_pin: roomCode,
-                quiz_id: quizId,
                 status: 'waiting',
                 question_limit: limit,
                 total_time_minutes: parseInt(duration) / 60,
@@ -118,33 +111,35 @@ export default function SettingsPage() {
                 current_questions: selectedQuestions,
             };
 
-            console.log("[handleCreateRoom] Inserting session payload:", sessionPayload);
+            console.log("[handleCreateRoom] Updating session payloads for pin:", roomCode);
 
+            // Update in local game DB
             const { data: sessionData, error } = await supabase
                 .from('sessions')
-                .insert(sessionPayload)
+                .update(sessionPayload)
+                .eq('game_pin', roomCode)
                 .select()
                 .single();
 
-            if (error) { 
-                console.error("Error creating session in Supabase:", {
-                    message: error.message,
-                    details: error.details,
-                    hint: error.hint,
-                    code: error.code,
-                    entireError: error
-                });
+            // Update in centralized platform DB parallelly
+            const { error: mainError } = await supabaseCentral
+                .from('game_sessions')
+                .update(sessionPayload)
+                .eq('game_pin', roomCode);
+
+            if (error || mainError) { 
+                console.error("Error updating session:", { error, mainError });
                 setSaving(false);
                 return;
             }
 
             if (!sessionData) {
-                console.error("Session created but no data returned.");
+                console.error("Session updated but no data returned.");
                 setSaving(false);
                 return;
             }
 
-            console.log("[handleCreateRoom] Session created successfully:", sessionData.id);
+            console.log("[handleCreateRoom] Session updated successfully:", sessionData.id);
 
             const settings = {
                 sessionId: sessionData.id, gamePin: roomCode, quizId: quizId, quizTitle: quizDetail.title,
@@ -155,16 +150,26 @@ export default function SettingsPage() {
             localStorage.setItem("hostroomCode", roomCode as string);
             localStorage.setItem("settings_muted", isMuted.toString());
             router.push(`/host/${roomCode}/lobby`);
-        } catch (err) { 
-            console.error("Unexpected error creating session:", err); 
-            setSaving(false); 
+        } catch (err) {
+            console.error("Unexpected error updating session:", err);
+            setSaving(false);
         }
     };
 
     const handleCancelSession = async () => {
         setIsDeleting(true);
-        try { localStorage.removeItem(`session_${roomCode}`); router.push('/host/select-quiz'); }
-        catch (err) { console.error("Error deleting session:", err); router.push('/host/select-quiz'); }
+        try {
+            await Promise.allSettled([
+                supabaseCentral.from('game_sessions').delete().eq('game_pin', roomCode),
+                supabase.from('sessions').delete().eq('game_pin', roomCode)
+            ]);
+            localStorage.removeItem(`session_${roomCode}`);
+            router.push('/host/select-quiz');
+        }
+        catch (err) {
+            console.error("Error deleting session:", err);
+            router.push('/host/select-quiz');
+        }
     };
 
     if (!quizDetail) {
@@ -289,19 +294,18 @@ export default function SettingsPage() {
                                             <button
                                                 key={diff}
                                                 onClick={() => setSelectedDifficulty(diff.toLowerCase())}
-                                                className={`h-11 text-xs font-display uppercase tracking-wider transition-all duration-200 rounded-xl border ${
-                                                    selectedDifficulty === diff.toLowerCase()
+                                                className={`h-11 text-xs font-display uppercase tracking-wider transition-all duration-200 rounded-xl border ${selectedDifficulty === diff.toLowerCase()
                                                         ? diff === "Easy"
                                                             ? "bg-emerald-500/20 text-[#00ff9d] border-[#00ff9d] shadow-[0_0_14px_rgba(0,255,157,0.5)]"
                                                             : diff === "Normal"
-                                                            ? "bg-amber-500/20 text-amber-400 border-amber-500/60 shadow-[0_0_14px_rgba(245,158,11,0.3)]"
-                                                            : "bg-red-500/20 text-red-400 border-red-500/60 shadow-[0_0_14px_rgba(239,68,68,0.3)]"
+                                                                ? "bg-amber-500/20 text-amber-400 border-amber-500/60 shadow-[0_0_14px_rgba(245,158,11,0.3)]"
+                                                                : "bg-red-500/20 text-red-400 border-red-500/60 shadow-[0_0_14px_rgba(239,68,68,0.3)]"
                                                         : diff === "Easy"
-                                                        ? "bg-white/[0.03] border-emerald-500/20 text-emerald-500/50 hover:border-[#00ff9d]/60 hover:text-[#00ff9d]"
-                                                        : diff === "Normal"
-                                                        ? "bg-white/[0.03] border-amber-500/20 text-amber-500/50 hover:border-amber-500/50 hover:text-amber-400"
-                                                        : "bg-white/[0.03] border-red-500/20 text-red-500/50 hover:border-red-500/50 hover:text-red-400"
-                                                }`}
+                                                            ? "bg-white/[0.03] border-emerald-500/20 text-emerald-500/50 hover:border-[#00ff9d]/60 hover:text-[#00ff9d]"
+                                                            : diff === "Normal"
+                                                                ? "bg-white/[0.03] border-amber-500/20 text-amber-500/50 hover:border-amber-500/50 hover:text-amber-400"
+                                                                : "bg-white/[0.03] border-red-500/20 text-red-500/50 hover:border-red-500/50 hover:text-red-400"
+                                                    }`}
                                             >
                                                 {t(`room_settings.difficulty.${diff.toLowerCase()}`)}
                                             </button>

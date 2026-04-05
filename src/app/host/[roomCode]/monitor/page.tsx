@@ -4,13 +4,15 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Users, Skull } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseCentral } from "@/lib/supabase";
 import { useTranslation } from "react-i18next";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogTitle, 
-  DialogOverlay 
+import { syncServerTime, getSyncedServerTime } from "@/lib/serverTime";
+import { generateXID } from "@/lib/id-generator";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogOverlay
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LogOut, Flag } from "lucide-react";
@@ -43,7 +45,7 @@ const getAvatarColor = (name: string): string => {
 const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) => {
   const fontSize = size === 'lg' ? 'text-[20px]' : size === 'md' ? 'text-[16px]' : 'text-[10px]';
   return (
-    <div 
+    <div
       style={{
         width: '100%',
         height: '100%',
@@ -74,6 +76,7 @@ interface Participant {
   minigame?: boolean;
   user_id?: string | null;
   avatar_url?: string | null;
+  lap_race?: number;
 }
 
 // ── Lap Indicator: BIG NUMBER ──
@@ -130,7 +133,6 @@ function PlayerCard({
 
   const isFinished =
     player.finished_at !== null || player.current_question >= totalQuestions;
-  const isNew = player.current_question === 0 && !player.finished_at && !player.eliminated;
 
   const rankColors: Record<number, string> = {
     0: "#f59e0b",
@@ -155,7 +157,7 @@ function PlayerCard({
     statusBg = "rgba(239,68,68,0.12)";
     statusBorder = "rgba(239,68,68,0.5)";
     statusText = "#f87171";
-  } else if (player.minigame) {
+  } else if (!player.minigame) {
     statusLabel = t("host_monitor.quiz");
     statusBg = "rgba(59,130,246,0.12)";
     statusBorder = "rgba(59,130,246,0.5)";
@@ -178,8 +180,8 @@ function PlayerCard({
         borderRadius: "12px",
         overflow: "hidden",
         background: "linear-gradient(135deg, rgba(16,26,52,0.97) 0%, rgba(11,16,32,0.97) 100%)",
-        border: `1px solid ${isNew ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.07)'}`,
-        boxShadow: isNew ? "0 4px 20px rgba(59,130,246,0.2)" : "0 4px 20px rgba(0,0,0,0.45)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
         transition: "all 0.3s ease",
       }}
     >
@@ -219,28 +221,6 @@ function PlayerCard({
             background: "rgba(0,0,0,0.2)",
           }}
         >
-          {isNew && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 10,
-                textAlign: "center",
-                padding: "2px 0",
-                background: "rgba(37,99,235,0.85)",
-                fontFamily: "Orbitron, monospace",
-                fontSize: "7px",
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-                color: "#bfdbfe",
-                textTransform: "uppercase",
-              }}
-            >
-              {t("host_monitor.new")}
-            </div>
-          )}
           {player.eliminated ? (
             <div
               style={{
@@ -434,6 +414,7 @@ export default function GameMonitorPage() {
   const roomCode = params.roomCode as string;
 
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [totalQuestions, setTotalQuestions] = useState(5);
   const [timeLeft, setTimeLeft] = useState(300);
@@ -458,16 +439,17 @@ export default function GameMonitorPage() {
 
         if (sessionData) {
           setSessionId(sessionData.id);
+          setSession(sessionData);
           setTotalQuestions(sessionData.question_limit || 5);
-          
-          let computedTimeLeft = (sessionData.total_time_minutes || 5) * 60;
+
+          // Initial calculation for immediate display
           if (sessionData.started_at) {
-              const startedTime = new Date(sessionData.started_at).getTime();
-              const now = new Date().getTime();
-              const elapsedSeconds = Math.floor((now - startedTime) / 1000);
-              computedTimeLeft = Math.max(0, computedTimeLeft - elapsedSeconds);
+              const start = new Date(sessionData.started_at).getTime();
+              const now = getSyncedServerTime();
+              const elapsedSeconds = Math.floor((now - start) / 1000);
+              const remaining = Math.max(0, (sessionData.total_time_minutes || 5) * 60 - elapsedSeconds);
+              setTimeLeft(remaining);
           }
-          setTimeLeft(computedTimeLeft);
 
           const { data: pData } = await supabase
             .from("participants")
@@ -482,16 +464,17 @@ export default function GameMonitorPage() {
     };
 
     fetchInitialData();
+    syncServerTime();
   }, [roomCode]);
 
   useEffect(() => {
     if (!sessionId) return;
 
     const channel = supabase
-      .channel(`host_monitor_${roomCode}`)
+      .channel(`host_monitor_${roomCode?.toUpperCase()}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "participants" },
+        { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
         (payload) => {
           if (payload.eventType === "UPDATE") {
             const updated = payload.new as Participant;
@@ -501,12 +484,24 @@ export default function GameMonitorPage() {
             const inserted = payload.new as Participant;
             if (inserted.session_id !== sessionId) return;
             setParticipants((prev) => {
-                if (prev.some(p => String(p.id) === String(inserted.id))) return prev;
-                return [...prev, inserted];
+              if (prev.some(p => String(p.id) === String(inserted.id))) return prev;
+              return [...prev, inserted];
             });
           } else if (payload.eventType === "DELETE") {
-             const deleted = payload.old as { id: any };
-             setParticipants((prev) => prev.filter(p => String(p.id) !== String(deleted.id)));
+            const deleted = payload.old as { id: any };
+            setParticipants((prev) => prev.filter(p => String(p.id) !== String(deleted.id)));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
+        (payload) => {
+          setSession(payload.new);
+          if (payload.new.status === "finished" || payload.new.status === "completed") {
+            router.push(`/host/${roomCode}/leaderboard`);
+          } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
+            router.push(`/host/${roomCode}/lobby`);
           }
         }
       )
@@ -515,11 +510,26 @@ export default function GameMonitorPage() {
     return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
+  // Timer akurat berbasis realtime seperti Axiom
   useEffect(() => {
-    if (timeLeft <= 0) { handleEndRace(); return; }
-    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft]);
+    if (!session?.started_at) return;
+
+    const interval = setInterval(() => {
+      const start = new Date(session.started_at).getTime();
+      const now = getSyncedServerTime();
+      const elapsedSeconds = Math.floor((now - start) / 1000);
+      const remaining = Math.max(0, (session.total_time_minutes || 5) * 60 - elapsedSeconds);
+      
+      setTimeLeft(remaining);
+
+      // Auto end jika waktu habis
+      if (remaining <= 0 && !isEnding) {
+        handleEndRace();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [session, isEnding]);
 
   useEffect(() => {
     if (!sessionId || participants.length === 0 || isEnding) return;
@@ -541,12 +551,12 @@ export default function GameMonitorPage() {
           const pointsPerQ = Math.ceil(100 / totalQuestions);
           const newScore = Math.min(100, bot.score + Math.floor(Math.random() * 5) + (pointsPerQ - 2));
           const isFinished = nextQ >= totalQuestions;
-          
+
           const updates = {
             current_question: nextQ,
             score: newScore,
             finished_at: isFinished ? new Date().toISOString() : null,
-            minigame: Math.random() > 0.5
+            minigame: Math.random() > 0.5 // true = racing, false = quiz
           };
 
           setParticipants(prev => prev.map(p => String(p.id) === String(bot.id) ? { ...p, ...updates } : p));
@@ -566,11 +576,95 @@ export default function GameMonitorPage() {
     return `${m}:${s}`;
   };
 
+  const syncResultsToMainSupabase = async (activeSessionId: string) => {
+    try {
+      const { data: sess } = await supabase
+        .from("sessions")
+        .select("id, host_id, quiz_id, question_limit, total_time_minutes, current_questions, started_at, ended_at")
+        .eq("id", activeSessionId)
+        .single();
+
+      if (!sess) throw new Error("Session tidak ditemukan");
+
+      const totalQuestionsLimit = sess.question_limit || (sess.current_questions || []).length;
+
+      const { data: participantsData } = await supabase
+        .from("participants")
+        .select("id, user_id, nickname, car_character, score, correct, answers, duration, eliminated, current_question, finished_at")
+        .eq("session_id", activeSessionId);
+
+      if (!participantsData || participantsData.length === 0) return;
+
+      // FORMAT PARTICIPANTS
+      const formattedParticipants = participantsData.map(p => {
+        const correctCount = p.correct || 0;
+        const accuracy = totalQuestionsLimit > 0
+          ? Number(((correctCount / totalQuestionsLimit) * 100).toFixed(2))
+          : 0;
+
+        return {
+          id: p.id,
+          user_id: p.user_id || null,
+          nickname: p.nickname,
+          car_character: p.car_character || "purple",
+          score: p.score || 0,
+          correct: correctCount,
+          eliminated: p.eliminated || false,
+          started: sess.started_at,
+          ended: p.finished_at || sess.ended_at || new Date().toISOString(),
+          total_question: totalQuestionsLimit,
+          current_question: p.current_question || 0,
+          accuracy: accuracy.toFixed(2),
+        };
+      });
+
+      // FORMAT RESPONSES
+      const formattedResponses = participantsData
+        .filter(p => (p.answers || []).length > 0)
+        .map(p => ({
+          id: generateXID(),
+          participant: p.id,
+          answers: p.answers || [],
+        }));
+
+      // UPDATE KE SUPABASE UTAMA
+      const { error } = await supabaseCentral
+        .from("game_sessions")
+        .update({
+          status: "finished",
+          ended_at: sess.ended_at || new Date().toISOString(),
+          participants: formattedParticipants,
+          responses: formattedResponses,
+        })
+        .eq("game_pin", roomCode);
+
+      if (error) throw error;
+      console.log("Hasil berhasil disinkronkan ke supabase utama!");
+    } catch (err: any) {
+      console.error("Gagal sync:", err);
+    }
+  };
+
   const handleEndRace = async () => {
     if (isEnding || !sessionId) return;
     setIsEnding(true);
     try {
-      await supabase.from("sessions").update({ status: "finished", ended_at: new Date().toISOString() }).eq("id", sessionId);
+      const now = new Date().toISOString();
+      await supabase.from("sessions").update({ status: "finished", ended_at: now }).eq("id", sessionId);
+
+      // Force semua participant yang belum selesai jadi finished DAN eliminated
+      await supabase
+        .from("participants")
+        .update({
+          finished_at: now,
+          eliminated: true,
+          minigame: false
+        })
+        .eq("session_id", sessionId)
+        .is("finished_at", null);
+
+      await syncResultsToMainSupabase(sessionId);
+
       router.push(`/host/${roomCode}/leaderboard`);
     } catch (error) {
       console.error("Failed to end race:", error);
@@ -581,7 +675,8 @@ export default function GameMonitorPage() {
   const rankedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      return b.current_question - a.current_question;
+      if (b.current_question !== a.current_question) return b.current_question - a.current_question;
+      return (b.lap_race || 0) - (a.lap_race || 0);
     });
   }, [participants]);
 
@@ -630,65 +725,21 @@ export default function GameMonitorPage() {
 
       {/* ── HEADER ── */}
       <div
-        style={{
-          position: "relative",
-          zIndex: 20,
-          width: "100%",
-          padding: "40px 24px 20px", // Increased top padding to move elements down
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: "transparent", // Removed solid background
-          backdropFilter: "none", // Removed blur wrapper
-          borderBottom: "none", // Removed border line
-        }}
+        className="relative z-30 flex flex-col md:flex-row items-center justify-between gap-6 px-6 pt-10 pb-6"
       >
-        {/* Left: Logo + count */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {/* Left: Logo */}
+        <div className="flex items-center gap-4">
           <img
             src="/assets/logo/logo1.png"
             alt="NitroQuiz Logo"
-            style={{ height: "40px", objectFit: "contain", filter: "drop-shadow(0 0 6px rgba(45,106,242,0.5))" }}
+            className="h-10 md:h-12 object-contain drop-shadow-[0_0_8px_rgba(45,106,242,0.5)]"
           />
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "5px 12px",
-              borderRadius: "8px",
-              background: "rgba(26,34,53,0.8)",
-              border: "1px solid rgba(45,106,242,0.3)",
-            }}
-          >
-            <Users size={13} color="#60a5fa" />
-            <span style={{ fontFamily: "Orbitron, monospace", fontSize: "12px", color: "#60a5fa", letterSpacing: "0.15em" }}>
-              {participants.length}
-            </span>
-          </div>
         </div>
 
-        {/* Center: LIVE TIMING + Timer */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
-
+        {/* Center: Timer (Always visible) */}
+        <div className="relative md:absolute md:left-1/2 md:-translate-x-1/2">
           <div
-            style={{
-              padding: "6px 28px",
-              borderRadius: "10px",
-              background: "rgba(10,14,30,0.95)",
-              border: "2px solid rgba(45,106,242,0.6)",
-              boxShadow: "0 0 20px rgba(45,106,242,0.3), inset 0 0 10px rgba(45,106,242,0.05)",
-            }}
+            className="px-8 py-2 md:px-10 md:py-3 rounded-xl bg-[#0a0e1e]/95 border-2 border-blue-500/60 shadow-[0_0_20px_rgba(45,106,242,0.3)]"
           >
             <span
               style={{
@@ -705,31 +756,12 @@ export default function GameMonitorPage() {
           </div>
         </div>
 
-        {/* Right: logo2 + END RACE */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <img
-            src="/assets/logo/logo2.png"
-            alt="GameForSmart.com"
-            style={{ height: "36px", objectFit: "contain", opacity: 0.75 }}
-          />
+        {/* Right: END RACE */}
+        <div className="flex items-center">
           <button
             onClick={() => setEndGameDialogOpen(true)}
             disabled={isEnding}
-            style={{
-              padding: "9px 22px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)",
-              border: "1px solid rgba(239,68,68,0.5)",
-              boxShadow: "0 0 16px rgba(220,38,38,0.35)",
-              color: "#fecaca",
-              fontFamily: "Orbitron, monospace",
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              cursor: isEnding ? "not-allowed" : "pointer",
-              opacity: isEnding ? 0.5 : 1,
-            }}
+            className="px-6 py-2 md:px-8 md:py-2.5 rounded-xl bg-gradient-to-br from-red-600 to-red-900 border border-red-500/50 shadow-[0_0_20px_rgba(220,38,38,0.35)] text-[#fecaca] font-body font-bold text-xs md:text-sm tracking-[0.15em] uppercase cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isEnding ? t("host_monitor.ending") : t("host_monitor.end_race")}
           </button>
@@ -746,22 +778,26 @@ export default function GameMonitorPage() {
           overflowY: "auto",
         }}
       >
-        {/* Label */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px", paddingRight: "4px" }}>
-          <span style={{ fontFamily: "Orbitron, monospace", fontSize: "9px", letterSpacing: "0.35em", color: "rgba(147,197,253,0.45)", textTransform: "uppercase" }}>
-            {t("host_monitor.leaderboard")}
-          </span>
+        {/* Label area with responsive layout */}
+        <div className="flex flex-row items-center justify-between mb-4 md:mb-6 px-2">
+          {/* Player Count on the Left */}
+          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+            <Users size={18} className="text-blue-400" />
+            <span className="font-body font-bold text-lg md:text-2xl text-blue-400 tracking-wider">
+              {participants.length}
+            </span>
+          </div>
         </div>
 
-        <div className="leaderboard-grid" style={{ maxWidth: "1280px", margin: "0 auto", width: "100%" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" style={{ maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
           <AnimatePresence>
             {rankedParticipants.map((player, index) => (
-              <motion.div 
-                key={player.id} 
-                layout 
-                initial={{ opacity: 0, scale: 0.9 }} 
-                animate={{ opacity: 1, scale: 1 }} 
-                exit={{ opacity: 0, scale: 0.9 }} 
+              <motion.div
+                key={player.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 350, damping: 25, mass: 0.8 }}
                 style={{ height: '100%' }}
               >
@@ -805,22 +841,22 @@ export default function GameMonitorPage() {
             <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
               <Flag size={32} className="text-red-500" />
             </div>
-            <DialogTitle className="text-xl font-display uppercase tracking-[0.2em] text-center mb-2">
+            <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.15em] text-center mb-2">
               {t('host_monitor.end_game_title')}
             </DialogTitle>
-            <p className="text-white/40 text-[11px] text-center font-display tracking-widest uppercase mb-8">
+            <p className="text-white/60 text-sm text-center font-body tracking-wider mb-8">
               {t('host_monitor.end_game_desc')}
             </p>
             <div className="flex gap-4 w-full">
-              <Button onClick={() => setEndGameDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-display uppercase text-[10px] tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
+              <Button onClick={() => setEndGameDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
                 {t('host_lobby.cancel')}
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   setEndGameDialogOpen(false);
                   handleEndRace();
                 }}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-display uppercase text-[10px] tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
               >
                 {t('host_monitor.confirm_end')}
               </Button>

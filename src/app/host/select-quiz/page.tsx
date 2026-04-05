@@ -9,11 +9,12 @@ import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { QuizCategory } from "@/types";
-import { supabaseCentral } from "@/lib/supabase";
+import { supabase, supabaseCentral } from "@/lib/supabase";
 import { Logo } from "@/components/ui/logo";
 import Image from "next/image";
-import { getUser } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
+import { generateXID } from "@/lib/id-generator";
 
 interface QuizView {
     id: string;
@@ -36,35 +37,35 @@ const categoryColorMap: Record<string, {
     hoverBorder: string;
 }> = {
     // known English keys
-    general:    { bar:'#1a5f5f', badge:'rgba(26,95,95,0.22)',    badgeBorder:'rgba(38,166,154,0.4)',  badgeText:'#4db6ac', hoverBorder:'rgba(26,95,95,0.7)' },
-    math:       { bar:'#00c853', badge:'rgba(0,200,83,0.15)',    badgeBorder:'rgba(0,230,118,0.35)',  badgeText:'#00e676', hoverBorder:'rgba(0,200,83,0.6)' },
-    history:    { bar:'#e91e8c', badge:'rgba(233,30,140,0.15)',  badgeBorder:'rgba(240,98,146,0.35)', badgeText:'#f06292', hoverBorder:'rgba(233,30,140,0.6)' },
-    science:    { bar:'#7c3aed', badge:'rgba(124,58,237,0.18)',  badgeBorder:'rgba(167,139,250,0.35)',badgeText:'#a78bfa', hoverBorder:'rgba(124,58,237,0.6)' },
-    geography:  { bar:'#1a9e6e', badge:'rgba(26,158,110,0.18)', badgeBorder:'rgba(52,211,153,0.35)', badgeText:'#34d399', hoverBorder:'rgba(26,158,110,0.6)' },
-    language:   { bar:'#f59e0b', badge:'rgba(245,158,11,0.15)', badgeBorder:'rgba(251,191,36,0.35)', badgeText:'#fbbf24', hoverBorder:'rgba(245,158,11,0.6)' },
-    sport:      { bar:'#ef4444', badge:'rgba(239,68,68,0.15)',   badgeBorder:'rgba(252,165,165,0.35)',badgeText:'#fca5a5', hoverBorder:'rgba(239,68,68,0.6)' },
-    technology: { bar:'#2d6af2', badge:'rgba(45,106,242,0.18)', badgeBorder:'rgba(100,181,246,0.35)',badgeText:'#64b5f6', hoverBorder:'rgba(45,106,242,0.6)' },
-    art:        { bar:'#d946ef', badge:'rgba(217,70,239,0.15)',  badgeBorder:'rgba(240,171,252,0.35)',badgeText:'#f0abfc', hoverBorder:'rgba(217,70,239,0.6)' },
-    music:      { bar:'#ec4899', badge:'rgba(236,72,153,0.15)',  badgeBorder:'rgba(249,168,212,0.35)',badgeText:'#f9a8d4', hoverBorder:'rgba(236,72,153,0.6)' },
+    general: { bar: '#1a5f5f', badge: 'rgba(26,95,95,0.22)', badgeBorder: 'rgba(38,166,154,0.4)', badgeText: '#4db6ac', hoverBorder: 'rgba(26,95,95,0.7)' },
+    math: { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
+    history: { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
+    science: { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
+    geography: { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
+    language: { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
+    sport: { bar: '#ef4444', badge: 'rgba(239,68,68,0.15)', badgeBorder: 'rgba(252,165,165,0.35)', badgeText: '#fca5a5', hoverBorder: 'rgba(239,68,68,0.6)' },
+    technology: { bar: '#2d6af2', badge: 'rgba(45,106,242,0.18)', badgeBorder: 'rgba(100,181,246,0.35)', badgeText: '#64b5f6', hoverBorder: 'rgba(45,106,242,0.6)' },
+    art: { bar: '#d946ef', badge: 'rgba(217,70,239,0.15)', badgeBorder: 'rgba(240,171,252,0.35)', badgeText: '#f0abfc', hoverBorder: 'rgba(217,70,239,0.6)' },
+    music: { bar: '#ec4899', badge: 'rgba(236,72,153,0.15)', badgeBorder: 'rgba(249,168,212,0.35)', badgeText: '#f9a8d4', hoverBorder: 'rgba(236,72,153,0.6)' },
     // common Indonesian keys
-    umum:       { bar:'#1a5f5f', badge:'rgba(26,95,95,0.22)',    badgeBorder:'rgba(38,166,154,0.4)',  badgeText:'#4db6ac', hoverBorder:'rgba(26,95,95,0.7)' },
-    matematika: { bar:'#00c853', badge:'rgba(0,200,83,0.15)',    badgeBorder:'rgba(0,230,118,0.35)',  badgeText:'#00e676', hoverBorder:'rgba(0,200,83,0.6)' },
-    sejarah:    { bar:'#e91e8c', badge:'rgba(233,30,140,0.15)',  badgeBorder:'rgba(240,98,146,0.35)', badgeText:'#f06292', hoverBorder:'rgba(233,30,140,0.6)' },
-    ipa:        { bar:'#7c3aed', badge:'rgba(124,58,237,0.18)',  badgeBorder:'rgba(167,139,250,0.35)',badgeText:'#a78bfa', hoverBorder:'rgba(124,58,237,0.6)' },
-    ips:        { bar:'#1a9e6e', badge:'rgba(26,158,110,0.18)', badgeBorder:'rgba(52,211,153,0.35)', badgeText:'#34d399', hoverBorder:'rgba(26,158,110,0.6)' },
-    bahasa:     { bar:'#f59e0b', badge:'rgba(245,158,11,0.15)', badgeBorder:'rgba(251,191,36,0.35)', badgeText:'#fbbf24', hoverBorder:'rgba(245,158,11,0.6)' },
-    olahraga:   { bar:'#ef4444', badge:'rgba(239,68,68,0.15)',   badgeBorder:'rgba(252,165,165,0.35)',badgeText:'#fca5a5', hoverBorder:'rgba(239,68,68,0.6)' },
-    teknologi:  { bar:'#2d6af2', badge:'rgba(45,106,242,0.18)', badgeBorder:'rgba(100,181,246,0.35)',badgeText:'#64b5f6', hoverBorder:'rgba(45,106,242,0.6)' },
+    umum: { bar: '#1a5f5f', badge: 'rgba(26,95,95,0.22)', badgeBorder: 'rgba(38,166,154,0.4)', badgeText: '#4db6ac', hoverBorder: 'rgba(26,95,95,0.7)' },
+    matematika: { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
+    sejarah: { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
+    ipa: { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
+    ips: { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
+    bahasa: { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
+    olahraga: { bar: '#ef4444', badge: 'rgba(239,68,68,0.15)', badgeBorder: 'rgba(252,165,165,0.35)', badgeText: '#fca5a5', hoverBorder: 'rgba(239,68,68,0.6)' },
+    teknologi: { bar: '#2d6af2', badge: 'rgba(45,106,242,0.18)', badgeBorder: 'rgba(100,181,246,0.35)', badgeText: '#64b5f6', hoverBorder: 'rgba(45,106,242,0.6)' },
 };
 
 // Fallback color for unknown categories — deterministic by string hash
 const fallbackColors = [
-    { bar:'#1a5f5f', badge:'rgba(26,95,95,0.22)',    badgeBorder:'rgba(38,166,154,0.4)',  badgeText:'#4db6ac', hoverBorder:'rgba(26,95,95,0.7)' },
-    { bar:'#7c3aed', badge:'rgba(124,58,237,0.18)',  badgeBorder:'rgba(167,139,250,0.35)',badgeText:'#a78bfa', hoverBorder:'rgba(124,58,237,0.6)' },
-    { bar:'#f59e0b', badge:'rgba(245,158,11,0.15)',  badgeBorder:'rgba(251,191,36,0.35)', badgeText:'#fbbf24', hoverBorder:'rgba(245,158,11,0.6)' },
-    { bar:'#00c853', badge:'rgba(0,200,83,0.15)',    badgeBorder:'rgba(0,230,118,0.35)',  badgeText:'#00e676', hoverBorder:'rgba(0,200,83,0.6)' },
-    { bar:'#e91e8c', badge:'rgba(233,30,140,0.15)',  badgeBorder:'rgba(240,98,146,0.35)', badgeText:'#f06292', hoverBorder:'rgba(233,30,140,0.6)' },
-    { bar:'#1a9e6e', badge:'rgba(26,158,110,0.18)',  badgeBorder:'rgba(52,211,153,0.35)', badgeText:'#34d399', hoverBorder:'rgba(26,158,110,0.6)' },
+    { bar: '#1a5f5f', badge: 'rgba(26,95,95,0.22)', badgeBorder: 'rgba(38,166,154,0.4)', badgeText: '#4db6ac', hoverBorder: 'rgba(26,95,95,0.7)' },
+    { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
+    { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
+    { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
+    { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
+    { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
 ];
 
 const getCategoryColor = (category: string) => {
@@ -79,168 +80,132 @@ const getCategoryColor = (category: string) => {
 export default function SelectQuizPage() {
     const router = useRouter();
     const { t, i18n } = useTranslation();
+    const { profile, user } = useAuth();
+
+    // Auth derivations
+    const currentProfileId = profile?.id || null;
+    const currentUserId = user?.id || null;
+
     const [searchQuery, setSearchQuery] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [currentPage, setCurrentPage] = useState(1);
     const [quizzes, setQuizzes] = useState<QuizView[]>([]);
-    const [allItems, setAllItems] = useState<QuizView[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [categories, setCategories] = useState<string[]>(['All']);
     const [creating, setCreating] = useState(false);
     const [creatingQuizId, setCreatingQuizId] = useState<string | null>(null);
     const [favorites, setFavorites] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'myquiz'>('all');
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-    const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
     const [isFetching, setIsFetching] = useState(true);
     const [isReturning, setIsReturning] = useState(false);
 
     const itemsPerPage = 8;
+    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
     useEffect(() => {
-        const user = getUser();
-        if (user) {
-            setCurrentUserId(user.id);
-            setCurrentUsername(user.username);
-            const fetchProfile = async () => {
-                try {
-                    if (user.id && user.id.includes('-') && user.id.length > 20) {
-                        const { data } = await supabaseCentral.from('profiles').select('id, favorite_quiz').eq('auth_user_id', user.id).single();
-                        if (data) {
-                            setCurrentProfileId(data.id);
-                            if (data.favorite_quiz && (data.favorite_quiz as any).favorites) {
-                                setFavorites((data.favorite_quiz as any).favorites);
-                            }
-                        }
-                    } else if (user.username) {
-                        const { data } = await supabaseCentral.from('profiles').select('id, favorite_quiz').eq('username', user.username).single();
-                        if (data) {
-                            setCurrentProfileId(data.id);
-                            if (data.favorite_quiz && (data.favorite_quiz as any).favorites) {
-                                setFavorites((data.favorite_quiz as any).favorites);
-                            }
-                        }
-                    }
-                } catch (err) { console.error('Failed to map profile id', err); }
-            };
-            fetchProfile();
+        // Load initial favorites from auth profile or fall back to localStorage
+        if (profile) {
+            const profileFavorites = (profile as any)?.favorite_quiz?.favorites;
+            if (profileFavorites && Array.isArray(profileFavorites)) {
+                setFavorites(profileFavorites);
+                localStorage.setItem('quiz_favorites', JSON.stringify(profileFavorites));
+            } else {
+                const savedFavorites = localStorage.getItem('quiz_favorites');
+                if (savedFavorites) {
+                    try { setFavorites(JSON.parse(savedFavorites)); } catch { }
+                }
+            }
         }
-    }, []);
+    }, [profile]);
 
     useEffect(() => {
-        const savedFavorites = localStorage.getItem('quiz_favorites');
-        if (savedFavorites) { try { setFavorites(JSON.parse(savedFavorites)); } catch { } }
-    }, []);
+        const fetchCategories = async () => {
+            const orQuery = currentProfileId
+                ? `is_public.eq.true,creator_id.eq.${currentProfileId}`
+                : `is_public.eq.true`;
+            const { data } = await supabaseCentral
+                .from("quizzes").select("category")
+                .eq("is_hidden", false).eq("status", "active")
+                .is("deleted_at", null)
+                .or(orQuery);
+            if (data) {
+                const uniqueCats = ['All', ...new Set(data.map(q => q.category).filter(Boolean))];
+                setCategories(uniqueCats);
+            }
+        };
+        fetchCategories();
+    }, [currentProfileId]);
 
     const toggleFavorite = async (quizId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        
         const isFav = favorites.includes(quizId);
         const newFavs = isFav ? favorites.filter(id => id !== quizId) : [...favorites, quizId];
-        
-        // 1. Update local state & localStorage immediately
         setFavorites(newFavs);
         localStorage.setItem('quiz_favorites', JSON.stringify(newFavs));
 
-        // 2. Sync to Database profile
         if (currentProfileId) {
             try {
                 const { error } = await supabaseCentral
                     .from('profiles')
-                    .update({ 
-                        favorite_quiz: { favorites: newFavs } 
-                    })
+                    .update({ favorite_quiz: { favorites: newFavs } })
                     .eq('id', currentProfileId);
-                
                 if (error) throw error;
-            } catch (err) {
-                console.error("Failed to sync favorites to profile database", err);
-            }
+            } catch (err) { console.error("Failed to sync favorites to profile", err); }
         }
     };
 
-    const fetchQuizzes = async () => {
+    const fetchQuizzes = async (pageToFetch = currentPage) => {
         setIsFetching(true);
         try {
-            const { data, error } = await supabaseCentral
-                .from("quizzes").select("*").eq("is_hidden", false).eq("status", "active")
-                .is("deleted_at", null).order("created_at", { ascending: false });
-            if (error) { console.error("Error fetching quizzes:", error); return; }
+            const offset = (pageToFetch - 1) * itemsPerPage;
+            const favIds = favorites.length > 0 ? favorites : ['00000000-0000-0000-0000-000000000000'];
+            const p_search_query = searchQuery || null;
+            const p_category_filter = selectedCategory === 'All' ? null : selectedCategory;
+            const p_favorites_filter = activeTab === 'favorites' ? favIds : null;
+            const p_creator_filter = activeTab === 'myquiz' ? (currentProfileId || currentUserId) : null;
+
+            const { data, error } = await supabaseCentral.rpc('get_quizzes_paginated', {
+                p_user_id: currentProfileId || null,
+                p_search_query,
+                p_category_filter,
+                p_favorites_filter,
+                p_creator_filter,
+                p_limit: itemsPerPage,
+                p_offset: offset
+            });
+
+            if (error) { console.error("Error fetching paginated quizzes:", error); return; }
+
             if (data) {
-                const fetchedQuizzes: QuizView[] = data.map((quiz: any) => {
-                    let qCount = 0;
-                    if (Array.isArray(quiz.questions)) { qCount = quiz.questions.length; }
-                    else if (typeof quiz.questions === 'string') { try { qCount = JSON.parse(quiz.questions).length; } catch (e) { } }
-                    return {
-                        id: quiz.id, title: quiz.title || "Untitled Quiz",
-                        category: quiz.category || "umum", questionCount: qCount,
-                        description: quiz.description || "No description provided.",
-                        imageUrl: quiz.image_url || quiz.cover_image, played: quiz.played || 0,
-                        creatorId: quiz.creator_id || quiz.user_id || null,
-                        isPublic: quiz.is_public !== false,
-                    };
-                });
-                setAllItems(fetchedQuizzes);
+                const fetchedQuizzes: QuizView[] = data.map((quiz: any) => ({
+                    id: quiz.id, title: quiz.title || "Untitled Quiz",
+                    category: quiz.category || "umum", questionCount: quiz.question_count || 0,
+                    description: quiz.description || "No description provided.",
+                    imageUrl: quiz.image_url || quiz.cover_image, played: quiz.played || 0,
+                    creatorId: quiz.creator_id, isPublic: quiz.is_public !== false,
+                }));
+                setQuizzes(fetchedQuizzes);
+                setTotalCount(data.length > 0 ? Number(data[0].total_count) : 0);
             }
-        } catch (err) { console.error("Failed to fetch quizzes", err); }
+        } catch (err) { console.error("Failed to fetch quizzes via RPC", err); }
         finally { setIsFetching(false); }
     };
 
-    useEffect(() => { fetchQuizzes(); }, []);
-
+    // Refetch when filters or page change
     useEffect(() => {
-        let filtered = allItems;
-        
-        // Visibility gate: What kuis are searchable/visible?
-        // Must be PUBLIC OR owned by current user (check profile ID, auth ID, or username)
-        filtered = filtered.filter(q => {
-            const isOwner = (currentProfileId && q.creatorId === currentProfileId) || 
-                            (currentUserId && (q.creatorId === currentUserId || q.creatorId === currentUsername));
-            return q.isPublic || isOwner;
-        });
+        // Wait for profile mapping if needed before fetching
+        fetchQuizzes(currentPage);
+    }, [currentPage, searchQuery, selectedCategory, activeTab, currentProfileId, currentUserId]);
 
-        // Tab-specific filtering
-        if (activeTab === 'favorites') {
-            // Show only kuis that are in the user's favorite list
-            filtered = filtered.filter(q => favorites.includes(q.id));
-        } else if (activeTab === 'myquiz') {
-            // Show only kuis owned by the user
-            filtered = filtered.filter(q => 
-                (currentProfileId && q.creatorId === currentProfileId) || 
-                (currentUserId && (q.creatorId === currentUserId || q.creatorId === currentUsername))
-            );
-        }
-        
-        if (searchQuery) { 
-            filtered = filtered.filter(q => 
-                q.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                q.description.toLowerCase().includes(searchQuery.toLowerCase())
-            ); 
-        }
-        
-        if (selectedCategory !== "All") { 
-            filtered = filtered.filter(q => q.category.toLowerCase() === selectedCategory.toLowerCase()); 
-        }
-        
-        setQuizzes(filtered);
+    // Reset pagination to 1 on tab, category, or search changes
+    useEffect(() => {
         setCurrentPage(1);
-    }, [allItems, searchQuery, selectedCategory, activeTab, favorites, currentUserId, currentUsername, currentProfileId]);
-
-    const paginatedQuizzes = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        return quizzes.slice(start, start + itemsPerPage);
-    }, [quizzes, currentPage]);
-
-    const totalPages = Math.ceil(quizzes.length / itemsPerPage);
-
-    const categories = useMemo(() => {
-        const uniqueCategories = Array.from(new Set(allItems.map(q => q.category)));
-        return ["All", ...uniqueCategories];
-    }, [allItems]);
+    }, [searchQuery, selectedCategory, activeTab, favorites.length]);
 
     const getCategoryDisplayName = (cat: string): string => {
         if (cat === 'All') return t('select_quiz.all_categories');
-        
+
         const key = cat.toLowerCase().trim();
         if (i18n.exists(`categories.${key}`)) {
             return t(`categories.${key}`);
@@ -254,10 +219,68 @@ export default function SelectQuizPage() {
         if (creating) return;
         setCreating(true);
         setCreatingQuizId(quizId);
-        await new Promise(resolve => setTimeout(resolve, 1500));
         const mockGamePin = Math.floor(100000 + Math.random() * 900000).toString();
-        localStorage.setItem("currentQuizId", quizId);
-        router.push(`/host/${mockGamePin}/settings`);
+        const hostId = currentProfileId || currentUserId || null;
+        const sessId = generateXID();
+
+        const primarySession = {
+            id: sessId,
+            quiz_id: quizId,
+            host_id: hostId,
+            game_pin: mockGamePin,
+            total_time_minutes: 5,
+            question_limit: 5,
+            difficulty: 'easy',
+            current_questions: [],
+            status: 'waiting',
+        };
+
+        const newMainSession = {
+            ...primarySession,
+            game_end_mode: 'manual',
+            allow_join_after_start: false,
+            participants: [],
+            responses: [],
+            application: 'nitroquiz'
+        };
+
+        try {
+            // Insert to both databases in parallel
+            // supabaseCentral = platform main DB (game_sessions)
+            // supabase = nitroquiz specific DB (sessions)
+            const [mainResult, gameResult] = await Promise.allSettled([
+                supabaseCentral.from('game_sessions').insert(newMainSession),
+                supabase.from('sessions').insert(primarySession)
+            ]);
+
+            const mainError = mainResult.status === 'rejected' ? mainResult.reason : mainResult.value.error;
+            const gameError = gameResult.status === 'rejected' ? gameResult.reason : gameResult.value.error;
+
+            if (mainError) {
+                console.error('Error creating session (main):', mainError);
+                if (!gameError) await supabase.from('sessions').delete().eq('id', sessId);
+                setCreating(false); setCreatingQuizId(null);
+                return;
+            }
+
+            if (gameError) {
+                console.error('Error creating session (game):', gameError);
+                await supabaseCentral.from('game_sessions').delete().eq('id', sessId);
+                setCreating(false); setCreatingQuizId(null);
+                return;
+            }
+
+            // Store references
+            localStorage.setItem("currentQuizId", quizId);
+            localStorage.setItem('hostGamePin', mockGamePin);
+            sessionStorage.setItem('currentHostId', hostId || '');
+
+            router.push(`/host/${mockGamePin}/settings`);
+        } catch (err) {
+            console.error('Unexpected error:', err);
+            setCreating(false);
+            setCreatingQuizId(null);
+        }
     };
 
     return (
@@ -286,43 +309,43 @@ export default function SelectQuizPage() {
                             {/* ── Cyan accent bar ── */}
                             <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg,#1a45c4,#2d6af2,#00ff9d,#2d6af2,#1a45c4)' }} />
                             <div className="p-2 sm:p-3">
-                            <div className="flex flex-col sm:flex-row gap-3 mb-3 relative">
-                                <div className="flex-1">
-                                    <div className="relative group/search">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4 group-focus-within/search:text-[#00ff9d] transition-colors" />
-                                        <Input type="text" placeholder={t('select_quiz.search_placeholder')} value={searchInput}
-                                            onChange={(e) => { setSearchInput(e.target.value); setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                            className="w-full bg-white/[0.03] border border-white/[0.07] pl-9 h-10 sm:h-9 text-white font-display text-left text-[9px] sm:text-[10px] uppercase tracking-widest placeholder:text-[8px] sm:placeholder:text-gray-600 rounded-lg focus-visible:ring-1 focus-visible:ring-[#00ff9d]/50 focus-visible:border-[#00ff9d]/50 focus-visible:bg-white/[0.05] transition-all !py-0 leading-normal" />
+                                <div className="flex flex-col sm:flex-row gap-3 mb-3 relative">
+                                    <div className="flex-1">
+                                        <div className="relative group/search">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4 group-focus-within/search:text-[#00ff9d] transition-colors" />
+                                            <Input type="text" placeholder={t('select_quiz.search_placeholder')} value={searchInput}
+                                                onChange={(e) => { setSearchInput(e.target.value); setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                                className="w-full bg-white/[0.03] border border-white/[0.07] pl-9 h-10 sm:h-9 text-white font-display text-left text-[9px] sm:text-[10px] uppercase tracking-widest placeholder:text-[8px] sm:placeholder:text-gray-600 rounded-lg focus-visible:ring-1 focus-visible:ring-[#00ff9d]/50 focus-visible:border-[#00ff9d]/50 focus-visible:bg-white/[0.05] transition-all !py-0 leading-normal" />
+                                        </div>
                                     </div>
+                                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                        <SelectTrigger className="w-full sm:w-52 h-10 bg-white/[0.03] border border-white/[0.07] text-white focus:border-[#00ff9d]/50 focus:ring-1 focus:ring-[#00ff9d]/50 rounded-xl font-display text-xs tracking-wider uppercase">
+                                            <SelectValue placeholder={t('select_quiz.category_placeholder')} />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#04060f] border border-[#2d6af2]/30 text-white font-display text-[10px] uppercase tracking-wider backdrop-blur-3xl">
+                                            {categories.map((cat) => (
+                                                <SelectItem key={cat} value={cat} className="focus:bg-[#4a3d8f]/20 focus:text-white cursor-pointer py-1.5">
+                                                    {getCategoryDisplayName(cat)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                    <SelectTrigger className="w-full sm:w-52 h-10 bg-white/[0.03] border border-white/[0.07] text-white focus:border-[#00ff9d]/50 focus:ring-1 focus:ring-[#00ff9d]/50 rounded-xl font-display text-xs tracking-wider uppercase">
-                                        <SelectValue placeholder={t('select_quiz.category_placeholder')} />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#04060f] border border-[#2d6af2]/30 text-white font-display text-[10px] uppercase tracking-wider backdrop-blur-3xl">
-                                        {categories.map((cat) => (
-                                            <SelectItem key={cat} value={cat} className="focus:bg-[#4a3d8f]/20 focus:text-white cursor-pointer py-1.5">
-                                                {getCategoryDisplayName(cat)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex items-center sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 w-full relative">
-                                <button onClick={() => setActiveTab('all')}
-                                    className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'all' ? 'bg-[#2d6af2] text-white' : 'bg-white/[0.03] border border-white/[0.07] text-gray-400 hover:text-white hover:border-[#00ff9d]/50'}`}>
-                                    <Search size={12} className="sm:w-3.5 sm:h-3.5" />{t('select_quiz.tabs.quizzes')}
-                                </button>
-                                <button onClick={() => setActiveTab('favorites')}
-                                    className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'favorites' ? 'bg-gradient-to-r from-pink-600 to-red-500 text-white' : 'bg-black/40 border border-pink-500/20 text-gray-400 hover:text-pink-400 hover:border-pink-500/50'}`}>
-                                    <Heart size={12} className={`sm:w-3.5 sm:h-3.5 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
-                                    {t('select_quiz.tabs.favorites')}
-                                </button>
-                                <button onClick={() => setActiveTab('myquiz')}
-                                    className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'myquiz' ? 'bg-[#00ff9d] text-[#04060f] font-bold' : 'bg-white/[0.03] border border-white/[0.07] text-gray-400 hover:text-[#00ff9d] hover:border-[#00ff9d]/50'}`}>
-                                    <FileText size={12} className="sm:w-3.5 sm:h-3.5" />{t('select_quiz.tabs.my_quiz')}
-                                </button>
-                            </div>
+                                <div className="flex items-center sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 w-full relative">
+                                    <button onClick={() => setActiveTab('all')}
+                                        className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'all' ? 'bg-[#2d6af2] text-white' : 'bg-white/[0.03] border border-white/[0.07] text-gray-400 hover:text-white hover:border-[#00ff9d]/50'}`}>
+                                        <Search size={12} className="sm:w-3.5 sm:h-3.5" />{t('select_quiz.tabs.quizzes')}
+                                    </button>
+                                    <button onClick={() => setActiveTab('favorites')}
+                                        className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'favorites' ? 'bg-gradient-to-r from-pink-600 to-red-500 text-white' : 'bg-black/40 border border-pink-500/20 text-gray-400 hover:text-pink-400 hover:border-pink-500/50'}`}>
+                                        <Heart size={12} className={`sm:w-3.5 sm:h-3.5 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
+                                        {t('select_quiz.tabs.favorites')}
+                                    </button>
+                                    <button onClick={() => setActiveTab('myquiz')}
+                                        className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'myquiz' ? 'bg-[#00ff9d] text-[#04060f] font-bold' : 'bg-white/[0.03] border border-white/[0.07] text-gray-400 hover:text-[#00ff9d] hover:border-[#00ff9d]/50'}`}>
+                                        <FileText size={12} className="sm:w-3.5 sm:h-3.5" />{t('select_quiz.tabs.my_quiz')}
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
 
@@ -342,10 +365,10 @@ export default function SelectQuizPage() {
                                         </div>
                                     ))}
                                 </motion.div>
-                            ) : paginatedQuizzes.length > 0 ? (
+                            ) : quizzes.length > 0 ? (
                                 <motion.div key={`grid-${currentPage}-${activeTab}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                                    {paginatedQuizzes.map((quiz, index) => {
+                                    {quizzes.map((quiz, index) => {
                                         const isFavorited = favorites.includes(quiz.id);
                                         const colors = getCategoryColor(quiz.category);
 
@@ -354,7 +377,7 @@ export default function SelectQuizPage() {
                                                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ duration: 0.2 }} whileHover={{ scale: 1.01 }}
                                                 style={{ willChange: "transform, opacity" }}>
-                                                <Card className="h-full flex flex-col bg-black/40 border transition-all duration-200 relative overflow-hidden group rounded-xl"
+                                                <Card className="h-full flex flex-col bg-black/40 border transition-all duration-200 relative overflow-hidden group rounded-xl pb-0"
                                                     style={{
                                                         borderColor: 'rgba(74,61,143,0.3)',
                                                     }}
@@ -407,9 +430,9 @@ export default function SelectQuizPage() {
                                                             title={quiz.title}>
                                                             {quiz.title}
                                                         </CardTitle>
-                                                        <div className="text-[9px] text-gray-400 font-body line-clamp-1 mt-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] flex-1" title={quiz.description}>
+                                                        {/* <div className="text-[9px] text-gray-400 font-body line-clamp-1 mt-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] flex-1" title={quiz.description}>
                                                             {quiz.description}
-                                                        </div>
+                                                        </div> */}
                                                     </CardHeader>
                                                     <CardFooter className="mt-auto !pt-2 !pb-2 px-3 border-t border-white/5 flex justify-between items-center text-[8px] text-gray-400 font-display tracking-wider relative z-20 bg-black/40 backdrop-blur-sm">
                                                         <div className="flex items-center gap-4 drop-shadow-md">
@@ -417,12 +440,6 @@ export default function SelectQuizPage() {
                                                                 <HelpCircle size={14} style={{ color: colors.bar }} />
                                                                 {quiz.questionCount} Qs
                                                             </div>
-                                                            {quiz.played !== undefined && (
-                                                                <div className="flex items-center gap-1.5" style={{ color: colors.badgeText, opacity: 0.7 }}>
-                                                                    <User size={14} />
-                                                                    {quiz.played}
-                                                                </div>
-                                                            )}
                                                         </div>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleSelectQuiz(quiz.id); }}
@@ -459,7 +476,7 @@ export default function SelectQuizPage() {
                                             <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">{t('select_quiz.empty_states.myquiz_title')}</h3>
                                             <p className="text-[#00ff9d]/40 text-sm mb-6">{t('select_quiz.empty_states.myquiz_desc')}</p>
                                             <div className="flex justify-center gap-4">
-                                                <Button variant="outline" onClick={fetchQuizzes} className="bg-white/[0.03] border border-[#00ff9d]/50 text-[#00ff9d] hover:bg-[#00ff9d]/20 transition-all font-display text-xs uppercase tracking-wider"><RefreshCw className="w-4 h-4 mr-2" />{t('select_quiz.empty_states.refresh')}</Button>
+                                                <Button variant="outline" onClick={() => fetchQuizzes(1)} className="bg-white/[0.03] border border-[#00ff9d]/50 text-[#00ff9d] hover:bg-[#00ff9d]/20 transition-all font-display text-xs uppercase tracking-wider"><RefreshCw className="w-4 h-4 mr-2" />{t('select_quiz.empty_states.refresh')}</Button>
                                                 <Button variant="outline" onClick={() => setActiveTab('all')} className="bg-[#00ff9d]/10 border border-[#00ff9d]/50 text-[#00ff9d] hover:bg-[#00ff9d] hover:text-[#04060f] transition-all font-display text-xs uppercase tracking-wider">{t('select_quiz.empty_states.browse_all')}</Button>
                                             </div>
                                         </>

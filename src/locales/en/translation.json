@@ -19,6 +19,12 @@
         "language": "Language",
         "logout": "Logout"
     },
+    "logout_confirm": {
+      "title": "Logout?",
+      "description": "You will be signed out.",
+      "confirm": "LOGOUT",
+      "cancel": "CANCEL"
+    },
     "loading": "Establishing Signal...",
     "how_to_play": {
         "title": "How to Play",
@@ -186,10 +192,10 @@
     "lap": "LAP",
     "score": "SCORE",
     "ending": "ENDING...",
-    "end_race": "END RACE",
+    "end_race": "END GAME",
     "leaderboard": "LEADERBOARD",
     "waiting": "Waiting for Grid...",
-    "end_game_title": "End Race?",
+    "end_game_title": "End Game?",
     "end_game_desc": "Are you sure you want to end?",
     "confirm_end": "END"
   },
@@ -224,14 +230,20 @@
     "steady": "STEADY",
     "go_race": "GO RACE",
     "go": "GO!",
-    "launching": "LAUNCHING RACE..."
+    "launching": "LAUNCHING RACE...",
+    "exit_title": "Leave?",
+    "exit_description": "Progress will be lost.",
+    "exit_confirm": "LEAVE",
+    "exit_cancel": "CANCEL"
   },
   "player_quiz": {
     "round_complete": "ROUND COMPLETE!",
     "quiz_finished": "QUIZ FINISHED!",
     "establishing_signal": "ESTABLISHING SIGNAL...",
     "question": "Question {{current}}",
-    "score": "Score:"
+    "score": "Score:",
+    "questions_label": "Questions",
+    "score_label": "Score"
   },
   "player_result": {
     "establishing_signal": "Establishing Signal...",

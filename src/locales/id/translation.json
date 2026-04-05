@@ -19,6 +19,12 @@
         "language": "Bahasa",
         "logout": "Keluar"
     },
+    "logout_confirm": {
+      "title": "Keluar Akun?",
+      "description": "Yakin ingin keluar dari akun Anda?",
+      "confirm": "KELUAR",
+      "cancel": "BATAL"
+    },
     "loading": "Memantapkan Sinyal...",
     "how_to_play": {
         "title": "Cara Bermain",
@@ -186,10 +192,10 @@
     "lap": "PUTARAN",
     "score": "SKOR",
     "ending": "MENGAKHIRI...",
-    "end_race": "AKHIRI BALAPAN",
+    "end_race": "AKHIRI PERMAINAN",
     "leaderboard": "PAPAN PERINGKAT",
     "waiting": "Menunggu Pembalap...",
-    "end_game_title": "Akhiri Balapan?",
+    "end_game_title": "Akhiri Permainan?",
     "end_game_desc": "Apakah Anda yakin ingin mengakhiri?",
     "confirm_end": "AKHIRI"
   },
@@ -224,14 +230,20 @@
     "steady": "SIAP",
     "go_race": "BALAP",
     "go": "GAS!",
-    "launching": "MELUNCURKAN BALAPAN..."
+    "launching": "MELUNCURKAN BALAPAN...",
+    "exit_title": "Keluar?",
+    "exit_description": "Progres bakal hilang.",
+    "exit_confirm": "KELUAR",
+    "exit_cancel": "BATAL"
   },
   "player_quiz": {
     "round_complete": "RONDE SELESAI!",
     "quiz_finished": "KUIS SELESAI!",
     "establishing_signal": "MEMANTAPKAN SINYAL...",
     "question": "Pertanyaan {{current}}",
-    "score": "Skor:"
+    "score": "Skor:",
+    "questions_label": "Pertanyaan",
+    "score_label": "Skor"
   },
   "player_result": {
     "establishing_signal": "Memantapkan Sinyal...",
