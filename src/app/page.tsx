@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getUser, saveUser, removeUser } from "@/lib/storage";
 import { supabase, supabaseCentral } from "@/lib/supabase";
 import { User } from "@/types";
 import {
@@ -38,12 +37,18 @@ export default function Home() {
   const i18n = getI18nInstance();
   const [roomCode, setRoomCode] = useState("");
   const [isHosting, setIsHosting] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const user = profile ? {
+    id: profile.auth_user_id,
+    username: profile.nickname || profile.fullname || profile.username || "Racer",
+    email: profile.email,
+    avatar: profile.avatar_url || "",
+  } : null;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,37 +73,13 @@ export default function Home() {
     setIsDropdownOpen(false);
   };
   useEffect(() => {
-    if (profile) {
-      const u = getUser();
-      const newUser: User = {
-        id: profile.auth_user_id,
-        username: profile.nickname || profile.fullname || profile.username || "Racer",
-        email: profile.email,
-        avatar: profile.avatar_url || "",
-        totalPoints: u?.totalPoints || 0,
-        gamesPlayed: u?.gamesPlayed || 0,
-        createdAt: u?.createdAt || new Date().toISOString(),
-      };
-
-      // Only update if data changed to prevent infinite loops
-      if (!u || u.id !== newUser.id || u.username !== newUser.username || u.avatar !== newUser.avatar) {
-        saveUser(newUser);
-        setUser(newUser);
-      } else {
-        setUser(u);
-      }
-    } else if (!authLoading) {
-      const currentUser = getUser();
-      if (!currentUser) {
-        // Double check session in case AuthContext is still initializing
-        supabaseCentral.auth.getSession().then(({ data: { session } }) => {
-          if (!session) {
-            router.push("/login");
-          }
-        });
-      } else {
-        setUser(currentUser);
-      }
+    if (!authLoading && !profile) {
+      // Double check session in case AuthContext is still initializing
+      supabaseCentral.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          router.push("/login");
+        }
+      });
     }
   }, [profile, authLoading, router]);
 
@@ -111,37 +92,8 @@ export default function Home() {
         const code = roomParam.toUpperCase();
         setIsRedirecting(true);
 
-        const existingUser = getUser();
-        if (existingUser) {
-          router.push(`/player/${code}/waiting`);
-          return;
-        }
-
-        try {
-          const {
-            data: { session },
-          } = await supabaseCentral.auth.getSession();
-          if (session?.user) {
-            const newUser: User = {
-              id: session.user.id,
-              username:
-                session.user.user_metadata.full_name ||
-                session.user.email?.split("@")[0] ||
-                "Racer",
-              email: session.user.email || "",
-              avatar: session.user.user_metadata.avatar_url || session.user.user_metadata.picture || "",
-              totalPoints: 0,
-              gamesPlayed: 0,
-              createdAt: new Date().toISOString(),
-            };
-            saveUser(newUser);
-            router.push(`/player/${code}/waiting`);
-            return;
-          }
-        } catch (e) {
-          console.error("Session check failed:", e);
-        }
-        router.push(`/player/${code}/join`);
+        // Just redirect to join, let join page handle auth state
+        router.push(`/join/${code}`);
       }
     }
 
@@ -162,8 +114,12 @@ export default function Home() {
   }, []);
 
   const handleLogout = async () => {
+    setIsLogoutDialogOpen(true);
+    setIsDropdownOpen(false);
+  };
+
+  const performLogout = async () => {
     await supabaseCentral.auth.signOut();
-    removeUser();
     router.push("/login");
   };
 
@@ -177,12 +133,12 @@ export default function Home() {
   const handleJoin = () => {
     if (roomCode.trim() && user) {
       router.push(
-        `/player/${roomCode.trim()}/join`,
+        `/join/${roomCode.trim()}`,
       );
     }
   };
 
-  if (!user || isHosting || isRedirecting) {
+  if (authLoading || isHosting || isRedirecting) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-display text-white">
         <div className="text-center z-10">
@@ -634,6 +590,51 @@ export default function Home() {
         <div className="absolute top-1/4 left-10 w-1 h-24 bg-gradient-to-b from-transparent via-[#2d6af2]/50 to-transparent blur-sm hidden lg:block"></div>
         <div className="absolute bottom-1/3 right-10 w-1 h-32 bg-gradient-to-b from-transparent via-[#00ff9d]/40 to-transparent blur-sm hidden lg:block"></div>
       </main>
+
+      {/* Logout Confirmation Dialog */}
+      <AnimatePresence>
+        {isLogoutDialogOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="bg-[#0c1225] border border-[#2d6af2]/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl overflow-hidden relative"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
+                  <LogOut className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">
+                  {t("homepage.logout_confirm.title")}
+                </h3>
+                <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                  {t("homepage.logout_confirm.description")}
+                </p>
+                <div className="flex gap-4 w-full">
+                  <button
+                    onClick={() => setIsLogoutDialogOpen(false)}
+                    className="flex-1 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all outline-none"
+                  >
+                    {t("homepage.logout_confirm.cancel")}
+                  </button>
+                  <button
+                    onClick={performLogout}
+                    className="flex-1 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-red-600 text-white hover:bg-red-500 transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] outline-none"
+                  >
+                    {t("homepage.logout_confirm.confirm")}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

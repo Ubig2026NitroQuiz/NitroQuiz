@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from 'next/navigation';
-import { saveUser } from '@/lib/storage';
 import { User } from '@/types';
 import { supabaseCentral } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
@@ -64,10 +63,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if ((user || profile) && !loading) {
-      const pendingCode = localStorage.getItem("pendingRoomCode");
+      const pendingCode = localStorage.getItem("nitroquiz_pendingRoomCode");
       if (pendingCode) {
-        localStorage.setItem("roomCode", pendingCode);
-        router.replace('/');
+        localStorage.removeItem("nitroquiz_pendingRoomCode");
+        router.replace(`/join/${pendingCode}`);
       } else {
         router.replace('/');
       }

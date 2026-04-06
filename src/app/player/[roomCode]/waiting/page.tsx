@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getUser } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
+import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
 import { Loader2, Zap, Users, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
+import { useAuth } from '@/contexts/AuthContext';
 
 export const PLAYER_CHARACTERS = [
     {
@@ -62,12 +63,56 @@ const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md
 };
 
 
+// Reusable Confirmation Dialog for logout/exit
+const LogoutConfirmDialog = ({ onConfirm, onCancel, t }: { onConfirm: () => void, onCancel: () => void, t: any }) => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+    >
+        <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-[#0c1225] border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl overflow-hidden relative"
+        >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
+            <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
+                    <LogOut className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">
+                    {t("player_waiting.exit_title")}
+                </h3>
+                <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                    {t("player_waiting.exit_description")}
+                </p>
+                <div className="flex gap-4 w-full">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all outline-none"
+                    >
+                        {t("player_waiting.exit_cancel")}
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest bg-red-600 text-white hover:bg-red-500 transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] outline-none"
+                    >
+                        {t("player_waiting.exit_confirm")}
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    </motion.div>
+);
+
 
 export default function PlayerWaitingPage() {
     const router = useRouter();
     const params = useParams();
     const { t } = useTranslation();
-    const roomCode = params.roomCode as string;
+    const roomCode = (params.roomCode as string)?.toUpperCase();
+    const { profile, loading: authLoading } = useAuth();
 
     const [status, setStatus] = useState<"loading" | "waiting" | "countdown" | "go" | "error">("loading");
     const [errorMessage, setErrorMessage] = useState("");
@@ -80,80 +125,158 @@ export default function PlayerWaitingPage() {
     const [participantCount, setParticipantCount] = useState(1);
     const [username, setUsername] = useState("");
     const [userAvatar, setUserAvatar] = useState<string | null>(null);
-    const [allParticipants, setAllParticipants] = useState<{ nickname: string; car_character: string; avatar_url?: string | null }[]>([]);
+    const [allParticipants, setAllParticipants] = useState<{ id?: string; nickname: string; car_character: string; avatar_url?: string | null }[]>([]);
+    const [isExiting, setIsExiting] = useState(false);
+    const statusRef = useRef(status);
+    useEffect(() => { statusRef.current = status; }, [status]);
+
+    // Sync server time on mount
+    useEffect(() => {
+        syncServerTime();
+    }, []);
 
     useEffect(() => {
-        const user = getUser();
-        if (!user) { router.push(`/player/${roomCode}/join`); return; }
-        setUsername(user.username || "");
-        setUserAvatar(user.avatar || null);
+        if (authLoading) return;
         let cleanup: (() => void) | undefined;
 
         const joinRoom = async () => {
             try {
                 const { data: sessionData, error: sessionError } = await supabase
-                    .from("sessions").select("id, status").eq("game_pin", roomCode).single();
+                    .from("sessions").select("id, status, countdown_started_at, started_at, created_at").eq("game_pin", roomCode).single();
+
                 if (sessionError || !sessionData) { setStatus("error"); setErrorMessage("Room not found or invalid."); return; }
-                if (sessionData.status === "active") { setStatus("countdown"); return; }
 
-                const randIndex = Math.floor(Math.random() * PLAYER_CHARACTERS.length);
-                const carChoice = PLAYER_CHARACTERS[randIndex].id;
-                setAssignedCarId(carChoice);
-                setPendingCharacterId(carChoice);
-
-                const { data: existingP } = await supabase.from("participants").select("id")
-                    .eq("session_id", sessionData.id).eq("nickname", user.username).maybeSingle();
-
-                let currentParticipantId = existingP?.id;
-
-                if (!existingP) {
-                    const { data: newP, error: insertError } = await supabase.from("participants").insert({
-                        session_id: sessionData.id, user_id: user.id || null,
-                        nickname: user.username, car_character: carChoice, score: 0, minigame: false,
-                        avatar_url: user.avatar || null
-                    }).select('id').single();
-
-                    if (insertError) { setStatus("error"); setErrorMessage("Failed to enter room. " + insertError.message); return; }
-                    currentParticipantId = newP?.id;
+                if (sessionData.status === "active") {
+                    router.push(`/player/${roomCode}/game`);
+                    return;
                 }
 
-                if (currentParticipantId) {
-                    localStorage.setItem('nitroquiz_game_participantId', currentParticipantId);
-                    setParticipantId(currentParticipantId);
+                // If countdown has already started but session not yet active
+                if (sessionData.countdown_started_at && !sessionData.started_at) {
+                    const startTime = new Date(sessionData.countdown_started_at).getTime();
+                    const nowOnServer = getSyncedServerTime();
+                    const elapsed = nowOnServer - startTime;
+                    const remaining = 3000 - elapsed;
+
+                    if (remaining > 0) {
+                        setStatus("countdown");
+                        preloadQuizData(sessionData.id);
+                        
+                        // Frame-perfect sync loop
+                        const syncLoop = () => {
+                            const now = getSyncedServerTime();
+                            const diff = now - startTime;
+                            const rem = Math.max(0, 3000 - diff);
+                            const displayVal = Math.ceil(rem / 1000);
+
+                            setCountdownValue(displayVal);
+
+                            if (rem > 0 && statusRef.current === "countdown") {
+                                requestAnimationFrame(syncLoop);
+                            } else if (rem <= 0 && statusRef.current === "countdown") {
+                                setStatus("go");
+                                setTimeout(() => {
+                                    router.push(`/player/${roomCode}/game`);
+                                }, 800);
+                            }
+                        };
+                        requestAnimationFrame(syncLoop);
+                    }
                 }
+
+                // Instead of inserting new participant, check if one was provided via RPC Auto Join
+                const storedParticipantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+                const storedRoomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
+
+                // Verifikasi bahwa cache ID ini benar-benar untuk room code yang sama
+                // Jika tidak atau kosong, pentalan balik ke join
+                if (!storedParticipantId || storedRoomCode !== roomCode) {
+                    router.replace(`/join/${roomCode}`);
+                    return;
+                }
+
+                // Ambil default car character dari cache (sudah di generate di RPC)
+                const storedCarCharacter = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_carCharacter') : null;
+                const assignedCar = storedCarCharacter || "rico";
+
+                setParticipantId(storedParticipantId);
+                setAssignedCarId(assignedCar);
+                setPendingCharacterId(assignedCar);
 
                 const { data: pList, count } = await supabase.from("participants")
-                    .select("nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
+                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
+
                 if (count !== null) setParticipantCount(count);
-                if (pList) setAllParticipants(pList);
+                if (pList) {
+                    setAllParticipants(pList);
+                    const me = pList.find(p => p.id === storedParticipantId);
+                    if (me) {
+                        setUsername(me.nickname);
+                        setUserAvatar(profile?.avatar_url || me.avatar_url || null);
+                    } else if (profile) {
+                        setUsername(profile.username || "Player");
+                        setUserAvatar(profile.avatar_url || null);
+                    }
+                }
 
                 setStatus("waiting");
                 setSessionId(sessionData.id);
 
                 const channel = supabase.channel(`player-session-${sessionData.id}`)
                     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
-                        (payload) => { if (payload.new.status === "active") { setStatus("countdown"); preloadQuizData(sessionData.id); } })
-                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
-                        async () => {
-                            const { data: pList, count } = await supabase.from("participants")
-                                .select("nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
-                            if (count !== null) setParticipantCount(count);
-                            if (pList) setAllParticipants(pList);
+                        (payload) => {
+                            // If countdown starts
+                            if (payload.new.countdown_started_at && !payload.new.started_at && statusRef.current !== "countdown" && statusRef.current !== "go") {
+                                const startTime = new Date(payload.new.countdown_started_at).getTime();
+                                setStatus("countdown");
+                                preloadQuizData(sessionData.id);
+
+                                // Frame-perfect sync loop
+                                const syncLoop = () => {
+                                    const nowOnServer = getSyncedServerTime();
+                                    const elapsed = nowOnServer - startTime;
+                                    const remaining = Math.max(0, 3000 - elapsed);
+                                    const displayVal = Math.ceil(remaining / 1000);
+
+                                    setCountdownValue(displayVal);
+
+                                    if (remaining > 0 && statusRef.current === "countdown") {
+                                        requestAnimationFrame(syncLoop);
+                                    } else if (remaining <= 0 && statusRef.current === "countdown") {
+                                        // Client-side auto-transition for smooth UX
+                                        setStatus("go");
+                                        setTimeout(() => {
+                                            router.push(`/player/${roomCode}/game`);
+                                        }, 800);
+                                    }
+                                };
+                                requestAnimationFrame(syncLoop);
+                            }
+                            // If session becomes active
+                            if (payload.new.status === "active" && statusRef.current !== "go") {
+                                setStatus("go");
+                                router.push(`/player/${roomCode}/game`);
+                            }
+                            // If session becomes finished
+                            if (payload.new.status === "finished" || payload.new.status === "completed") {
+                                router.push(`/player/${roomCode}/result`);
+                            }
                         })
-                    .subscribe((s) => console.log(`[Player Waiting] Realtime: ${s}`));
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
+                        async (payload) => {
+                            if (payload.eventType === 'DELETE') {
+                                setAllParticipants(prev => prev.filter(p => p.id !== payload.old.id));
+                                setParticipantCount(prev => Math.max(0, prev - 1));
+                            } else {
+                                const { data: pList, count } = await supabase.from("participants")
+                                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
+                                if (count !== null) setParticipantCount(count);
+                                if (pList) setAllParticipants(pList);
+                            }
+                        })
+                    .subscribe();
 
-                const sessId = sessionData.id;
-                const pollInterval = setInterval(async () => {
-                    try {
-                        const { data } = await supabase.from("sessions").select("status").eq("id", sessId).single();
-                        if (data?.status === "active") {
-                            setStatus(prev => { if (prev === "waiting") { preloadQuizData(sessId); return "countdown"; } return prev; });
-                            clearInterval(pollInterval);
-                        }
-                    } catch (e) { console.error("Poll session error:", e); }
-                }, 2000);
-
-                cleanup = () => { clearInterval(pollInterval); supabase.removeChannel(channel); };
+                cleanup = () => { supabase.removeChannel(channel); };
             } catch (err: any) { setStatus("error"); setErrorMessage(err.message || "Unknown error occurred."); }
         };
 
@@ -183,19 +306,6 @@ export default function PlayerWaitingPage() {
             const link = document.createElement('link'); link.rel = 'prefetch'; link.href = route; document.head.appendChild(link);
         } catch (err) { console.error('Failed to preload quiz:', err); }
     };
-
-    useEffect(() => {
-        if (status !== "countdown") return;
-        if (countdownValue <= 0) {
-            setStatus("go");
-            setTimeout(() => {
-                router.push(`/player/${roomCode}/game`);
-            }, 800);
-            return;
-        }
-        const timer = setTimeout(() => setCountdownValue(prev => prev - 1), 1000);
-        return () => clearTimeout(timer);
-    }, [status, countdownValue, router]);
 
     const getCountdownLabel = (val: number) => {
         if (val === 3) return t("player_waiting.ready");
@@ -601,7 +711,7 @@ export default function PlayerWaitingPage() {
                                             transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}>
                                             <img src={displayVisual} alt="Your Car"
                                                 className="object-contain drop-shadow-[0_28px_60px_rgba(40,70,200,0.22)] relative z-10"
-                                                style={{ width: '100%', maxHeight: '100%' }} 
+                                                style={{ width: '100%', maxHeight: '100%' }}
                                             />
                                             {/* Ground shadow */}
                                             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-3/4 h-3 bg-black/40 blur-xl rounded-full" />
@@ -720,22 +830,20 @@ export default function PlayerWaitingPage() {
                         <div className="md:hidden mt-6 flex gap-3 w-full max-w-[320px] px-4">
                             <button
                                 onClick={() => localStorage.setItem('nitroquiz_orientation', 'portrait')}
-                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${
-                                    (typeof window !== 'undefined' && localStorage.getItem('nitroquiz_orientation') === 'portrait')
+                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${(typeof window !== 'undefined' && localStorage.getItem('nitroquiz_orientation') === 'portrait')
                                     ? 'border-[#2d6af2] bg-[#2d6af2]/15'
                                     : 'border-white/10 bg-white/5'
-                                }`}
+                                    }`}
                             >
                                 <span style={{ fontSize: '1.5rem' }}>📱</span>
                                 <span className="font-display text-[9px] text-white font-bold uppercase tracking-widest">{t('player_game.portrait')}</span>
                             </button>
                             <button
                                 onClick={() => localStorage.setItem('nitroquiz_orientation', 'landscape')}
-                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${
-                                    (typeof window !== 'undefined' && localStorage.getItem('nitroquiz_orientation') === 'landscape')
+                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${(typeof window !== 'undefined' && localStorage.getItem('nitroquiz_orientation') === 'landscape')
                                     ? 'border-[#00ff9d] bg-[#00ff9d]/10'
                                     : 'border-white/10 bg-white/5'
-                                }`}
+                                    }`}
                             >
                                 <span style={{ fontSize: '1.5rem', transform: 'rotate(90deg)', display: 'inline-block' }}>📱</span>
                                 <span className="font-display text-[9px] text-white font-bold uppercase tracking-widest">{t('player_game.landscape')}</span>

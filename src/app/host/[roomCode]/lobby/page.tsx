@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
+import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,8 @@ export default function HostLobby() {
   const [kickDialogOpen, setKickDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
 
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setJoinLink(`${window.location.origin}/join/${roomCode}`);
@@ -79,6 +82,18 @@ export default function HostLobby() {
         .single();
       if (error || !data) return;
       setSession(data);
+      setSessionId(data.id);
+
+      // Resume countdown if it started but not finished
+      if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
+        const diff = Math.floor((new Date().getTime() - new Date(data.countdown_started_at).getTime()) / 1000);
+        const remaining = 3 - diff;
+        if (remaining > 0) {
+          setCountdown(remaining);
+        } else if (remaining <= 0) {
+          router.push(`/host/${roomCode}/monitor`);
+        }
+      }
 
       const { data: pData } = await supabase
         .from("participants")
@@ -88,24 +103,44 @@ export default function HostLobby() {
     };
 
     loadSession();
+  }, [roomCode, router]); // separated from channel so it doesn't loop
+
+  useEffect(() => {
+    if (!sessionId) return;
+      
+    const handleStartedOrFinished = (status: string) => {
+        if (status === "active") router.push(`/host/${roomCode}/monitor`);
+        else if (status === "finished" || status === "completed") router.push(`/host/${roomCode}/leaderboard`);
+    };
 
     const channel = supabase
       .channel(`lobby-${roomCode}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "participants" },
-        async () => {
-          const { data: sessionData } = await supabase
-            .from("sessions")
-            .select("id")
-            .eq("game_pin", roomCode)
-            .single();
-          if (!sessionData) return;
-          const { data: pData } = await supabase
-            .from("participants")
-            .select("*")
-            .eq("session_id", sessionData.id);
-          if (pData) setParticipants(pData);
+        { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
+        (payload: any) => {
+          if (payload.eventType === "INSERT") {
+            setParticipants(prev => {
+              if (prev.some(p => p.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === "UPDATE") {
+            setParticipants(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+          } else if (payload.eventType === "DELETE") {
+            setParticipants(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
+        (payload: any) => {
+          setSession(payload.new);
+          // Trigger countdown when server confirms it started
+          if (payload.new.countdown_started_at && !payload.new.started_at) {
+            setCountdown(prev => prev === null ? 3 : prev);
+          }
+          handleStartedOrFinished(payload.new.status);
         }
       )
       .subscribe();
@@ -113,7 +148,7 @@ export default function HostLobby() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomCode]);
+  }, [sessionId, roomCode, router]);
 
   const copyToClipboard = (text: string, setCopied: any) => {
     navigator.clipboard.writeText(text);
@@ -123,24 +158,95 @@ export default function HostLobby() {
 
   const startGame = async () => {
     if (!session || participants.length === 0) return;
-    setCountdown(3);
+
+    // SERVER-DRIVEN: We only update the DB.
+    // The actual countdown will start when the DB broadcast confirms the update.
+    const nowServer = getSyncedServerTime();
+    await supabase
+      .from("sessions")
+      .update({
+        countdown_started_at: new Date(nowServer).toISOString()
+      })
+      .eq("id", session.id);
   };
 
   useEffect(() => {
     if (countdown === null) return;
-    if (countdown === 0) {
-      setTimeout(async () => {
-        await supabase
-          .from("sessions")
-          .update({ status: "active", started_at: new Date().toISOString() })
-          .eq("id", session.id);
-        router.push(`/host/${roomCode}/monitor`);
-      }, 1000);
-      return;
-    }
-    const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [countdown, session, roomCode, router]);
+    const startTimeStr = session?.countdown_started_at;
+    if (!startTimeStr) return;
+
+    let active = true;
+    const startTime = new Date(startTimeStr).getTime();
+
+    const checkCountdown = () => {
+      const now = getSyncedServerTime();
+      const elapsed = now - startTime;
+      const totalCountdown = 3000;
+      const remaining = Math.max(0, totalCountdown - elapsed);
+      const displayVal = Math.ceil(remaining / 1000);
+
+      setCountdown((prev) => (prev !== displayVal ? displayVal : prev));
+
+      if (remaining <= 0 && active) {
+        active = false; // Prevent multiple triggers
+        
+        // Trigger start immediately
+        const startSession = async () => {
+          // 1. Update session to active
+          await supabase
+            .from("sessions")
+            .update({
+              status: "active",
+              started_at: new Date(getSyncedServerTime()).toISOString()
+            })
+            .eq("id", session.id);
+
+          // 2. Initial participants to Racing (minigame: true)
+          await supabase
+            .from("participants")
+            .update({
+                minigame: true, // TRUE = RACING
+                score: 0,
+                current_question: 0,
+                lap_race: 1
+            })
+            .eq("session_id", session.id);
+
+          router.push(`/host/${roomCode}/monitor`);
+        };
+        startSession();
+        return true; // Finished
+      }
+      return false; // Ongoing
+    };
+
+    const syncLoop = () => {
+      if (!active) return;
+      const finished = checkCountdown();
+      if (!finished) requestAnimationFrame(syncLoop);
+    };
+
+    // Secondary interval for background safety (browsers throttle RAF more aggressively than Interval)
+    const backgroundInterval = setInterval(() => {
+      if (active) checkCountdown();
+    }, 1000);
+
+    // Visibility listener to snap back immediately
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && active) {
+        checkCountdown();
+      }
+    };
+
+    requestAnimationFrame(syncLoop);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      active = false;
+      clearInterval(backgroundInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [session?.countdown_started_at, roomCode]);
 
   const handleAddBot = async () => {
     if (!session) return;
@@ -148,14 +254,14 @@ export default function HostLobby() {
     const botNickname = `CPU_${botCount + 1}`;
     const botCharacters = ['rico-bot', 'roadhog-bot', 'gecho-bot'];
     const selectedChar = botCharacters[Math.floor(Math.random() * botCharacters.length)];
-    
+
     try {
       await supabase.from("participants").insert({
-          session_id: session.id,
-          nickname: botNickname,
-          car_character: selectedChar,
-          score: 0,
-          current_question: 0
+        session_id: session.id,
+        nickname: botNickname,
+        car_character: selectedChar,
+        score: 0,
+        current_question: 0
       });
     } catch (e) {
       console.error("Failed to add bot", e);
@@ -233,6 +339,29 @@ export default function HostLobby() {
               <p className="flex-1 text-white/60 text-[11px] font-mono truncate">{joinLink}</p>
               {copiedJoin ? <Check size={14} className="text-[#00ff9d] shrink-0" /> : <Copy size={14} className="text-white/20 group-hover/link:text-[#2d6af2] shrink-0" />}
             </div>
+
+            {/* MOBILE: Action Buttons (Sticky at bottom) */}
+            <div className="fixed bottom-0 inset-x-0 md:hidden gap-2 p-4 pt-3 border-t border-white/10 bg-black/80 backdrop-blur-xl shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-[100] flex animate-in slide-in-from-bottom-5 duration-300">
+              <Button
+                onClick={() => setExitDialogOpen(true)}
+                className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-14 px-5 font-display text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 transition-all"
+              >
+                <LogOut size={20} className="rtl:rotate-180" />
+              </Button>
+              <Button
+                onClick={startGame}
+                disabled={participants.length === 0 || countdown !== null}
+                className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-14 rounded-xl shadow-[0_5px_20px_rgba(45,106,242,0.4)] tracking-[0.15em] uppercase text-sm transition-all disabled:opacity-50 active:scale-95"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Play className="fill-current w-5 h-5" />
+                  <span>{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
+                </div>
+              </Button>
+            </div>
+
+            {/* Spacer for sticky buttons on mobile */}
+            <div className="md:hidden h-24 shrink-0" />
 
             {/* DESKTOP: full vertical layout */}
             <div className="hidden md:flex flex-col gap-4 p-5 flex-1 relative z-10">
@@ -374,7 +503,7 @@ export default function HostLobby() {
                         exit={{ opacity: 0, scale: 0.8 }}
                         className="group relative bg-[#11111a] border border-white/10 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center transition-all hover:border-[#2d6af2]/50 hover:bg-[#1a1c2e] hover:shadow-[0_10px_30px_rgba(45,106,242,0.15)] hover:-translate-y-1 overflow-hidden"
                       >
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-[#2d6af2]/30 bg-black/40 overflow-hidden mb-3 flex items-center justify-center shadow-inner">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-[#2d6af2]/30 bg-black/40 overflow-hidden mb-3 flex items-center justify-center shadow-inner relative group/avatar">
                           {player.avatar_url ? (
                             <img src={player.avatar_url} alt="Ava" className="w-full h-full object-cover" />
                           ) : (
@@ -405,14 +534,14 @@ export default function HostLobby() {
       <Dialog open={kickDialogOpen} onOpenChange={setKickDialogOpen}>
         <DialogOverlay className="bg-black/90 backdrop-blur-md" />
         <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
-          <DialogTitle className="text-xl font-display uppercase tracking-[0.2em] text-center mb-6">
+          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-6">
             {t('host_lobby.kick')} {selectedPlayer?.nickname}?
           </DialogTitle>
           <div className="flex gap-4">
-            <Button onClick={() => setKickDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-display uppercase text-[10px] tracking-widest text-gray-400">
+            <Button onClick={() => setKickDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400">
               {t('host_lobby.cancel') ?? 'Cancel'}
             </Button>
-            <Button onClick={confirmKick} className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-display uppercase text-[10px] tracking-widest">
+            <Button onClick={confirmKick} className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest">
               KICK
             </Button>
           </div>
@@ -427,19 +556,19 @@ export default function HostLobby() {
             <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
               <LogOut size={32} className="text-red-500" />
             </div>
-            <DialogTitle className="text-xl font-display uppercase tracking-[0.2em] text-center mb-2">
+            <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.15em] text-center mb-2">
               {t('host_lobby.exit_dialog_title')}
             </DialogTitle>
-            <p className="text-white/40 text-[11px] text-center font-display tracking-widest uppercase mb-8">
+            <p className="text-white/60 text-sm text-center font-body tracking-wider mb-8 uppercase">
               {t('host_lobby.exit_dialog_desc')}
             </p>
             <div className="flex gap-4 w-full">
-              <Button onClick={() => setExitDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-display uppercase text-[10px] tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
+              <Button onClick={() => setExitDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
                 {t('host_lobby.cancel')}
               </Button>
-              <Button 
-                onClick={() => router.push("/host/select-quiz")} 
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-display uppercase text-[10px] tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
+              <Button
+                onClick={() => router.push("/host/select-quiz")}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
               >
                 {t('host_lobby.confirm_exit')}
               </Button>
@@ -467,10 +596,10 @@ export default function HostLobby() {
       <Dialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen}>
         <DialogOverlay className="bg-black/80 backdrop-blur-md" />
         <DialogContent className="bg-[#0f1220] border border-[#2d6af2]/30 text-white p-8 max-w-md rounded-[2rem] shadow-[0_0_80px_rgba(45,106,242,0.2)]">
-          <DialogTitle className="text-xl font-display uppercase tracking-[0.2em] text-center mb-2 text-white">
+          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-2 text-white">
             {t('host_lobby.invite_friends') ?? 'Invite Friends'}
           </DialogTitle>
-          <p className="text-white/40 text-xs text-center font-display tracking-widest uppercase mb-6">{t('host_lobby.share_link') ?? 'Share Link'}</p>
+          <p className="text-white/40 text-[10px] text-center font-body tracking-[0.2em] uppercase mb-6">{t('host_lobby.share_link') ?? 'Share Link'}</p>
           <div className="flex gap-3">
             <input
               readOnly
@@ -479,7 +608,7 @@ export default function HostLobby() {
             />
             <Button
               onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-              className="bg-[#2d6af2] hover:bg-[#2d6af2]/80 px-5 rounded-xl font-display uppercase text-[10px] tracking-widest"
+              className="bg-[#2d6af2] hover:bg-[#2d6af2]/80 px-5 rounded-xl font-body font-bold uppercase text-xs tracking-widest"
             >
               {copiedJoin ? <Check size={16} /> : <Copy size={16} />}
             </Button>
@@ -491,10 +620,10 @@ export default function HostLobby() {
       <Dialog open={inviteGroupOpen} onOpenChange={setInviteGroupOpen}>
         <DialogOverlay className="bg-black/80 backdrop-blur-md" />
         <DialogContent className="bg-[#0f1220] border border-purple-500/30 text-white p-8 max-w-md rounded-[2rem] shadow-[0_0_80px_rgba(168,85,247,0.2)]">
-          <DialogTitle className="text-xl font-display uppercase tracking-[0.2em] text-center mb-2 text-white">
+          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-2 text-white">
             {t('host_lobby.invite_groups') ?? 'Invite Groups'}
           </DialogTitle>
-          <p className="text-white/40 text-xs text-center font-display tracking-widest uppercase mb-6">{t('host_lobby.share_link') ?? 'Share Link'}</p>
+          <p className="text-white/40 text-[10px] text-center font-body tracking-[0.2em] uppercase mb-6">{t('host_lobby.share_link') ?? 'Share Link'}</p>
           <div className="flex gap-3">
             <input
               readOnly
@@ -503,7 +632,7 @@ export default function HostLobby() {
             />
             <Button
               onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-              className="bg-purple-600 hover:bg-purple-700 px-5 rounded-xl font-display uppercase text-[10px] tracking-widest"
+              className="bg-purple-600 hover:bg-purple-700 px-5 rounded-xl font-body font-bold uppercase text-xs tracking-widest"
             >
               {copiedJoin ? <Check size={16} /> : <Copy size={16} />}
             </Button>

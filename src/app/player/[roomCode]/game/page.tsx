@@ -13,7 +13,8 @@ interface QuizQuestion {
     correctAnswer: number;
 }
 import { supabase } from '@/lib/supabase';
-import { getUser } from '@/lib/storage';
+import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
+import { Clock } from 'lucide-react';
 
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
@@ -152,11 +153,11 @@ export default function GameSpeedPage() {
     const { t } = useTranslation();
     const router = useRouter();
     const params = useParams();
-    const roomCode = params?.roomCode as string;
+    const roomCode = (params?.roomCode as string)?.toUpperCase();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Game State
-    const [gameState, setGameState] = useState<'preparation' | 'countdown' | 'playing' | 'finished' | 'gameover'>('playing');
+    const [gameState, setGameState] = useState<'preparation' | 'countdown' | 'playing' | 'finished' | 'gameover'>('preparation');
     // Countdown Ref helper
     const countdownRef = useRef(3);
     const [countdown, setCountdown] = useState(3);
@@ -182,6 +183,10 @@ export default function GameSpeedPage() {
 
         return () => clearInterval(interval);
     }, [gameState]);
+    const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+    const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
+
+    // Audio Refs
     const [viewMode, setViewMode] = useState<'first' | 'third'>('third');
     const [assetsLoaded, setAssetsLoaded] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -405,6 +410,19 @@ export default function GameSpeedPage() {
         };
         loadAssets();
     }, []);
+
+    // --- Start Trigger ---
+    useEffect(() => {
+        if (gameState === 'preparation' && assetsLoaded) {
+            if (isMobile) {
+                if (mobileOrientationChoice) {
+                    setGameState('countdown');
+                }
+            } else {
+                setGameState('countdown');
+            }
+        }
+    }, [gameState, assetsLoaded, isMobile, mobileOrientationChoice]);
 
     // --- Game Logic functions ---
     const findSegment = (z: number) => {
@@ -1376,11 +1394,25 @@ export default function GameSpeedPage() {
                 // Save current state to localStorage before redirect
                 localStorage.setItem('nitroquiz_game_questionIndex', state.current.quizQuestionIndex.toString());
                 localStorage.setItem('nitroquiz_game_score', state.current.totalQuizScore.toString());
+                
+                const participantId = localStorage.getItem('nitroquiz_game_participantId');
+                if (participantId) {
+                    supabase.from('participants').update({ 
+                        lap_race: currentRound,
+                        minigame: false
+                    }).eq('id', participantId).then();
+                }
+
                 router.push(`/player/${roomCode}/quiz`);
             } else {
+                const participantId = localStorage.getItem('nitroquiz_game_participantId');
+                if (participantId) {
+                    supabase.from('participants').update({ lap_race: currentRound }).eq('id', participantId).then();
+                }
                 setGameState('finished');
                 endGame();
             }
+
         }
     };
 
@@ -1532,8 +1564,21 @@ export default function GameSpeedPage() {
 
 
     useEffect(() => {
+        syncServerTime();
         setMounted(true);
-        updateParticipantStatus({ minigame: false }); // Ensure monitor knows player is Racing
+
+        const fetchServerState = async () => {
+             const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+             if (!participantId) return;
+
+             const { data } = await supabase.from('participants').select('minigame, finished_at').eq('id', participantId).single();
+             if (data) {
+                 if (data.minigame === true && !data.finished_at) {
+                     router.push(`/player/${roomCode}/quiz`);
+                 }
+             }
+        };
+        fetchServerState();
 
         if (!assetsLoaded) return;
 
@@ -2027,6 +2072,86 @@ export default function GameSpeedPage() {
         }
     }, [gameState, endGame]);
 
+    // Real-time Guards: Session status and Minigame status
+    useEffect(() => {
+        const sessId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_sessionId') : null;
+        const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+        if (!sessId || !participantId) return;
+
+        const channel = supabase
+            .channel(`player_game_guards_${participantId}`)
+            // Listen for Session changes
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessId}` },
+                (payload) => {
+                    const status = payload.new.status;
+                    if (status === 'finished' || status === 'completed') {
+                        router.push(`/player/${roomCode}/result`);
+                    } else if (status === 'waiting' || status === 'lobby') {
+                        router.push(`/player/${roomCode}/waiting`);
+                    }
+                }
+            )
+            // Listen for Participant changes (Minigame Guard)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` },
+                (payload) => {
+                    // If minigame is false, player should be on the quiz page
+                    if (payload.new.minigame === false && !payload.new.finished_at) {
+                        router.push(`/player/${roomCode}/quiz`);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [router, roomCode]);
+
+    // Global Timer Realtime Synchronization
+    useEffect(() => {
+        const sessId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_sessionId') : null;
+        if (!sessId) return;
+
+        const fetchAndStartTimer = async () => {
+            const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessId).single();
+            if (!data?.started_at) return;
+
+            const interval = setInterval(() => {
+                const start = new Date(data.started_at).getTime();
+                const now = getSyncedServerTime();
+                const elapsedSeconds = Math.floor((now - start) / 1000);
+                const remaining = Math.max(0, (data.total_time_minutes || 5) * 60 - elapsedSeconds);
+                
+                setGlobalTimeLeft(remaining);
+
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    // If time is up, we just end the game. Handled by monitor finishing the session anyway.
+                    // But just in case:
+                    handleForceEndGame();
+                }
+            }, 1000);
+
+            return interval;
+        };
+
+        const handleForceEndGame = async () => {
+            setGameState('finished');
+            endGame();
+        };
+
+        let intervalId: NodeJS.Timeout | undefined;
+        fetchAndStartTimer().then(id => { intervalId = id; });
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, []);
+
     // Load quiz questions from localStorage (preloaded by player lobby)
     useEffect(() => {
         try {
@@ -2370,6 +2495,25 @@ export default function GameSpeedPage() {
                                     <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
                                     <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
                                 </div>
+                                {globalTimeLeft !== null && (
+                                <div style={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                                    backdropFilter: 'blur(15px)',
+                                    padding: isMobileLandscape ? '0.5rem 0.8rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem'),
+                                    borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
+                                    border: globalTimeLeft <= 30 ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    flex: 'none',
+                                    color: globalTimeLeft <= 30 ? '#ef4444' : '#fff'
+                                }}>
+                                    <Clock size={isMobile ? 12 : 16} />
+                                    <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900 }}>
+                                        {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{ (globalTimeLeft % 60).toString().padStart(2, '0') }
+                                    </span>
+                                </div>
+                                )}
                             </div>
                         </div>
 

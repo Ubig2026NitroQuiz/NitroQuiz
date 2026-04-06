@@ -21,7 +21,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import confetti from "canvas-confetti";
-import { getUser } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 
 const carImageMap: Record<string, string> = {
@@ -82,17 +82,23 @@ export default function PlayerResultPage() {
   const params = useParams();
   const router = useRouter();
   const { t } = useTranslation();
-  const roomCode = params.roomCode as string;
+  const roomCode = (params.roomCode as string)?.toUpperCase();
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileView, setMobileView] = useState<"result" | "stats">("result");
   const [showResults, setShowResults] = useState(false);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
-  const [mobileView, setMobileView] = useState<"result" | "stats">("result");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const { user, profile, loading: authLoading } = useAuth();
+  const [storedParticipantId, setStoredParticipantId] = useState<string | null>(null);
 
-  const currentUser = getUser();
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setStoredParticipantId(localStorage.getItem("nitroquiz_game_participantId"));
+    }
+  }, []);
 
   const fetchResults = async () => {
     try {
@@ -139,11 +145,22 @@ export default function PlayerResultPage() {
           fetchResults();
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "sessions", filter: `game_pin=eq.${roomCode}` },
+        (payload) => {
+          if (payload.new.status === "active") {
+             router.push(`/player/${roomCode}/game`);
+          } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
+             router.push(`/player/${roomCode}/waiting`);
+          }
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomCode]);
+  }, [roomCode, router]);
 
   const rankedPlayers = [...participants].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
@@ -153,9 +170,9 @@ export default function PlayerResultPage() {
   });
 
   const currentPlayerRank =
-    rankedPlayers.findIndex((p) => p.nickname === currentUser?.username) + 1;
+    rankedPlayers.findIndex((p) => p.id === storedParticipantId || (p.nickname === profile?.username && !storedParticipantId)) + 1;
   const currentPlayerData = rankedPlayers.find(
-    (p) => p.nickname === currentUser?.username,
+    (p) => p.id === storedParticipantId || (p.nickname === profile?.username && !storedParticipantId),
   );
   const currentPlayerCarSrc = (() => {
     if (!currentPlayerData) return carImageMap["purple"];
@@ -391,7 +408,7 @@ export default function PlayerResultPage() {
                     {currentPlayerData?.avatar_url ? (
                       <img src={currentPlayerData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <InitialsAvatar name={currentUser?.username || 'P'} size="lg" />
+                      <InitialsAvatar name={profile?.username || currentPlayerData?.nickname || 'P'} size="lg" />
                     )}
                   </motion.div>
                 </div>
@@ -401,7 +418,7 @@ export default function PlayerResultPage() {
                   className="font-display text-[#00d4ff] text-xl font-bold tracking-[0.18em] uppercase"
                   style={{ textShadow: "0 0 12px rgba(0,212,255,0.55)" }}
                 >
-                  {currentUser?.username || t("player_result.player_fallback")}
+                  {profile?.username || currentPlayerData?.nickname || t("player_result.player_fallback")}
                 </p>
                 {!allFinished && (
                   <p className="text-[#00ff9d]/70 text-[10px] uppercase tracking-[0.2em] font-mono mt-1 animate-pulse">
@@ -517,11 +534,11 @@ export default function PlayerResultPage() {
                   <div className="mb-1 text-center">
                     <div className="bg-black/60 border border-slate-300/40 backdrop-blur-md px-2 py-0.5 rounded-lg">
                       <p
-                        className={`font-display text-[9px] tracking-wider truncate max-w-[68px] ${secondPlace.nickname === currentUser?.username ? "text-[#00ff9d] font-bold" : "text-slate-200"}`}
+                        className={`font-display text-[9px] tracking-wider truncate max-w-[68px] ${(secondPlace.id === storedParticipantId || (secondPlace.nickname === profile?.username && !storedParticipantId)) ? "text-[#00ff9d] font-bold" : "text-slate-200"}`}
                         title={secondPlace.nickname}
                       >
                         {secondPlace.nickname}
-                        {secondPlace.nickname === currentUser?.username &&
+                        {(secondPlace.id === storedParticipantId || (secondPlace.nickname === profile?.username && !storedParticipantId)) &&
                           t("player_result.you")}
                       </p>
                       <p className="font-mono text-slate-400 text-[8px]">
@@ -570,11 +587,11 @@ export default function PlayerResultPage() {
                   <div className="mb-1 text-center">
                     <div className="bg-[#1a1500]/80 border border-yellow-500/60 backdrop-blur-md px-2.5 py-1 rounded-xl">
                       <p
-                        className={`font-display text-[9px] font-bold tracking-widest uppercase truncate max-w-[88px] ${firstPlace.nickname === currentUser?.username ? "text-[#00ff9d]" : "text-yellow-500"}`}
+                        className={`font-display text-[9px] font-bold tracking-widest uppercase truncate max-w-[88px] ${(firstPlace.id === storedParticipantId || (firstPlace.nickname === profile?.username && !storedParticipantId)) ? "text-[#00ff9d]" : "text-yellow-500"}`}
                         title={firstPlace.nickname}
                       >
                         {firstPlace.nickname}
-                        {firstPlace.nickname === currentUser?.username &&
+                        {(firstPlace.id === storedParticipantId || (firstPlace.nickname === profile?.username && !storedParticipantId)) &&
                           t("player_result.you")}
                       </p>
                       <p className="font-mono text-white text-[8px] mt-0.5 font-bold">
@@ -617,11 +634,11 @@ export default function PlayerResultPage() {
                   <div className="mb-1 text-center">
                     <div className="bg-black/60 border border-orange-700/40 backdrop-blur-md px-2 py-0.5 rounded-lg">
                       <p
-                        className={`font-display text-[9px] tracking-wider truncate max-w-[68px] ${thirdPlace.nickname === currentUser?.username ? "text-[#00ff9d] font-bold" : "text-orange-200"}`}
+                        className={`font-display text-[9px] tracking-wider truncate max-w-[68px] ${(thirdPlace.id === storedParticipantId || (thirdPlace.nickname === profile?.username && !storedParticipantId)) ? "text-[#00ff9d] font-bold" : "text-orange-200"}`}
                         title={thirdPlace.nickname}
                       >
                         {thirdPlace.nickname}
-                        {thirdPlace.nickname === currentUser?.username &&
+                        {(thirdPlace.id === storedParticipantId || (thirdPlace.nickname === profile?.username && !storedParticipantId)) &&
                           t("player_result.you")}
                       </p>
                       <p className="font-mono text-orange-400 text-[8px]">
@@ -656,7 +673,7 @@ export default function PlayerResultPage() {
             <div className="bg-black/40 backdrop-blur-xl border border-[#2d6af2]/30 rounded-2xl p-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-4 overflow-y-auto flex-1">
               <div className="space-y-1.5">
                 {rankedPlayers.map((player, index) => {
-                  const isMe = player.nickname === currentUser?.username;
+                  const isMe = player.id === storedParticipantId || (player.nickname === profile?.username && !storedParticipantId);
                   const rankColors = [
                     "border-yellow-500/50 bg-yellow-500/5",
                     "border-slate-300/50 bg-slate-300/5",
@@ -835,7 +852,7 @@ export default function PlayerResultPage() {
                           className="w-full h-full object-cover" 
                         />
                       ) : (
-                        <InitialsAvatar name={currentUser?.username || 'P'} size="lg" />
+                        <InitialsAvatar name={profile?.username || currentPlayerData?.nickname || 'P'} size="lg" />
                       )}
                     </div>
                     <div className="absolute inset-[-8px] rounded-full border border-[#2d6af2]/20 animate-pulse" />
@@ -848,8 +865,8 @@ export default function PlayerResultPage() {
                 </div>
                 {/* Player name + Status — transparent, no divider between them */}
                 <div className="flex flex-col items-center justify-center gap-6 px-6 py-10 flex-1">
-                  <p className="font-display text-white text-xl font-bold uppercase tracking-widest text-center leading-tight" title={currentUser?.username || ""}>
-                    {currentUser?.username || t("player_result.player_fallback")}
+                  <p className="font-display text-white text-xl font-bold uppercase tracking-widest text-center leading-tight" title={profile?.username || currentPlayerData?.nickname || ""}>
+                    {profile?.username || currentPlayerData?.nickname || t("player_result.player_fallback")}
                   </p>
                   {currentPlayerData?.eliminated ? (
                     <span
