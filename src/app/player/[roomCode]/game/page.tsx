@@ -157,32 +157,15 @@ export default function GameSpeedPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Game State
-    const [gameState, setGameState] = useState<'preparation' | 'countdown' | 'playing' | 'finished' | 'gameover'>('preparation');
-    // Countdown Ref helper
-    const countdownRef = useRef(3);
-    const [countdown, setCountdown] = useState(3);
+    const [gameState, setGameState] = useState<'preparation' | 'playing' | 'finished' | 'gameover'>('preparation');
+    // Pre-initialize flag to prevent undefined check
+    useEffect(() => {
+        if (state.current) {
+            (state.current as any).hasFinishedLine = false;
+        }
+    }, []);
     const [stats, setStats] = useState({ speed: 0, nos: 100, lap: 1, totalLaps: 1 });
 
-    // Countdown timer effect — uses setInterval, only triggers on gameState change
-    useEffect(() => {
-        if (gameState !== 'countdown') return;
-
-        // Reset display to whatever the ref says it should be (5 or 3)
-        setCountdown(countdownRef.current);
-
-        const interval = setInterval(() => {
-            setCountdown((prev) => {
-                const next = prev - 1;
-                if (next <= 0) {
-                    clearInterval(interval);
-                    setTimeout(() => { setGameState('playing'); }, 500);
-                }
-                return next;
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [gameState]);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
 
@@ -416,13 +399,14 @@ export default function GameSpeedPage() {
         if (gameState === 'preparation' && assetsLoaded) {
             if (isMobile) {
                 if (mobileOrientationChoice) {
-                    setGameState('countdown');
+                    setGameState('playing');
                 }
             } else {
-                setGameState('countdown');
+                setGameState('playing');
             }
         }
     }, [gameState, assetsLoaded, isMobile, mobileOrientationChoice]);
+        
 
     // --- Game Logic functions ---
     const findSegment = (z: number) => {
@@ -519,6 +503,7 @@ export default function GameSpeedPage() {
         const diffConfig = getDifficultyConfig(difficulty);
 
         state.current.segments = [];
+        (state.current as any).hasFinishedLine = false;
 
         if (diffConfig.trackType === 'complex') {
             // --- MEDIUM / HARD: Twisty track with S-Curves and Bumps ---
@@ -831,10 +816,9 @@ export default function GameSpeedPage() {
     const renderPlayer = (ctx: CanvasRenderingContext2D, width: number, height: number, resolution: number, roadWidth: number, speedPercent: number, scale: number, destX: number, destY: number, steer: number, updown: number, viewMode: 'first' | 'third') => {
         const { keyLeft, keyRight, keyFaster, sprites } = state.current;
 
-        // Starting Sequence - Revving Animation saat Countdown & Preparation
+        // Animation flags for motor/car
         const isPreparing = gameState === 'preparation';
-        const isCountdown = gameState === 'countdown';
-        const isAtStart = isPreparing || isCountdown;
+        const isAtStart = isPreparing;
 
         // Update revving animation timer - Play when gas is pressed at start OR when braking
         if ((isAtStart && keyFaster) || state.current.keySlower) {
@@ -1092,13 +1076,14 @@ export default function GameSpeedPage() {
     const update = (dt: number) => {
         const { keyLeft, keyRight, keyFaster, keySlower, keyBoost, segments, playerX, speed, trackLength } = state.current;
         let { position, playerZ } = state.current;
+        const isPreparing = gameState === 'preparation';
 
         const playerSegment = findSegment(position + playerZ);
         const speedPercent = speed / MAX_SPEED;
         const dx = dt * 2 * speedPercent;
 
-        // Move - TIDAK bergerak saat countdown
-        if (gameState !== 'countdown') {
+        // Move - only when playing
+        if (gameState === 'playing') {
             position = Util.increase(position, dt * speed, trackLength);
             state.current.position = position;
         }
@@ -1130,7 +1115,7 @@ export default function GameSpeedPage() {
         const BOOST_LIMIT = MAX_SPEED * 1.1;  // ~220 KPH
         const REVVING_LIMIT = MAX_SPEED * 0.2; // ~40 KPH
 
-        if (gameState === 'countdown') {
+        if (isPreparing) {
             if (keyFaster) {
                 nextSpeed = Util.accelerate(speed, ACCEL * 0.5, dt);
                 nextSpeed = Math.min(nextSpeed, REVVING_LIMIT);
@@ -1391,19 +1376,39 @@ export default function GameSpeedPage() {
             }
             
             if (hasQuizRemaining) {
-                // Save current state to localStorage before redirect
-                localStorage.setItem('nitroquiz_game_questionIndex', state.current.quizQuestionIndex.toString());
-                localStorage.setItem('nitroquiz_game_score', state.current.totalQuizScore.toString());
-                
-                const participantId = localStorage.getItem('nitroquiz_game_participantId');
-                if (participantId) {
-                    supabase.from('participants').update({ 
-                        lap_race: currentRound,
-                        minigame: false
-                    }).eq('id', participantId).then();
-                }
+                // Async transition wrapper to allow 'await' without blocking the main update loop synchronously
+                (async () => {
+                    const participantId = localStorage.getItem('nitroquiz_game_participantId');
+                    console.log("[NitroQuiz] Lap Finished. Updating minigame state for:", participantId);
+                    
+                    if (participantId) {
+                        try {
+                            // 1. Force state update to DB and await it
+                            const { error } = await supabase.from('participants').update({ 
+                                lap_race: currentRound,
+                                minigame: false
+                            }).eq('id', participantId);
+                            
+                            if (error) {
+                                console.error("[NitroQuiz] DB Update Error:", error);
+                            } else {
+                                console.log("[NitroQuiz] DB Update Success. minigame=false confirmed.");
+                            }
+                        } catch (e) {
+                            console.error("[NitroQuiz] Critical error updating minigame status:", e);
+                        }
+                    }
 
-                router.push(`/player/${roomCode}/quiz`);
+                    // 2. Clear local storage for next session but keep questions
+                    localStorage.setItem('nitroquiz_game_questionIndex', state.current.quizQuestionIndex.toString());
+                    localStorage.setItem('nitroquiz_game_score', state.current.totalQuizScore.toString());
+
+                    // 3. Tiny delay (200ms) to ensure Supabase propagation before redirect
+                    setTimeout(() => {
+                        console.log("[NitroQuiz] Navigating to quiz phase...");
+                        router.push(`/player/${roomCode}/quiz`);
+                    }, 500);
+                })();
             } else {
                 const participantId = localStorage.getItem('nitroquiz_game_participantId');
                 if (participantId) {
@@ -1573,7 +1578,7 @@ export default function GameSpeedPage() {
 
              const { data } = await supabase.from('participants').select('minigame, finished_at').eq('id', participantId).single();
              if (data) {
-                 if (data.minigame === true && !data.finished_at) {
+                 if (data.minigame === false && !data.finished_at) {
                      router.push(`/player/${roomCode}/quiz`);
                  }
              }
@@ -1591,7 +1596,7 @@ export default function GameSpeedPage() {
         let miniMapUpdateTime = 0;
 
         const loop = (time: number) => {
-            if (gameState === 'playing' || gameState === 'countdown') {
+            if (gameState === 'playing') {
                 const dt = Math.min(1, (time - lastTime) / 1000);
                 update(dt);
             }
@@ -2117,6 +2122,7 @@ export default function GameSpeedPage() {
         if (!sessId) return;
 
         const fetchAndStartTimer = async () => {
+            await syncServerTime(); // Ensure offset is ready before logic
             const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessId).single();
             if (!data?.started_at) return;
 
@@ -2124,7 +2130,8 @@ export default function GameSpeedPage() {
                 const start = new Date(data.started_at).getTime();
                 const now = getSyncedServerTime();
                 const elapsedSeconds = Math.floor((now - start) / 1000);
-                const remaining = Math.max(0, (data.total_time_minutes || 5) * 60 - elapsedSeconds);
+                const totalSeconds = (data.total_time_minutes || 5) * 60;
+                const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
                 
                 setGlobalTimeLeft(remaining);
 
@@ -2776,83 +2783,6 @@ export default function GameSpeedPage() {
                     <div style={{ width: '64px', height: '64px', border: '4px solid rgba(59,130,246,0.1)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', boxShadow: '0 0 20px rgba(59,130,246,0.2)' }} />
                     <p style={{ marginTop: '2rem', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4em', color: '#3b82f6', animation: 'pulse 2s ease-in-out infinite' }}>{t('player_game.establishing_signal')}</p>
                     <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
-                </div>
-            )}
-
-            {/* Countdown Overlay - 3 traffic lights (red, yellow, green) */}
-            {mounted && assetsLoaded && gameState === 'countdown' && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 1000,
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: 'rgba(0, 0, 0, 0.88)',
-                    backdropFilter: 'blur(8px)',
-                    fontFamily: 'var(--font-rajdhani)',
-                    gap: usePCLayout ? '2rem' : '1.25rem',
-                }}>
-                    {/* Racing lights - 3 circles: Red, Yellow, Green */}
-                    <div style={{ display: 'flex', gap: usePCLayout ? '1.25rem' : '0.75rem' }}>
-                        {[
-                            { color: '#ef4444', activeAt: 3 }, // Red = lit when countdown === 3
-                            { color: '#facc15', activeAt: 2 }, // Yellow = lit when countdown <= 2
-                            { color: '#00ff9d', activeAt: 1 }, // Green = lit when countdown <= 1
-                        ].map((light, i) => {
-                            const isGo = countdown <= 0;
-                            const isLit = isGo || countdown <= light.activeAt;
-                            const displayColor = isGo ? '#00ff9d' : light.color;
-
-                            return (
-                                <div
-                                    key={i}
-                                    style={{
-                                        width: usePCLayout ? '3rem' : '2rem',
-                                        height: usePCLayout ? '3rem' : '2rem',
-                                        borderRadius: '50%',
-                                        border: `2px solid ${isLit ? displayColor : '#374151'}`,
-                                        backgroundColor: isLit ? displayColor : 'rgba(55, 65, 81, 0.3)',
-                                        boxShadow: isLit ? `0 0 25px ${displayColor}` : 'none',
-                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        transform: isLit ? 'scale(1.15)' : 'scale(1)',
-                                    }}
-                                />
-                            );
-                        })}
-                    </div>
-
-                    {/* Countdown number */}
-                    <div
-                        key={countdown}
-                        style={{
-                            fontSize: usePCLayout ? '8rem' : '5rem',
-                            fontWeight: 900,
-                            lineHeight: 1,
-                            color: countdown === 3 ? '#ef4444' : countdown === 2 ? '#facc15' : '#00ff9d',
-                            textShadow: `0 0 60px currentColor`,
-                            animation: 'countdown-pop 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
-                            willChange: 'transform, opacity',
-                        }}
-                    >
-                        {countdown > 0 ? countdown : t('player_game.go')}
-                    </div>
-
-                    {/* Subtitle */}
-                    {countdown > 0 && (
-                        <div style={{
-                            fontSize: usePCLayout ? '1rem' : '0.7rem',
-                            letterSpacing: '0.3em', textTransform: 'uppercase',
-                            color: '#64748b', fontWeight: 900,
-                        }}>
-                        {countdown > 0 ? t('player_game.race_starting') : ''}
-                        </div>
-                    )}
-
-                    <style>{`
-                        @keyframes countdown-pop {
-                            0% { transform: scale(1.5); opacity: 0; }
-                            60% { transform: scale(0.95); opacity: 1; }
-                            100% { transform: scale(1); opacity: 1; }
-                        }
-                    `}</style>
                 </div>
             )}
 

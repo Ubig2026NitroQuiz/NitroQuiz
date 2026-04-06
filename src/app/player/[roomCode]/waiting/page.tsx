@@ -132,7 +132,10 @@ export default function PlayerWaitingPage() {
 
     // Sync server time on mount
     useEffect(() => {
-        syncServerTime();
+        const initSync = async () => {
+            await syncServerTime();
+        };
+        initSync();
     }, []);
 
     useEffect(() => {
@@ -156,24 +159,25 @@ export default function PlayerWaitingPage() {
                     const startTime = new Date(sessionData.countdown_started_at).getTime();
                     const nowOnServer = getSyncedServerTime();
                     const elapsed = nowOnServer - startTime;
-                    const remaining = 3000 - elapsed;
+                    const remaining = Math.max(0, 3000 - elapsed);
 
                     if (remaining > 0) {
                         setStatus("countdown");
+                        statusRef.current = "countdown"; // Synchronous update
                         preloadQuizData(sessionData.id);
                         
                         // Frame-perfect sync loop
                         const syncLoop = () => {
-                            const now = getSyncedServerTime();
-                            const diff = now - startTime;
-                            const rem = Math.max(0, 3000 - diff);
-                            const displayVal = Math.ceil(rem / 1000);
+                            const nowOnServer = getSyncedServerTime();
+                            const elapsed = nowOnServer - startTime;
+                            const remaining = Math.max(0, 3000 - elapsed);
+                            const displayVal = Math.min(3, Math.ceil(remaining / 1000));
 
                             setCountdownValue(displayVal);
 
-                            if (rem > 0 && statusRef.current === "countdown") {
+                            if (remaining > 0 && statusRef.current === "countdown") {
                                 requestAnimationFrame(syncLoop);
-                            } else if (rem <= 0 && statusRef.current === "countdown") {
+                            } else if (remaining <= 0 && statusRef.current === "countdown") {
                                 setStatus("go");
                                 setTimeout(() => {
                                     router.push(`/player/${roomCode}/game`);
@@ -229,6 +233,7 @@ export default function PlayerWaitingPage() {
                             if (payload.new.countdown_started_at && !payload.new.started_at && statusRef.current !== "countdown" && statusRef.current !== "go") {
                                 const startTime = new Date(payload.new.countdown_started_at).getTime();
                                 setStatus("countdown");
+                                statusRef.current = "countdown"; // Synchronous update
                                 preloadQuizData(sessionData.id);
 
                                 // Frame-perfect sync loop
@@ -236,7 +241,7 @@ export default function PlayerWaitingPage() {
                                     const nowOnServer = getSyncedServerTime();
                                     const elapsed = nowOnServer - startTime;
                                     const remaining = Math.max(0, 3000 - elapsed);
-                                    const displayVal = Math.ceil(remaining / 1000);
+                                    const displayVal = Math.min(3, Math.ceil(remaining / 1000));
 
                                     setCountdownValue(displayVal);
 
