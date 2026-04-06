@@ -235,8 +235,7 @@ export default function QuizPage() {
             const participantId = localStorage.getItem('nitroquiz_game_participantId');
             if (participantId) {
                 try {
-                    await supabase
-                        .from('participants')
+                    await supabase.from('participants')
                         .update({ 
                             minigame: true, // Back to Racing
                             current_question: nextIdx // Save progress

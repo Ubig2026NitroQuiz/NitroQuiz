@@ -75,6 +75,7 @@ export default function HostLobby() {
     }
 
     const loadSession = async () => {
+      await syncServerTime(); // Ensure offset is ready before logic
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
@@ -86,8 +87,9 @@ export default function HostLobby() {
 
       // Resume countdown if it started but not finished
       if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
-        const diff = Math.floor((new Date().getTime() - new Date(data.countdown_started_at).getTime()) / 1000);
-        const remaining = 3 - diff;
+        const now = getSyncedServerTime();
+        const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
+        const remaining = Math.max(0, Math.min(3, 3 - diff));
         if (remaining > 0) {
           setCountdown(remaining);
         } else if (remaining <= 0) {
@@ -158,9 +160,7 @@ export default function HostLobby() {
 
   const startGame = async () => {
     if (!session || participants.length === 0) return;
-
-    // SERVER-DRIVEN: We only update the DB.
-    // The actual countdown will start when the DB broadcast confirms the update.
+    await syncServerTime(); // Ensure offset is ready before logic
     const nowServer = getSyncedServerTime();
     await supabase
       .from("sessions")
@@ -180,9 +180,9 @@ export default function HostLobby() {
 
     const checkCountdown = () => {
       const now = getSyncedServerTime();
-      const elapsed = now - startTime;
+      const elapsed = Math.max(0, now - startTime);
       const totalCountdown = 3000;
-      const remaining = Math.max(0, totalCountdown - elapsed);
+      const remaining = Math.max(0, Math.min(totalCountdown, totalCountdown - elapsed));
       const displayVal = Math.ceil(remaining / 1000);
 
       setCountdown((prev) => (prev !== displayVal ? displayVal : prev));
@@ -197,7 +197,8 @@ export default function HostLobby() {
             .from("sessions")
             .update({
               status: "active",
-              started_at: new Date(getSyncedServerTime()).toISOString()
+              started_at: new Date(getSyncedServerTime()).toISOString(),
+              countdown_started_at: null  
             })
             .eq("id", session.id);
 

@@ -429,6 +429,7 @@ export default function GameMonitorPage() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
+        await syncServerTime(); // Force sync first
         const { data: sessionData, error: sessionError } = await supabase
           .from("sessions")
           .select("id, question_limit, total_time_minutes, started_at")
@@ -447,7 +448,8 @@ export default function GameMonitorPage() {
               const start = new Date(sessionData.started_at).getTime();
               const now = getSyncedServerTime();
               const elapsedSeconds = Math.floor((now - start) / 1000);
-              const remaining = Math.max(0, (sessionData.total_time_minutes || 5) * 60 - elapsedSeconds);
+              const totalSeconds = (sessionData.total_time_minutes || 5) * 60;
+              const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
               setTimeLeft(remaining);
           }
 
@@ -464,7 +466,6 @@ export default function GameMonitorPage() {
     };
 
     fetchInitialData();
-    syncServerTime();
   }, [roomCode]);
 
   useEffect(() => {
@@ -518,7 +519,8 @@ export default function GameMonitorPage() {
       const start = new Date(session.started_at).getTime();
       const now = getSyncedServerTime();
       const elapsedSeconds = Math.floor((now - start) / 1000);
-      const remaining = Math.max(0, (session.total_time_minutes || 5) * 60 - elapsedSeconds);
+      const totalSeconds = (session.total_time_minutes || 5) * 60;
+      const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
       
       setTimeLeft(remaining);
 
