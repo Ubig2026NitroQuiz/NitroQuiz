@@ -420,8 +420,8 @@ export default function PlayerWaitingPage() {
                                         <img src={assignedChar.imageSrc} alt="car" className="w-full max-h-[80px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
                                     </div>
                                     <div className="text-center pb-2 px-2">
-                                        <p className="font-display text-white text-[10px] font-bold uppercase tracking-[0.18em] truncate">{username}</p>
-                                        <p className="font-display text-[#00ff9d] text-[8px] uppercase tracking-widest mt-0.5 opacity-80">{assignedChar.name}</p>
+                                        <p className="font-display text-white text-[10px] font-bold tracking-[0.18em] truncate">{username}</p>
+                                        <p className="font-display text-[#00ff9d] text-[8px] tracking-widest mt-0.5 opacity-80">{assignedChar.name}</p>
                                     </div>
                                 </div>
 
@@ -446,8 +446,8 @@ export default function PlayerWaitingPage() {
                                                 <img src={charObj.imageSrc} alt="car" className="w-full max-h-[80px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
                                             </div>
                                             <div className="text-center pb-2 px-2">
-                                                <p className="font-display text-white text-[10px] font-bold uppercase tracking-[0.18em] truncate">{p.nickname}</p>
-                                                <p className="font-display text-[#00d4ff] text-[8px] uppercase tracking-widest mt-0.5 opacity-80">{charObj.name}</p>
+                                                <p className="font-display text-white text-[10px] font-bold tracking-[0.18em] truncate">{p.nickname}</p>
+                                                <p className="font-display text-[#00d4ff] text-[8px] tracking-widest mt-0.5 opacity-80">{charObj.name}</p>
                                             </div>
                                         </div>
                                     );
@@ -579,8 +579,8 @@ export default function PlayerWaitingPage() {
                                             </div>
                                             {/* Name */}
                                             <div className="text-center pb-3 px-3">
-                                                <p className="font-display text-white text-xs font-bold uppercase tracking-[0.18em] truncate" title={username}>{username}</p>
-                                                <p className="font-display text-[#00ff9d] text-[9px] uppercase tracking-widest mt-1 opacity-80">{assignedChar.name}</p>
+                                                <p className="font-display text-white text-xs font-bold tracking-[0.18em] truncate" title={username}>{username}</p>
+                                                <p className="font-display text-[#00ff9d] text-[9px] tracking-widest mt-1 opacity-80">{assignedChar.name}</p>
                                             </div>
                                         </div>
 
@@ -607,8 +607,8 @@ export default function PlayerWaitingPage() {
                                                         <img src={carSrc} alt="car" className="w-full max-h-[110px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
                                                     </div>
                                                     <div className="text-center pb-3 px-3">
-                                                        <p className="font-display text-white text-xs font-bold uppercase tracking-[0.18em] truncate" title={p.nickname}>{p.nickname}</p>
-                                                        <p className="font-display text-[#00d4ff] text-[9px] uppercase tracking-widest mt-1 opacity-80">{pCarName}</p>
+                                                        <p className="font-display text-white text-xs font-bold tracking-[0.18em] truncate" title={p.nickname}>{p.nickname}</p>
+                                                        <p className="font-display text-[#00d4ff] text-[9px] tracking-widest mt-1 opacity-80">{pCarName}</p>
                                                     </div>
                                                 </div>
                                             );
@@ -705,7 +705,6 @@ export default function PlayerWaitingPage() {
                                         <h2 className="font-display text-2xl font-black text-white uppercase tracking-wider leading-none">
                                             {assignedChar.name}
                                         </h2>
-                                        <p className="text-[#8899bb] text-xs font-mono tracking-widest">{assignedChar.name}</p>
                                     </div>
 
                                     <div className="absolute z-10 flex flex-col gap-6 items-center justify-center right-0 md:left-[340px] lg:left-[500px] xl:left-[700px]"
