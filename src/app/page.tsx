@@ -600,14 +600,23 @@ export default function Home() {
               </div>
 
               <div className="mb-4">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={{ 
+                    boxShadow: ["0 0 10px rgba(124,58,237,0.3)", "0 0 25px rgba(124,58,237,0.6)", "0 0 10px rgba(124,58,237,0.3)"],
+                  }}
+                  transition={{ 
+                    boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                  }}
                   onClick={handleHost}
-                  className="px-6 py-3 bg-[#7C3AED]/10 hover:bg-[#7C3AED]/20 border border-[#7C3AED]/30 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(124,58,237,0.2)] active:scale-95"
+                  className="px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#5b21b6] border border-[#7C3AED]/50 rounded-xl transition-all duration-300 relative group overflow-hidden"
                 >
-                  <span className="text-lg font-bold text-white uppercase tracking-wider">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                  <span className="text-lg font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                     {t('homepage.host.button')}
                   </span>
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -624,9 +633,14 @@ export default function Home() {
                   <div className="w-10 h-10 flex items-center justify-center bg-[#2d6af2]/10 text-[#5a9cff] border border-[#2d6af2]/20">
                     <PlayCircle className="w-5 h-5" />
                   </div>
-                  <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
-                    {t('homepage.join.title')}
-                  </h2>
+                  <div className="flex items-baseline gap-4">
+                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
+                      {t('homepage.join.title')}
+                    </h2>
+                    <p className="text-white/40 text-[10px] font-bold tracking-[0.1em] leading-none uppercase hidden sm:block">
+                      {t('homepage.join.subtitle')}
+                    </p>
+                  </div>
                 </div>
                 <div className="mt-1 h-0.5 w-12 bg-[#2d6af2] group-hover:w-20 transition-all duration-500"></div>
               </div>
@@ -644,14 +658,23 @@ export default function Home() {
                   />
                 </div>
 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={{ 
+                    boxShadow: ["0 0 10px rgba(45,106,242,0.3)", "0 0 25px rgba(45,106,242,0.6)", "0 0 10px rgba(45,106,242,0.3)"],
+                  }}
+                  transition={{ 
+                    boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                  }}
                   onClick={handleJoin}
-                  className="px-8 py-2.5 bg-[#2d6af2]/10 hover:bg-[#2d6af2]/20 border border-[#2d6af2]/30 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(45,106,242,0.2)] active:scale-95 whitespace-nowrap"
+                  className="px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-[#2d6af2]/50 rounded-xl transition-all duration-300 relative group overflow-hidden whitespace-nowrap"
                 >
-                  <span className="text-base font-bold text-white uppercase tracking-widest">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                  <span className="text-base font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                     {t('homepage.join.button')}
                   </span>
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
