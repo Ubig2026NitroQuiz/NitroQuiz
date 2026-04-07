@@ -107,34 +107,40 @@ const OFF_ROAD_LIMIT = MAX_SPEED / 4;
 // --- Difficulty-based config helper ---
 function getDifficultyConfig(difficulty: string) {
     if (difficulty === 'hard') {
-        // Hard: high camera (top-down drone feel), more NPCs, all obstacles
+        // Hard: high camera (drone feel), max 180 KPH, more NPCs, all obstacles, lighter fog for visibility
         return {
             fieldOfView: 85,
             cameraHeight: 1000,
-            fogDensity: 3,
+            fogDensity: 5,       // Less dense fog so players can see further
             npcCount: 30,
             obstacleCount: 25,
-            trackType: 'complex', // twisty S-curves + bumps like medium
+            trackType: 'complex',
+            speedFactor: 0.9,    // 180 KPH
+            accelFactor: 1.0,
         };
     } else if (difficulty === 'normal' || difficulty === 'medium') {
         // Normal/Medium: standard camera, twisty track, obstacles
         return {
             fieldOfView: 100,
             cameraHeight: 500,
-            fogDensity: 5,
+            fogDensity: 4,
             npcCount: 20,
-            obstacleCount: 25,
+            obstacleCount: 20,
             trackType: 'complex',
+            speedFactor: 0.75,   // 150 KPH
+            accelFactor: 0.9,
         };
     } else {
-        // Easy: standard everything, simple track, no obstacles
+        // Easy: simple track, no obstacles, clear view
         return {
             fieldOfView: 100,
             cameraHeight: 500,
-            fogDensity: 5,
-            npcCount: 20,
+            fogDensity: 3,
+            npcCount: 15,
             obstacleCount: 0,
             trackType: 'simple',
+            speedFactor: 0.6,    // 120 KPH
+            accelFactor: 0.8,
         };
     }
 }
@@ -571,7 +577,10 @@ export default function GameSpeedPage() {
         for (let n = 0; n < diffConfig.npcCount; n++) {
             const z = (n + 1) * (len * SEGMENT_LENGTH / diffConfig.npcCount);
             const offset = Util.randomChoice([-0.8, -0.4, 0.4, 0.8]);
-            const speed = MAX_SPEED / 4 + Math.random() * (MAX_SPEED / 2);
+            
+            // Scaled NPC Speed based on difficulty
+            const baseNPCSpeed = MAX_SPEED * diffConfig.speedFactor;
+            const speed = baseNPCSpeed / 4 + Math.random() * (baseNPCSpeed / 1.8);
 
             const vehicleTypeRnd = Math.random();
             let vehicleType: 'truck' | 'jne' | 'odong' | 'taxi' = 'truck';
@@ -632,7 +641,7 @@ export default function GameSpeedPage() {
             offset: -0.4,
             z: 200 * SEGMENT_LENGTH,
             sprite: state.current.sprites.car_rival || state.current.sprites.npc_car,
-            speed: MAX_SPEED * 0.7,
+            speed: MAX_SPEED * diffConfig.speedFactor * 0.8, // Rival stays competitive
             percent: 0,
             isRival: true
         };
@@ -1113,13 +1122,18 @@ export default function GameSpeedPage() {
         let nextSpeed = speed;
         let nextNos = state.current.nos;
 
-        const GAS_LIMIT = MAX_SPEED * 0.9;    // ~180 KPH
-        const BOOST_LIMIT = MAX_SPEED * 1.1;  // ~220 KPH
-        const REVVING_LIMIT = MAX_SPEED * 0.2; // ~40 KPH
+        const difficulty = localStorage.getItem('nitroquiz_game_difficulty') || 'easy';
+        const diffConfig = getDifficultyConfig(difficulty);
+        const CURRENT_MAX_SPEED = MAX_SPEED * diffConfig.speedFactor;
+        const CURRENT_ACCEL = ACCEL * diffConfig.accelFactor;
+
+        const GAS_LIMIT = CURRENT_MAX_SPEED * 0.9;
+        const BOOST_LIMIT = CURRENT_MAX_SPEED * 1.1;
+        const REVVING_LIMIT = CURRENT_MAX_SPEED * 0.2;
 
         if (isPreparing) {
             if (keyFaster) {
-                nextSpeed = Util.accelerate(speed, ACCEL * 0.5, dt);
+                nextSpeed = Util.accelerate(speed, CURRENT_ACCEL * 0.5, dt);
                 nextSpeed = Math.min(nextSpeed, REVVING_LIMIT);
             } else {
                 nextSpeed = Util.accelerate(speed, DECEL, dt);
@@ -1129,11 +1143,11 @@ export default function GameSpeedPage() {
             const tryingToBoost = keyBoost && nextNos > 0;
 
             if (keySlower) {
-                // BRAKING / STOPPING - Higher priority than Gas for mobile auto-forward
+                // BRAKING / STOPPING
                 nextSpeed = Util.accelerate(speed, BREAKING, dt);
             } else if (tryingToBoost) {
                 // NOS BOOSTING
-                nextSpeed = Util.accelerate(speed, ACCEL * 2.5, dt);
+                nextSpeed = Util.accelerate(speed, CURRENT_ACCEL * 2.5, dt);
                 nextNos = Math.max(0, nextNos - dt * 25); // Consumption
 
                 if (nextSpeed >= BOOST_LIMIT - 300) {
@@ -1142,7 +1156,7 @@ export default function GameSpeedPage() {
                 }
             } else if (keyFaster) {
                 // NORMAL GAS
-                nextSpeed = Util.accelerate(speed, ACCEL, dt);
+                nextSpeed = Util.accelerate(speed, CURRENT_ACCEL, dt);
                 if (nextSpeed > GAS_LIMIT) {
                     nextSpeed = Util.accelerate(nextSpeed, DECEL, dt);
                     nextSpeed = Math.max(nextSpeed, GAS_LIMIT);
@@ -1178,9 +1192,9 @@ export default function GameSpeedPage() {
             }
         }
 
-        // Road Boundary Limit (Acts as invisible barrier)
+        // Road Boundary Limit
         nextPlayerX = Util.limit(nextPlayerX, -1.5, 1.5);
-        nextSpeed = Util.limit(nextSpeed, 0, MAX_SPEED);
+        nextSpeed = Util.limit(nextSpeed, 0, CURRENT_MAX_SPEED);
 
         state.current.playerX = nextPlayerX;
         state.current.speed = nextSpeed;
@@ -1348,7 +1362,7 @@ export default function GameSpeedPage() {
         const totalRounds = Math.max(1, Math.ceil(state.current.allQuizQuestions.length / QUESTIONS_PER_ROUND));
 
         setStats({
-            speed: Math.floor(speed / 100),
+            speed: Math.floor(speed / 60), // Display actual calculated KPH (e.g. 19200 / 60 = 320 KPH)
             nos: Math.floor(state.current.nos),
             lap: currentRound,
             totalLaps: totalRounds
@@ -1356,36 +1370,31 @@ export default function GameSpeedPage() {
 
         // Lap & Finish line check
         if (position > trackLength - playerZ && gameState !== 'finished' && !(state.current as any).hasFinishedLine) {
+            
+            // Check if we have quiz questions remaining (from state ref)
+            const questions = state.current.allQuizQuestions;
+            const hasQuizRemaining = questions.length > 0 && state.current.quizQuestionIndex < questions.length;
+
+            // CRITICAL: If questions.length is 0, it might mean they are still loading.
+            // Do NOT end game if they are still loading.
+            if (questions.length === 0) {
+                console.warn("[NitroQuiz] Finish line hit but no questions loaded yet. Waiting...");
+                // Just stop the car and wait for questions to load
+                state.current.speed = 0;
+                return;
+            }
+
             (state.current as any).hasFinishedLine = true;
             state.current.speed = 0;
 
-            // Check if we have quiz questions remaining (from state ref)
-            let hasQuizRemaining = state.current.allQuizQuestions.length > 0 && state.current.quizQuestionIndex < state.current.allQuizQuestions.length;
-
-            if (!hasQuizRemaining) {
-                // Fallback: check localStorage directly
-                try {
-                    const storedQ = localStorage.getItem('nitroquiz_game_questions');
-                    const storedIdx = parseInt(localStorage.getItem('nitroquiz_game_questionIndex') || '0', 10);
-                    if (storedQ) {
-                        const parsed = JSON.parse(storedQ);
-                        if (Array.isArray(parsed) && storedIdx < parsed.length) {
-                            hasQuizRemaining = true;
-                        }
-                    }
-                } catch (e) { }
-            }
-
             if (hasQuizRemaining) {
-                // Async transition wrapper to allow 'await' without blocking the main update loop synchronously
+                // Async transition wrapper
                 (async () => {
                     const participantId = localStorage.getItem('nitroquiz_game_participantId');
-                    console.log("[NitroQuiz] Lap Finished. Updating minigame state for:", participantId);
+                    console.log("[NitroQuiz] Lap Finished. Updating state for participant:", participantId);
 
                     if (participantId) {
                         try {
-                            // 1. Force state update to DB and await it
-                            // Fetch lap_race saat ini dari DB dulu, lalu increment
                             const { data: pData } = await supabase
                                 .from('participants')
                                 .select('lap_race')
@@ -1403,27 +1412,20 @@ export default function GameSpeedPage() {
                                 localStorage.setItem('nitroquiz_game_lapRace', String(newLap));
                                 setLapRace(newLap);
                             }
-                            if (error) {
-                                console.error("[NitroQuiz] DB Update Error:", error);
-                            } else {
-                                console.log("[NitroQuiz] DB Update Success. minigame=false confirmed.");
-                            }
                         } catch (e) {
-                            console.error("[NitroQuiz] Critical error updating minigame status:", e);
+                            console.error("[NitroQuiz] Error updating minigame status:", e);
                         }
                     }
 
-                    // 2. Clear local storage for next session but keep questions
                     localStorage.setItem('nitroquiz_game_questionIndex', state.current.quizQuestionIndex.toString());
                     localStorage.setItem('nitroquiz_game_score', state.current.totalQuizScore.toString());
 
-                    // 3. Tiny delay (200ms) to ensure Supabase propagation before redirect
                     setTimeout(() => {
-                        console.log("[NitroQuiz] Navigating to quiz phase...");
                         router.push(`/player/${roomCode}/quiz`);
                     }, 500);
                 })();
             } else {
+                // No more questions -> Finish game
                 const participantId = localStorage.getItem('nitroquiz_game_participantId');
                 if (participantId) {
                     supabase.from('participants').update({ lap_race: currentRound }).eq('id', participantId).then();
@@ -1431,7 +1433,6 @@ export default function GameSpeedPage() {
                 setGameState('finished');
                 endGame();
             }
-
         }
     };
 
@@ -2185,87 +2186,113 @@ export default function GameSpeedPage() {
         };
     }, []);
 
-    // Load quiz questions from localStorage (preloaded by player lobby)
+    // Load quiz questions from localStorage or Supabase if missing
     useEffect(() => {
         (async () => {
             try {
+                let questionsData = [];
                 const stored = localStorage.getItem('nitroquiz_game_questions');
+                const sessId = localStorage.getItem('nitroquiz_game_sessionId');
+
                 if (stored) {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        // Normalize questions to QuizQuestion format
-                        // DB format: { answers: [{id:"0", answer:"text"}, ...], correct: "3", question: "..." }
-                        const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => {
-                            let options: string[] = [];
-                            let correctAnswer = 0;
-
-                            // Handle DB format: answers is array of {id, answer} objects
-                            if (Array.isArray(q.answers) && q.answers.length > 0 && typeof q.answers[0] === 'object' && q.answers[0].answer) {
-                                options = q.answers.map((a: any) => a.answer || '');
-                                // correct is a string ID matching answers[].id
-                                if (q.correct !== undefined) {
-                                    const correctId = String(q.correct);
-                                    const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
-                                    correctAnswer = correctIdx >= 0 ? correctIdx : 0;
-                                }
-                            }
-                            // Handle simple format: options is string[]
-                            else if (Array.isArray(q.options)) {
-                                options = q.options;
-                                correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer
-                                    : typeof q.correct_answer === 'number' ? q.correct_answer
-                                        : typeof q.answer === 'number' ? q.answer : 0;
-                            }
-                            // Handle other formats
-                            else if (Array.isArray(q.choices)) {
-                                options = q.choices;
-                                correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
-                            }
-
-                            return {
-                                id: q.id || `q-${idx}`,
-                                question: q.question || q.text || q.pertanyaan || '',
-                                options,
-                                correctAnswer,
-                            };
-                        });
-                        console.log('[GameSpeed] Loaded quiz questions:', normalized.length, 'Sample:', normalized[0]);
-                        setAllQuizQuestions(normalized);
-                        state.current.allQuizQuestions = normalized;
-
-                        // Sync current progress from localStorage
-                        const storedIndex = localStorage.getItem('nitroquiz_game_questionIndex');
-                        const storedScore = localStorage.getItem('nitroquiz_game_score');
-                        if (storedIndex) {
-                            const idx = parseInt(storedIndex, 10);
-                            setQuizQuestionIndex(idx);
-                            state.current.quizQuestionIndex = idx;
+                    questionsData = JSON.parse(stored);
+                } else if (sessId) {
+                    // Fallback: Fetch directly from DB if localStorage is empty
+                    console.log('[GameSpeed] No questions in localStorage, fetching from DB...');
+                    const { data: sessionData } = await supabase
+                        .from('sessions')
+                        .select('current_questions, difficulty')
+                        .eq('id', sessId)
+                        .single();
+                    
+                    if (sessionData?.current_questions) {
+                        questionsData = sessionData.current_questions;
+                        localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
+                        if (sessionData.difficulty) {
+                            localStorage.setItem('nitroquiz_game_difficulty', sessionData.difficulty);
                         }
-                        if (storedScore) {
-                            const sc = parseInt(storedScore, 10);
-                            setTotalQuizScore(sc);
-                            state.current.totalQuizScore = sc;
-                        }
+                    }
+                }
 
-                        // Fetch lap_race dari DB untuk HUD yang akurat
-                        const participantId = localStorage.getItem('nitroquiz_game_participantId');
-                        if (participantId) {
-                            try {
-                                const { data: pData } = await supabase
-                                    .from('participants')
-                                    .select('lap_race')
-                                    .eq('id', participantId)
-                                    .single();
-                                if (pData) {
-                                    const dbLap = pData.lap_race || 0;
-                                    setLapRace(dbLap);
-                                    localStorage.setItem('nitroquiz_game_lapRace', String(dbLap));
-                                }
-                            } catch (e) {
-                                console.error('Failed to fetch lap_race:', e);
+                if (Array.isArray(questionsData) && questionsData.length > 0) {
+                    // Normalize questions to QuizQuestion format
+                    const normalized: QuizQuestion[] = questionsData.map((q: any, idx: number) => {
+                        let options: any[] = [];
+                        let correctAnswer = 0;
+
+                        // Handle DB format: answers is array of {id, answer, image?} objects
+                        if (Array.isArray(q.answers) && q.answers.length > 0 && typeof q.answers[0] === 'object' && (q.answers[0].answer || q.answers[0].text)) {
+                            options = q.answers.map((a: any) => ({
+                                text: a.answer || a.text || '',
+                                image: a.image || a.image_url || a.imageUrl || undefined
+                            }));
+                            // correct is a string ID matching answers[].id
+                            if (q.correct !== undefined) {
+                                const correctId = String(q.correct);
+                                const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
+                                correctAnswer = correctIdx >= 0 ? correctIdx : 0;
                             }
                         }
+                        // Handle simple format: options is string[]
+                        else if (Array.isArray(q.options)) {
+                            options = q.options.map((opt: any) => typeof opt === 'string' ? { text: opt } : opt);
+                            correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer
+                                : typeof q.correct_answer === 'number' ? q.correct_answer
+                                    : typeof q.answer === 'number' ? q.answer : 0;
+                        }
+                        // Handle other formats
+                        else if (Array.isArray(q.choices)) {
+                            options = q.choices.map((opt: any) => typeof opt === 'string' ? { text: opt } : opt);
+                            correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
+                        }
 
+                        // Normalize image field for the question itself
+                        const qImage = q.image || q.image_url || q.imageUrl || undefined;
+
+                        return {
+                            id: q.id || `q-${idx}`,
+                            question: q.question || q.text || q.pertanyaan || '',
+                            options,
+                            correctAnswer,
+                            image: qImage
+                        };
+                    });
+                    
+                    console.log('[GameSpeed] Successfully initialized questions:', normalized.length);
+                    setAllQuizQuestions(normalized);
+                    state.current.allQuizQuestions = normalized;
+
+                    // Sync current progress from localStorage
+                    const storedIndex = localStorage.getItem('nitroquiz_game_questionIndex');
+                    const storedScore = localStorage.getItem('nitroquiz_game_score');
+                    if (storedIndex) {
+                        const idx = parseInt(storedIndex, 10);
+                        setQuizQuestionIndex(idx);
+                        state.current.quizQuestionIndex = idx;
+                    }
+                    if (storedScore) {
+                        const sc = parseInt(storedScore, 10);
+                        setTotalQuizScore(sc);
+                        state.current.totalQuizScore = sc;
+                    }
+
+                    // Fetch lap_race dari DB untuk HUD yang akurat
+                    const participantId = localStorage.getItem('nitroquiz_game_participantId');
+                    if (participantId) {
+                        try {
+                            const { data: pData } = await supabase
+                                .from('participants')
+                                .select('lap_race')
+                                .eq('id', participantId)
+                                .single();
+                            if (pData) {
+                                const dbLap = pData.lap_race || 0;
+                                setLapRace(dbLap);
+                                localStorage.setItem('nitroquiz_game_lapRace', String(dbLap));
+                            }
+                        } catch (e) {
+                            console.error('Failed to fetch lap_race:', e);
+                        }
                     }
                 }
             } catch (e) {
@@ -2294,8 +2321,8 @@ export default function GameSpeedPage() {
                 touchAction: 'none',
                 WebkitUserSelect: 'none',
                 textAlign: 'left',
-                filter: (stats.speed > 150 ? `blur(${((stats.speed - 150) / 60) + (state.current.keyBoost && stats.nos > 0 ? 2 : 0)}px) ` : (state.current.keyBoost && stats.nos > 0 ? 'blur(2px) ' : '')) + 'contrast(1.05) brightness(1) saturate(1.1)', // Milder Lighter Blur
-                transition: 'filter 0.4s ease'
+                filter: (state.current.keyBoost && stats.nos > 0 ? 'blur(1.5px) contrast(1.1) brightness(1.1) saturate(1.2)' : 'contrast(1.05) brightness(1) saturate(1.1)'),
+                transition: 'filter 0.5s ease'
             }}
         >
             {/* Main Game Canvas */}
@@ -2461,30 +2488,34 @@ export default function GameSpeedPage() {
                         touchAction: 'none'
                     }}
                 >
-                    {/* Top Center Timer Overlay */}
+                    {/* Top Center Timer Overlay - Redesigned to match Lap UI */}
                     {globalTimeLeft !== null && (
                         <div style={{
                             position: 'absolute',
                             left: '50%',
-                            top: '1.25rem',
+                            top: isMobile ? '0.75rem' : '1.25rem',
                             transform: 'translateX(-50%)',
                             zIndex: 1000,
-                            backgroundColor: globalTimeLeft <= 30 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 0, 0, 0.75)',
-                            backdropFilter: 'blur(20px)',
-                            padding: isMobile ? '0.4rem 1rem' : '0.6rem 1.75rem',
-                            borderRadius: '3rem',
-                            border: globalTimeLeft <= 30 ? '2.5px solid #ef4444' : '2px solid rgba(255, 255, 255, 0.2)',
-                            boxShadow: globalTimeLeft <= 30 ? '0 0 25px rgba(239, 68, 68, 0.5)' : '0 10px 30px rgba(0,0,0,0.5)',
+                            backgroundColor: globalTimeLeft <= 30 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 0, 0, 0.65)',
+                            backdropFilter: 'blur(15px)',
+                            padding: isMobile ? '0.4rem 0.75rem' : '0.6rem 1.25rem',
+                            borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
+                            border: globalTimeLeft <= 30 ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+                            boxShadow: globalTimeLeft <= 30 ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 10px 30px rgba(0,0,0,0.3)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.6rem',
-                            color: 'white',
                             pointerEvents: 'none',
-                            fontFamily: 'var(--font-rajdhani)',
                             animation: globalTimeLeft <= 30 ? 'timerPulse 1s infinite alternate' : 'none'
                         }}>
-                            <Clock size={isMobile ? 16 : 22} />
-                            <span style={{ fontSize: isMobile ? '1.2rem' : '1.75rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
+                            <span style={{ 
+                                fontSize: isMobile ? '1.1rem' : '1.5rem', 
+                                fontWeight: 900, 
+                                color: '#fff',
+                                fontFamily: 'Orbitron, sans-serif',
+                                fontVariantNumeric: 'tabular-nums',
+                                letterSpacing: '0.05em'
+                            }}>
                                 {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
                             </span>
                         </div>

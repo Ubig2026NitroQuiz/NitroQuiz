@@ -13,7 +13,7 @@ import { generateXID } from '@/lib/id-generator';
 export interface QuizQuestion {
     id: string;
     question: string;
-    options: string[];
+    options: { text: string; image?: string }[];
     correctAnswer: number;
     imageUrl?: string;
     originalDoc?: any;
@@ -35,7 +35,19 @@ export default function QuizPage() {
     const [statusText, setStatusText] = useState(t("player_quiz.round_complete"));
     const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
     const [isTimerReady, setIsTimerReady] = useState(false);
+    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
     const isTransitioningRef = useRef(false);
+    const lastUpdateRef = useRef<Promise<void> | null>(null);
+
+    // Handle Escape Key to close Zoom Modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setZoomedImage(null);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
 
     const QUESTIONS_PER_ROUND = 3;
 
@@ -105,25 +117,34 @@ export default function QuizPage() {
 
                 if (Array.isArray(rawQuestions)) {
                     const normalized: QuizQuestion[] = rawQuestions.map((q: any, idx: number) => {
-                        if (q.options && typeof q.correctAnswer === 'number') return q as QuizQuestion;
-
-                        let options: string[] = [];
+                        let options: { text: string; image?: string }[] = [];
                         let correctAnswer = 0;
+
                         if (Array.isArray(q.answers)) {
-                            options = q.answers.map((a: any) => a.answer || '');
+                            options = q.answers.map((a: any) => ({
+                                text: a.answer || a.text || '',
+                                image: a.image || a.image_url || a.imageUrl || undefined
+                            }));
                             const correctId = String(q.correct);
                             const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
                             correctAnswer = correctIdx >= 0 ? correctIdx : 0;
                         } else if (Array.isArray(q.options)) {
-                            options = q.options;
+                            options = q.options.map((opt: any) => {
+                                if (typeof opt === 'string') return { text: opt };
+                                return {
+                                    text: opt.text || opt.answer || '',
+                                    image: opt.image || opt.image_url || opt.imageUrl || undefined
+                                };
+                            });
                             correctAnswer = q.correctAnswer ?? 0;
                         }
+
                         return {
                             id: q.id || `q-${idx}`,
                             question: q.question || q.text || '',
                             options,
                             correctAnswer,
-                            imageUrl: q.image_url || undefined,
+                            imageUrl: q.image || q.image_url || q.imageUrl || undefined,
                             originalDoc: q
                         };
                     });
@@ -170,59 +191,63 @@ export default function QuizPage() {
         localStorage.setItem('nitroquiz_game_score', newScore.toString());
 
         const participantId = localStorage.getItem('nitroquiz_game_participantId');
-        if (participantId) {
-            try {
-                // Fetch the current state from Supabase to prevent overwriting
-                const { data: currentData } = await supabase
-                    .from('participants')
-                    .select('answers, correct, score, current_question')
-                    .eq('id', participantId)
-                    .single();
-
-                if (currentData) {
-                    let currentAnswers: any[] = [];
-                    if (currentData.answers) {
-                        try {
-                            currentAnswers = typeof currentData.answers === 'string'
-                                ? JSON.parse(currentData.answers)
-                                : currentData.answers;
-                        } catch (e) { }
-                    }
-
-                    // Extract strict raw IDs from original dictionary
-                    let answer_id = "";
-                    if (currentQ.originalDoc?.answers?.[optionIndex]?.id) {
-                        answer_id = currentQ.originalDoc.answers[optionIndex].id;
-                    }
-
-                    const newEntry = {
-                        id: generateXID(),
-                        correct: correct,
-                        answer_id: answer_id,
-                        question_id: currentQ.id
-                    };
-
-                    const updatedAnswers = [...currentAnswers, newEntry];
-                    const updatedCorrect = (currentData.correct || 0) + (correct ? 1 : 0);
-
-                    await supabase
-                        .from('participants')
-                        .update({
-                            answers: updatedAnswers,
-                            correct: updatedCorrect,
-                            score: newScore,
-                            current_question: currentIndex + 1
-                        })
-                        .eq('id', participantId);
-                }
-            } catch (e) {
-                console.error("Failed to update score/lap in DB", e);
-            }
-        }
-
+        // Start transition timer immediately for snappier feel
         setTimeout(() => {
             nextQuestion();
-        }, 800); // Shorter transition for more competitive feel
+        }, 300);
+
+        // Update database in background but keep track of it
+        lastUpdateRef.current = (async () => {
+            if (participantId) {
+                try {
+                    // Fetch the current state from Supabase to prevent overwriting
+                    const { data: currentData } = await supabase
+                        .from('participants')
+                        .select('answers, correct, score, current_question')
+                        .eq('id', participantId)
+                        .single();
+
+                    if (currentData) {
+                        let currentAnswers: any[] = [];
+                        if (currentData.answers) {
+                            try {
+                                currentAnswers = typeof currentData.answers === 'string'
+                                    ? JSON.parse(currentData.answers)
+                                    : currentData.answers;
+                            } catch (e) { }
+                        }
+
+                        // Extract strict raw IDs from original dictionary
+                        let answer_id = "";
+                        if (currentQ.originalDoc?.answers?.[optionIndex]?.id) {
+                            answer_id = currentQ.originalDoc.answers[optionIndex].id;
+                        }
+
+                        const newEntry = {
+                            id: generateXID(),
+                            correct: correct,
+                            answer_id: answer_id,
+                            question_id: currentQ.id
+                        };
+
+                        const updatedAnswers = [...currentAnswers, newEntry];
+                        const updatedCorrect = (currentData.correct || 0) + (correct ? 1 : 0);
+
+                        await supabase
+                            .from('participants')
+                            .update({
+                                answers: updatedAnswers,
+                                correct: updatedCorrect,
+                                score: newScore,
+                                current_question: currentIndex + 1
+                            })
+                            .eq('id', participantId);
+                    }
+                } catch (e) {
+                    console.error("Failed to update score/lap in background", e);
+                }
+            }
+        })();
     };
 
     const nextQuestion = async () => {
@@ -233,6 +258,9 @@ export default function QuizPage() {
 
         if (isEndOfQuiz) {
             // Quiz selesai total → ke result
+            // WAIT for the last background update to finish before navigating to ensure data is saved
+            if (lastUpdateRef.current) await lastUpdateRef.current;
+
             isTransitioningRef.current = true;
             const participantId = localStorage.getItem('nitroquiz_game_participantId');
             if (participantId) {
@@ -255,6 +283,9 @@ export default function QuizPage() {
 
         if (isRoundEnd) {
             // Selesai 1 round → balik ke game
+            // WAIT for the last background update to finish before navigating
+            if (lastUpdateRef.current) await lastUpdateRef.current;
+
             isTransitioningRef.current = true;
             const participantId = localStorage.getItem('nitroquiz_game_participantId');
             if (participantId) {
@@ -433,8 +464,12 @@ export default function QuizPage() {
                                     : 'border-white/10 text-white'
                                     }`}>
                                     <span
-                                        className="text-base md:text-2xl font-black tracking-widest leading-none"
-                                        style={{ fontFamily: 'Orbitron, sans-serif' }}
+                                        className="text-base md:text-2xl font-black leading-none"
+                                        style={{
+                                            fontFamily: 'Orbitron, sans-serif',
+                                            letterSpacing: '0.15em',
+                                            fontVariantNumeric: 'tabular-nums'
+                                        }}
                                     >
                                         {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
                                     </span>
@@ -464,8 +499,13 @@ export default function QuizPage() {
                                 className="mb-6 md:mb-10 flex flex-col items-center"
                             >
                                 {currentQ.imageUrl && (
-                                    <div className="w-full max-w-lg rounded-xl overflow-hidden mb-5 md:mb-8 border border-white/5 shadow-lg">
-                                        <img src={currentQ.imageUrl} alt="Quiz visual" className="w-full h-auto object-contain max-h-[30vh] md:max-h-[40vh]" />
+                                    <div className="!mb-6 flex justify-center">
+                                        <img
+                                            src={currentQ.imageUrl}
+                                            alt="Quiz visual"
+                                            className="rounded-lg max-h-[120px] md:max-h-[180px] object-contain cursor-pointer shadow-lg hover:scale-105 transition-transform duration-300"
+                                            onClick={() => setZoomedImage(currentQ.imageUrl || null)}
+                                        />
                                     </div>
                                 )}
                                 <h3 className="text-base md:text-2xl font-black leading-tight text-white text-center text-balance max-w-3xl tracking-tight">
@@ -480,30 +520,45 @@ export default function QuizPage() {
                                 const isSelected = selectedOption === idx;
                                 const optionColor = OPTION_COLORS[idx] || OPTION_COLORS[0];
                                 const letter = String.fromCharCode(65 + idx);
+                                const hasImage = !!option.image;
 
                                 return (
                                     <motion.button
                                         key={`${currentIndex}-${idx}`}
                                         whileHover={!isAnswered ? { scale: 1.01, backgroundColor: 'rgba(255,255,255,0.02)' } : {}}
-                                        whileTap={!isAnswered ? { scale: 0.99 } : {}}
+                                        whileTap={!isAnswered ? { scale: 0.98 } : {}}
                                         onClick={() => handleAnswer(idx)}
                                         disabled={isAnswered}
-                                        className={`w-full group relative py-3 md:py-5 px-4 md:px-8 rounded-xl md:rounded-22 border text-left flex items-center gap-3 md:gap-6 transition-all duration-300 ${isSelected
-                                            ? 'bg-white/0 border-white/20 shadow-lg'
+                                        className={`w-full group relative rounded-2xl border text-left flex flex-col overflow-hidden transition-all duration-300 ${isSelected
+                                            ? 'bg-white/5 border-white/20 shadow-lg'
                                             : 'bg-white/[0.01] border-white/[0.03] hover:border-white/10'
                                             }`}
                                     >
-                                        <div
-                                            className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center font-black text-lg md:text-xl flex-shrink-0 text-white shadow-lg relative z-10"
-                                            style={{ backgroundColor: optionColor }}
-                                        >
-                                            <div className="absolute inset-0 " />
-                                            {letter}
-                                        </div>
+                                        {/* Option Image Overlay/Section if exists */}
+                                        {hasImage && (
+                                            <div
+                                                className="w-full h-24 sm:h-32 md:h-40 overflow-hidden bg-black/20 border-b border-white/5 cursor-zoom-in"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setZoomedImage(option.image || null);
+                                                }}
+                                            >
+                                                <img src={option.image} alt={`Option ${letter}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                            </div>
+                                        )}
 
-                                        <span className={`text-sm md:text-xl font-bold flex-1 tracking-tight ${isSelected ? 'text-white' : 'text-gray-200'}`}>
-                                            {option}
-                                        </span>
+                                        <div className="flex items-center gap-3 md:gap-4 p-3 md:p-5 flex-1 w-full">
+                                            <div
+                                                className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center font-black text-sm md:text-lg flex-shrink-0 text-white shadow-lg relative z-10"
+                                                style={{ backgroundColor: optionColor }}
+                                            >
+                                                {letter}
+                                            </div>
+
+                                            <span className={`text-xs md:text-lg font-bold flex-1 tracking-tight leading-snug ${isSelected ? 'text-white' : 'text-gray-200'}`}>
+                                                {option.text}
+                                            </span>
+                                        </div>
                                     </motion.button>
                                 );
                             })}
@@ -511,6 +566,28 @@ export default function QuizPage() {
                     </div>
                 </div>
             </div>
+            {/* Zoom Modal - Matches ContohAxiomQuiz */}
+            <AnimatePresence>
+                {zoomedImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-4 cursor-pointer"
+                        onClick={() => setZoomedImage(null)}
+                    >
+                        <motion.img
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            src={zoomedImage}
+                            alt="Zoomed"
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

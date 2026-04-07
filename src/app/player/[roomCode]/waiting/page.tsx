@@ -138,68 +138,117 @@ export default function PlayerWaitingPage() {
         initSync();
     }, []);
 
+    // Countdown logic deduplicated
+    const startCountdown = useCallback((startTime: number, sessId: string) => {
+        if (statusRef.current === "countdown" || statusRef.current === "go") return;
+
+        setStatus("countdown");
+        statusRef.current = "countdown";
+        preloadQuizData(sessId);
+
+        const syncLoop = () => {
+            const nowOnServer = getSyncedServerTime();
+            const elapsed = nowOnServer - startTime;
+            const remaining = Math.max(0, 3000 - elapsed);
+            const displayVal = Math.min(3, Math.ceil(remaining / 1000));
+
+            setCountdownValue(displayVal);
+
+            if (remaining > 0 && statusRef.current === "countdown") {
+                requestAnimationFrame(syncLoop);
+            } else if (remaining <= 0 && statusRef.current === "countdown") {
+                setStatus("go");
+                setTimeout(() => {
+                    router.push(`/player/${roomCode}/game`);
+                }, 800);
+            }
+        };
+        requestAnimationFrame(syncLoop);
+    }, [roomCode, router]);
+
+    const channelRef = useRef<any>(null);
+
     useEffect(() => {
         if (authLoading) return;
-        let cleanup: (() => void) | undefined;
-
-        const joinRoom = async () => {
+        let isMounted = true;
+ 
+        const fetchSessionState = async () => {
             try {
                 const { data: sessionData, error: sessionError } = await supabase
                     .from("sessions").select("id, status, countdown_started_at, started_at, created_at").eq("game_pin", roomCode).single();
-
-                if (sessionError || !sessionData) { setStatus("error"); setErrorMessage("Room not found or invalid."); return; }
-
+ 
+                if (sessionError || !sessionData || !isMounted) { 
+                    if (sessionError) {
+                        setStatus("error"); 
+                        setErrorMessage("Room not found or invalid.");
+                    }
+                    return; 
+                }
+ 
                 if (sessionData.status === "active") {
                     router.push(`/player/${roomCode}/game`);
                     return;
                 }
 
+                if (sessionData.status === "finished" || sessionData.status === "completed") {
+                    router.push(`/player/${roomCode}/result`);
+                    return;
+                }
+ 
                 // If countdown has already started but session not yet active
                 if (sessionData.countdown_started_at && !sessionData.started_at) {
                     const startTime = new Date(sessionData.countdown_started_at).getTime();
                     const nowOnServer = getSyncedServerTime();
                     const elapsed = nowOnServer - startTime;
                     const remaining = Math.max(0, 3000 - elapsed);
-
+ 
                     if (remaining > 0) {
-                        setStatus("countdown");
-                        statusRef.current = "countdown"; // Synchronous update
-                        preloadQuizData(sessionData.id);
-                        
-                        // Frame-perfect sync loop
-                        const syncLoop = () => {
-                            const nowOnServer = getSyncedServerTime();
-                            const elapsed = nowOnServer - startTime;
-                            const remaining = Math.max(0, 3000 - elapsed);
-                            const displayVal = Math.min(3, Math.ceil(remaining / 1000));
-
-                            setCountdownValue(displayVal);
-
-                            if (remaining > 0 && statusRef.current === "countdown") {
-                                requestAnimationFrame(syncLoop);
-                            } else if (remaining <= 0 && statusRef.current === "countdown") {
-                                setStatus("go");
-                                setTimeout(() => {
-                                    router.push(`/player/${roomCode}/game`);
-                                }, 800);
-                            }
-                        };
-                        requestAnimationFrame(syncLoop);
+                        startCountdown(startTime, sessionData.id);
+                    } else {
+                        // Countdown already finished but status not yet 'active' in DB cache
+                        setStatus("go");
+                        router.push(`/player/${roomCode}/game`);
+                        return;
                     }
                 }
 
-                // Instead of inserting new participant, check if one was provided via RPC Auto Join
+                // If we are here, we are in waiting state or countdown has started
+                if (!sessionData.countdown_started_at) {
+                    setStatus("waiting");
+                }
+                setSessionId(sessionData.id);
+
+                // Setup Subscriptions only once
+                if (!channelRef.current) {
+                    const channel = supabase.channel(`player-session-${sessionData.id}`)
+                        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
+                            (payload) => {
+                                // Re-verify via fetchSessionState to be safe and consistent
+                                fetchSessionState();
+                            })
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
+                            async (payload) => {
+                                const { data: pList, count } = await supabase.from("participants")
+                                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
+                                if (isMounted) {
+                                    if (count !== null) setParticipantCount(count);
+                                    if (pList) setAllParticipants(pList);
+                                }
+                            })
+                        .subscribe();
+                    
+                    channelRef.current = channel;
+                }
+
+                // Initial fetch for additional info (participants)
                 const storedParticipantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
                 const storedRoomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
 
-                // Verifikasi bahwa cache ID ini benar-benar untuk room code yang sama
-                // Jika tidak atau kosong, pentalan balik ke join
                 if (!storedParticipantId || storedRoomCode !== roomCode) {
                     router.replace(`/join/${roomCode}`);
                     return;
                 }
 
-                // Ambil default car character dari cache (sudah di generate di RPC)
                 const storedCarCharacter = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_carCharacter') : null;
                 const assignedCar = storedCarCharacter || "rico";
 
@@ -210,84 +259,48 @@ export default function PlayerWaitingPage() {
                 const { data: pList, count } = await supabase.from("participants")
                     .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
 
-                if (count !== null) setParticipantCount(count);
-                if (pList) {
-                    setAllParticipants(pList);
-                    const me = pList.find(p => p.id === storedParticipantId);
-                    if (me) {
-                        setUsername(me.nickname);
-                        setUserAvatar(profile?.avatar_url || me.avatar_url || null);
-                    } else if (profile) {
-                        setUsername(profile.username || "Player");
-                        setUserAvatar(profile.avatar_url || null);
+                if (isMounted) {
+                    if (count !== null) setParticipantCount(count);
+                    if (pList) {
+                        setAllParticipants(pList);
+                        const me = pList.find(p => p.id === storedParticipantId);
+                        if (me) {
+                            setUsername(me.nickname);
+                            setUserAvatar(profile?.avatar_url || me.avatar_url || null);
+                        } else if (profile) {
+                            setUsername(profile.username || "Player");
+                            setUserAvatar(profile.avatar_url || null);
+                        }
                     }
                 }
-
-                setStatus("waiting");
-                setSessionId(sessionData.id);
-
-                const channel = supabase.channel(`player-session-${sessionData.id}`)
-                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
-                        (payload) => {
-                            // If countdown starts
-                            if (payload.new.countdown_started_at && !payload.new.started_at && statusRef.current !== "countdown" && statusRef.current !== "go") {
-                                const startTime = new Date(payload.new.countdown_started_at).getTime();
-                                setStatus("countdown");
-                                statusRef.current = "countdown"; // Synchronous update
-                                preloadQuizData(sessionData.id);
-
-                                // Frame-perfect sync loop
-                                const syncLoop = () => {
-                                    const nowOnServer = getSyncedServerTime();
-                                    const elapsed = nowOnServer - startTime;
-                                    const remaining = Math.max(0, 3000 - elapsed);
-                                    const displayVal = Math.min(3, Math.ceil(remaining / 1000));
-
-                                    setCountdownValue(displayVal);
-
-                                    if (remaining > 0 && statusRef.current === "countdown") {
-                                        requestAnimationFrame(syncLoop);
-                                    } else if (remaining <= 0 && statusRef.current === "countdown") {
-                                        // Client-side auto-transition for smooth UX
-                                        setStatus("go");
-                                        setTimeout(() => {
-                                            router.push(`/player/${roomCode}/game`);
-                                        }, 800);
-                                    }
-                                };
-                                requestAnimationFrame(syncLoop);
-                            }
-                            // If session becomes active
-                            if (payload.new.status === "active" && statusRef.current !== "go") {
-                                setStatus("go");
-                                router.push(`/player/${roomCode}/game`);
-                            }
-                            // If session becomes finished
-                            if (payload.new.status === "finished" || payload.new.status === "completed") {
-                                router.push(`/player/${roomCode}/result`);
-                            }
-                        })
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
-                        async (payload) => {
-                            if (payload.eventType === 'DELETE') {
-                                setAllParticipants(prev => prev.filter(p => p.id !== payload.old.id));
-                                setParticipantCount(prev => Math.max(0, prev - 1));
-                            } else {
-                                const { data: pList, count } = await supabase.from("participants")
-                                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
-                                if (count !== null) setParticipantCount(count);
-                                if (pList) setAllParticipants(pList);
-                            }
-                        })
-                    .subscribe();
-
-                cleanup = () => { supabase.removeChannel(channel); };
-            } catch (err: any) { setStatus("error"); setErrorMessage(err.message || "Unknown error occurred."); }
+            } catch (err: any) { 
+                if (isMounted) {
+                    setStatus("error"); 
+                    setErrorMessage(err.message || "Unknown error occurred."); 
+                }
+            }
         };
 
-        joinRoom();
-        return () => { if (cleanup) cleanup(); };
-    }, [roomCode, router]);
+        fetchSessionState();
+
+        // Handle visibility change to catch missed events when tab is inactive
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log("[NitroQuiz] Tab focused, re-verifying session state...");
+                fetchSessionState();
+            }
+        };
+        window.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => { 
+            isMounted = false;
+            if (channelRef.current) {
+                supabase.removeChannel(channelRef.current);
+                channelRef.current = null;
+            }
+            window.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [roomCode, router, startCountdown, authLoading, profile]);
 
     const preloadQuizData = async (sessId: string) => {
         try {
