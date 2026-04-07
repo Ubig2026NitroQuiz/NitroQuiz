@@ -168,6 +168,8 @@ export default function GameSpeedPage() {
 
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
+    const [isTimerReady, setIsTimerReady] = useState(false);
+    const [lapRace, setLapRace] = useState(0);
 
     // Audio Refs
     const [viewMode, setViewMode] = useState<'first' | 'third'>('third');
@@ -188,7 +190,7 @@ export default function GameSpeedPage() {
 
     // Quiz Integration State
     const [allQuizQuestions, setAllQuizQuestions] = useState<QuizQuestion[]>([]);
-    const [quizQuestionIndex, setQuizQuestionIndex] = useState(0); 
+    const [quizQuestionIndex, setQuizQuestionIndex] = useState(0);
     const [totalQuizScore, setTotalQuizScore] = useState(0);
     const QUESTIONS_PER_ROUND = 3;
 
@@ -248,7 +250,7 @@ export default function GameSpeedPage() {
         nosFrameTimer: 0,
         nosWasPressed: false,
         // Starting Sequence - Revving State
-        revvingFrame: 0, 
+        revvingFrame: 0,
         revvingTimer: 0,
         // MC / Forward Animation State
         mcFrame: 0,
@@ -281,7 +283,7 @@ export default function GameSpeedPage() {
 
         const loadAssets = async () => {
             console.log("Starting asset load...");
-            
+
             // Determine selected character ID for dynamic sprite loading
             let selectedCharId = 'rico'; // Default fallback
             try {
@@ -358,7 +360,7 @@ export default function GameSpeedPage() {
 
             // To properly support the new direct 'src' usage in TRACK_ASSETS without re-defining them in ASSET_LIST:
             const uniqueSources = Array.from(new Set(TRACK_ASSETS.map(item => item.src))).filter(Boolean);
-            
+
             uniqueSources.forEach(src => {
                 promises.push(new Promise<void>((resolve) => {
                     const img = new Image();
@@ -406,7 +408,7 @@ export default function GameSpeedPage() {
             }
         }
     }, [gameState, assetsLoaded, isMobile, mobileOrientationChoice]);
-        
+
 
     // --- Game Logic functions ---
     const findSegment = (z: number) => {
@@ -780,11 +782,11 @@ export default function GameSpeedPage() {
         const playerRefWidth = 450;
         const carWorldWidth = playerRefWidth * 1.5; // Larger base for vehicles to match character size
 
-        let worldWidth = carWorldWidth * 1.0; 
+        let worldWidth = carWorldWidth * 1.0;
         if (name?.includes('lampulalulintas') || name === 'traffic_light') worldWidth = carWorldWidth * 5.5;
-        else if (name?.includes('truck')) worldWidth = carWorldWidth * 1.4; 
-        else if (name?.includes('car_rival') || name === 'foward-opponent') worldWidth = carWorldWidth * 1.0; 
-        else if (name?.includes('odong') || name?.includes('taxi')) worldWidth = carWorldWidth * 1.0; 
+        else if (name?.includes('truck')) worldWidth = carWorldWidth * 1.4;
+        else if (name?.includes('car_rival') || name === 'foward-opponent') worldWidth = carWorldWidth * 1.0;
+        else if (name?.includes('odong') || name?.includes('taxi')) worldWidth = carWorldWidth * 1.0;
         else if (name?.includes('jne')) worldWidth = carWorldWidth * 1.1;
         else if (name?.includes('kiri_') || name?.includes('kanan_')) worldWidth = carWorldWidth * 18.0; // Building multiplier slightly adjusted down since playerRefWidth is up
         else if (name?.includes('pohon')) worldWidth = carWorldWidth * 11.0; // Tree multiplier slightly adjusted down
@@ -1204,7 +1206,7 @@ export default function GameSpeedPage() {
                         // "Mental ke belakang" — kurangi kecepatan tapi jangan 0, biar bisa langsung gas lagi
                         nextSpeed = nextSpeed * 0.3;
                         position = Util.increase(position, -200, trackLength); // "duk" mundur sedikit
-                        
+
                         // Mild horizontal push
                         const dir = nextPlayerX > car.offset ? 1 : -1;
                         nextPlayerX += dir * 0.15;
@@ -1342,10 +1344,9 @@ export default function GameSpeedPage() {
         state.current.playerZ = (activeDiffConfig.cameraHeight * state.current.cameraDepth);
         playerZ = state.current.playerZ;
 
-        const currentRound = Math.floor(state.current.quizQuestionIndex / QUESTIONS_PER_ROUND) + 1;
+        const currentRound = lapRace + 1;
         const totalRounds = Math.max(1, Math.ceil(state.current.allQuizQuestions.length / QUESTIONS_PER_ROUND));
 
-        // HUD update
         setStats({
             speed: Math.floor(speed / 100),
             nos: Math.floor(state.current.nos),
@@ -1357,10 +1358,10 @@ export default function GameSpeedPage() {
         if (position > trackLength - playerZ && gameState !== 'finished' && !(state.current as any).hasFinishedLine) {
             (state.current as any).hasFinishedLine = true;
             state.current.speed = 0;
-            
+
             // Check if we have quiz questions remaining (from state ref)
             let hasQuizRemaining = state.current.allQuizQuestions.length > 0 && state.current.quizQuestionIndex < state.current.allQuizQuestions.length;
-            
+
             if (!hasQuizRemaining) {
                 // Fallback: check localStorage directly
                 try {
@@ -1372,23 +1373,36 @@ export default function GameSpeedPage() {
                             hasQuizRemaining = true;
                         }
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
-            
+
             if (hasQuizRemaining) {
                 // Async transition wrapper to allow 'await' without blocking the main update loop synchronously
                 (async () => {
                     const participantId = localStorage.getItem('nitroquiz_game_participantId');
                     console.log("[NitroQuiz] Lap Finished. Updating minigame state for:", participantId);
-                    
+
                     if (participantId) {
                         try {
                             // 1. Force state update to DB and await it
-                            const { error } = await supabase.from('participants').update({ 
-                                lap_race: currentRound,
+                            // Fetch lap_race saat ini dari DB dulu, lalu increment
+                            const { data: pData } = await supabase
+                                .from('participants')
+                                .select('lap_race')
+                                .eq('id', participantId)
+                                .single();
+
+                            const newLap = (pData?.lap_race || 0) + 1;
+
+                            const { error } = await supabase.from('participants').update({
+                                lap_race: newLap,
                                 minigame: false
                             }).eq('id', participantId);
-                            
+
+                            if (!error) {
+                                localStorage.setItem('nitroquiz_game_lapRace', String(newLap));
+                                setLapRace(newLap);
+                            }
                             if (error) {
                                 console.error("[NitroQuiz] DB Update Error:", error);
                             } else {
@@ -1573,15 +1587,18 @@ export default function GameSpeedPage() {
         setMounted(true);
 
         const fetchServerState = async () => {
-             const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
-             if (!participantId) return;
+            const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+            if (!participantId) return;
 
-             const { data } = await supabase.from('participants').select('minigame, finished_at').eq('id', participantId).single();
-             if (data) {
-                 if (data.minigame === false && !data.finished_at) {
-                     router.push(`/player/${roomCode}/quiz`);
-                 }
-             }
+            const { data } = await supabase.from('participants').select('minigame, finished_at, lap_race').eq('id', participantId).single();
+            if (data) {
+                if (data.minigame === false && !data.finished_at) {
+                    router.push(`/player/${roomCode}/quiz`);
+                }
+                const dbLap = data.lap_race || 0;
+                setLapRace(dbLap);
+                localStorage.setItem('nitroquiz_game_lapRace', String(dbLap));
+            }
         };
         fetchServerState();
 
@@ -2040,7 +2057,7 @@ export default function GameSpeedPage() {
                 console.error("Failed to update participant finish state:", e);
             }
         }
-        
+
         // 2. Return to standard orientation
         try {
             if (screen.orientation && (screen.orientation as any).unlock) {
@@ -2061,7 +2078,7 @@ export default function GameSpeedPage() {
         localStorage.removeItem('nitroquiz_game_sessionId');
         localStorage.removeItem('nitroquiz_game_quizId');
         localStorage.removeItem('nitroquiz_game_difficulty');
-        
+
         // 4. Redirect to Result Page (instead of Podium)
         if (roomCode) {
             router.push(`/player/${roomCode}/result`);
@@ -2122,23 +2139,32 @@ export default function GameSpeedPage() {
         if (!sessId) return;
 
         const fetchAndStartTimer = async () => {
-            await syncServerTime(); // Ensure offset is ready before logic
+            await syncServerTime();
             const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessId).single();
-            if (!data?.started_at) return;
+
+            if (!data?.started_at) {
+                setIsTimerReady(true); // tetap lanjut walau ga ada data
+                return;
+            }
+
+            const start = new Date(data.started_at).getTime();
+            const totalSeconds = (data.total_time_minutes || 5) * 60;
+
+            // Hitung sekali langsung — ini yang hilangkan flicker!
+            const nowFirst = getSyncedServerTime();
+            const elapsedFirst = Math.floor((nowFirst - start) / 1000);
+            const initialRemaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedFirst));
+            setGlobalTimeLeft(initialRemaining);
+            setIsTimerReady(true); // <-- timer siap, UI boleh render
 
             const interval = setInterval(() => {
-                const start = new Date(data.started_at).getTime();
                 const now = getSyncedServerTime();
                 const elapsedSeconds = Math.floor((now - start) / 1000);
-                const totalSeconds = (data.total_time_minutes || 5) * 60;
                 const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
-                
                 setGlobalTimeLeft(remaining);
 
                 if (remaining <= 0) {
                     clearInterval(interval);
-                    // If time is up, we just end the game. Handled by monitor finishing the session anyway.
-                    // But just in case:
                     handleForceEndGame();
                 }
             }, 1000);
@@ -2161,69 +2187,91 @@ export default function GameSpeedPage() {
 
     // Load quiz questions from localStorage (preloaded by player lobby)
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem('nitroquiz_game_questions');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    // Normalize questions to QuizQuestion format
-                    // DB format: { answers: [{id:"0", answer:"text"}, ...], correct: "3", question: "..." }
-                    const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => {
-                        let options: string[] = [];
-                        let correctAnswer = 0;
+        (async () => {
+            try {
+                const stored = localStorage.getItem('nitroquiz_game_questions');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        // Normalize questions to QuizQuestion format
+                        // DB format: { answers: [{id:"0", answer:"text"}, ...], correct: "3", question: "..." }
+                        const normalized: QuizQuestion[] = parsed.map((q: any, idx: number) => {
+                            let options: string[] = [];
+                            let correctAnswer = 0;
 
-                        // Handle DB format: answers is array of {id, answer} objects
-                        if (Array.isArray(q.answers) && q.answers.length > 0 && typeof q.answers[0] === 'object' && q.answers[0].answer) {
-                            options = q.answers.map((a: any) => a.answer || '');
-                            // correct is a string ID matching answers[].id
-                            if (q.correct !== undefined) {
-                                const correctId = String(q.correct);
-                                const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
-                                correctAnswer = correctIdx >= 0 ? correctIdx : 0;
+                            // Handle DB format: answers is array of {id, answer} objects
+                            if (Array.isArray(q.answers) && q.answers.length > 0 && typeof q.answers[0] === 'object' && q.answers[0].answer) {
+                                options = q.answers.map((a: any) => a.answer || '');
+                                // correct is a string ID matching answers[].id
+                                if (q.correct !== undefined) {
+                                    const correctId = String(q.correct);
+                                    const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
+                                    correctAnswer = correctIdx >= 0 ? correctIdx : 0;
+                                }
+                            }
+                            // Handle simple format: options is string[]
+                            else if (Array.isArray(q.options)) {
+                                options = q.options;
+                                correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer
+                                    : typeof q.correct_answer === 'number' ? q.correct_answer
+                                        : typeof q.answer === 'number' ? q.answer : 0;
+                            }
+                            // Handle other formats
+                            else if (Array.isArray(q.choices)) {
+                                options = q.choices;
+                                correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
+                            }
+
+                            return {
+                                id: q.id || `q-${idx}`,
+                                question: q.question || q.text || q.pertanyaan || '',
+                                options,
+                                correctAnswer,
+                            };
+                        });
+                        console.log('[GameSpeed] Loaded quiz questions:', normalized.length, 'Sample:', normalized[0]);
+                        setAllQuizQuestions(normalized);
+                        state.current.allQuizQuestions = normalized;
+
+                        // Sync current progress from localStorage
+                        const storedIndex = localStorage.getItem('nitroquiz_game_questionIndex');
+                        const storedScore = localStorage.getItem('nitroquiz_game_score');
+                        if (storedIndex) {
+                            const idx = parseInt(storedIndex, 10);
+                            setQuizQuestionIndex(idx);
+                            state.current.quizQuestionIndex = idx;
+                        }
+                        if (storedScore) {
+                            const sc = parseInt(storedScore, 10);
+                            setTotalQuizScore(sc);
+                            state.current.totalQuizScore = sc;
+                        }
+
+                        // Fetch lap_race dari DB untuk HUD yang akurat
+                        const participantId = localStorage.getItem('nitroquiz_game_participantId');
+                        if (participantId) {
+                            try {
+                                const { data: pData } = await supabase
+                                    .from('participants')
+                                    .select('lap_race')
+                                    .eq('id', participantId)
+                                    .single();
+                                if (pData) {
+                                    const dbLap = pData.lap_race || 0;
+                                    setLapRace(dbLap);
+                                    localStorage.setItem('nitroquiz_game_lapRace', String(dbLap));
+                                }
+                            } catch (e) {
+                                console.error('Failed to fetch lap_race:', e);
                             }
                         }
-                        // Handle simple format: options is string[]
-                        else if (Array.isArray(q.options)) {
-                            options = q.options;
-                            correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer
-                                : typeof q.correct_answer === 'number' ? q.correct_answer
-                                    : typeof q.answer === 'number' ? q.answer : 0;
-                        }
-                        // Handle other formats
-                        else if (Array.isArray(q.choices)) {
-                            options = q.choices;
-                            correctAnswer = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
-                        }
 
-                        return {
-                            id: q.id || `q-${idx}`,
-                            question: q.question || q.text || q.pertanyaan || '',
-                            options,
-                            correctAnswer,
-                        };
-                    });
-                    console.log('[GameSpeed] Loaded quiz questions:', normalized.length, 'Sample:', normalized[0]);
-                    setAllQuizQuestions(normalized);
-                    state.current.allQuizQuestions = normalized;
-                    
-                    // Sync current progress from localStorage
-                    const storedIndex = localStorage.getItem('nitroquiz_game_questionIndex');
-                    const storedScore = localStorage.getItem('nitroquiz_game_score');
-                    if (storedIndex) {
-                        const idx = parseInt(storedIndex, 10);
-                        setQuizQuestionIndex(idx);
-                        state.current.quizQuestionIndex = idx;
-                    }
-                    if (storedScore) {
-                        const sc = parseInt(storedScore, 10);
-                        setTotalQuizScore(sc);
-                        state.current.totalQuizScore = sc;
                     }
                 }
+            } catch (e) {
+                console.error('Failed to load quiz questions:', e);
             }
-        } catch (e) {
-            console.error('Failed to load quiz questions:', e);
-        }
+        })();
     }, []);
 
     // Auto-complete game immediately when finished
@@ -2234,18 +2282,22 @@ export default function GameSpeedPage() {
     }, [gameState, endGame]);
 
     return (
-        <div style={{
-            width: '100%',
-            height: '100%',
-            background: '#020617',
-            overflow: 'hidden',
-            fontFamily: 'var(--font-rajdhani)',
-            userSelect: 'none',
-            touchAction: 'none',
-            WebkitUserSelect: 'none',
-            filter: (stats.speed > 150 ? `blur(${((stats.speed - 150) / 60) + (state.current.keyBoost && stats.nos > 0 ? 2 : 0)}px) ` : (state.current.keyBoost && stats.nos > 0 ? 'blur(2px) ' : '')) + 'contrast(1.05) brightness(1) saturate(1.1)', // Milder Lighter Blur
-            transition: 'filter 0.4s ease'
-        }}>
+        <div 
+            dir="ltr"
+            style={{
+                width: '100%',
+                height: '100%',
+                background: '#020617',
+                overflow: 'hidden',
+                fontFamily: 'var(--font-rajdhani)',
+                userSelect: 'none',
+                touchAction: 'none',
+                WebkitUserSelect: 'none',
+                textAlign: 'left',
+                filter: (stats.speed > 150 ? `blur(${((stats.speed - 150) / 60) + (state.current.keyBoost && stats.nos > 0 ? 2 : 0)}px) ` : (state.current.keyBoost && stats.nos > 0 ? 'blur(2px) ' : '')) + 'contrast(1.05) brightness(1) saturate(1.1)', // Milder Lighter Blur
+                transition: 'filter 0.4s ease'
+            }}
+        >
             {/* Main Game Canvas */}
             <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
 
@@ -2258,20 +2310,20 @@ export default function GameSpeedPage() {
                     fontFamily: 'var(--font-rajdhani)'
                 }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ 
-                            width: '64px', height: '64px', 
-                            border: '4px solid rgba(45, 106, 242, 0.3)', 
-                            borderTopColor: '#2d6af2', 
-                            borderRadius: '50%', 
+                        <div style={{
+                            width: '64px', height: '64px',
+                            border: '4px solid rgba(45, 106, 242, 0.3)',
+                            borderTopColor: '#2d6af2',
+                            borderRadius: '50%',
                             margin: '0 auto 1.5rem auto',
-                            animation: 'spin 1s linear infinite' 
+                            animation: 'spin 1s linear infinite'
                         }} />
-                        <p style={{ 
-                            marginTop: '1rem', 
-                            color: '#2d6af2', 
-                            fontSize: '1.25rem', 
-                            letterSpacing: '0.2em', 
-                            textTransform: 'uppercase', 
+                        <p style={{
+                            marginTop: '1rem',
+                            color: '#2d6af2',
+                            fontSize: '1.25rem',
+                            letterSpacing: '0.2em',
+                            textTransform: 'uppercase',
                             fontWeight: 700,
                             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
                         }}>
@@ -2409,6 +2461,34 @@ export default function GameSpeedPage() {
                         touchAction: 'none'
                     }}
                 >
+                    {/* Top Center Timer Overlay */}
+                    {globalTimeLeft !== null && (
+                        <div style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '1.25rem',
+                            transform: 'translateX(-50%)',
+                            zIndex: 1000,
+                            backgroundColor: globalTimeLeft <= 30 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 0, 0, 0.75)',
+                            backdropFilter: 'blur(20px)',
+                            padding: isMobile ? '0.4rem 1rem' : '0.6rem 1.75rem',
+                            borderRadius: '3rem',
+                            border: globalTimeLeft <= 30 ? '2.5px solid #ef4444' : '2px solid rgba(255, 255, 255, 0.2)',
+                            boxShadow: globalTimeLeft <= 30 ? '0 0 25px rgba(239, 68, 68, 0.5)' : '0 10px 30px rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            color: 'white',
+                            pointerEvents: 'none',
+                            fontFamily: 'var(--font-rajdhani)',
+                            animation: globalTimeLeft <= 30 ? 'timerPulse 1s infinite alternate' : 'none'
+                        }}>
+                            <Clock size={isMobile ? 16 : 22} />
+                            <span style={{ fontSize: isMobile ? '1.2rem' : '1.75rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
+                                {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
+                            </span>
+                        </div>
+                    )}
 
                     {/* Header: Stats & Map */}
                     <div style={{ display: 'flex', flexDirection: usePCLayout ? 'row' : 'column', justifyContent: 'space-between', alignItems: usePCLayout ? 'start' : 'center', width: '100%', gap: '1rem' }}>
@@ -2502,25 +2582,6 @@ export default function GameSpeedPage() {
                                     <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
                                     <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
                                 </div>
-                                {globalTimeLeft !== null && (
-                                <div style={{
-                                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-                                    backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.5rem 0.8rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem'),
-                                    borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
-                                    border: globalTimeLeft <= 30 ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.35rem',
-                                    flex: 'none',
-                                    color: globalTimeLeft <= 30 ? '#ef4444' : '#fff'
-                                }}>
-                                    <Clock size={isMobile ? 12 : 16} />
-                                    <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900 }}>
-                                        {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{ (globalTimeLeft % 60).toString().padStart(2, '0') }
-                                    </span>
-                                </div>
-                                )}
                             </div>
                         </div>
 
@@ -2778,7 +2839,7 @@ export default function GameSpeedPage() {
             `}</style>
 
             {/* Loading Overlay - show while assets load */}
-            {mounted && !assetsLoaded && (
+            {mounted && (!assetsLoaded || !isTimerReady) && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#020617', color: 'white', fontFamily: 'var(--font-rajdhani)' }}>
                     <div style={{ width: '64px', height: '64px', border: '4px solid rgba(59,130,246,0.1)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', boxShadow: '0 0 20px rgba(59,130,246,0.2)' }} />
                     <p style={{ marginTop: '2rem', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4em', color: '#3b82f6', animation: 'pulse 2s ease-in-out infinite' }}>{t('player_game.establishing_signal')}</p>

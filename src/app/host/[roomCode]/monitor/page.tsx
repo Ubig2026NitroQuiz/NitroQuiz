@@ -445,12 +445,12 @@ export default function GameMonitorPage() {
 
           // Initial calculation for immediate display
           if (sessionData.started_at) {
-              const start = new Date(sessionData.started_at).getTime();
-              const now = getSyncedServerTime();
-              const elapsedSeconds = Math.floor((now - start) / 1000);
-              const totalSeconds = (sessionData.total_time_minutes || 5) * 60;
-              const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
-              setTimeLeft(remaining);
+            const start = new Date(sessionData.started_at).getTime();
+            const now = getSyncedServerTime();
+            const elapsedSeconds = Math.floor((now - start) / 1000);
+            const totalSeconds = (sessionData.total_time_minutes || 5) * 60;
+            const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
+            setTimeLeft(remaining);
           }
 
           const { data: pData } = await supabase
@@ -521,7 +521,7 @@ export default function GameMonitorPage() {
       const elapsedSeconds = Math.floor((now - start) / 1000);
       const totalSeconds = (session.total_time_minutes || 5) * 60;
       const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
-      
+
       setTimeLeft(remaining);
 
       // Auto end jika waktu habis

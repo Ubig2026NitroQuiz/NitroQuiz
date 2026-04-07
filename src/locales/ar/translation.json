@@ -100,6 +100,21 @@
       "prev": "السابق",
       "next": "التالي",
       "page": "صفحة"
+    },
+    "detail": {
+      "title": "تفاصيل الاختبار",
+      "questions": "عدد الأسئلة",
+      "played": "تم اللعب",
+      "favorites": "المفضلة",
+      "language": "اللغة",
+      "start": "ابدأ",
+      "cancel": "إلغاء",
+      "no_description": "لا يوجد وصف متاح.",
+      "show_more": "عرض المزيد",
+      "show_less": "عرض أقل",
+      "qs_suffix": "أسئلة",
+      "play_suffix": "مرة",
+      "fav_suffix": "شخص"
     }
   },
   "categories": {

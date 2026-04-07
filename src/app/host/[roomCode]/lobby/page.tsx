@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Users, Play, LogOut, Copy, Check, Maximize2,
+  Users, Play, LogOut, Copy, Check, Maximize2, Minimize2,
   Volume2, VolumeX, X, UserPlus, Users2, Bot
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -68,6 +68,21 @@ export default function HostLobby() {
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -109,10 +124,10 @@ export default function HostLobby() {
 
   useEffect(() => {
     if (!sessionId) return;
-      
+
     const handleStartedOrFinished = (status: string) => {
-        if (status === "active") router.push(`/host/${roomCode}/monitor`);
-        else if (status === "finished" || status === "completed") router.push(`/host/${roomCode}/leaderboard`);
+      if (status === "active") router.push(`/host/${roomCode}/monitor`);
+      else if (status === "finished" || status === "completed") router.push(`/host/${roomCode}/leaderboard`);
     };
 
     const channel = supabase
@@ -189,7 +204,7 @@ export default function HostLobby() {
 
       if (remaining <= 0 && active) {
         active = false; // Prevent multiple triggers
-        
+
         // Trigger start immediately
         const startSession = async () => {
           // 1. Update session to active
@@ -198,20 +213,9 @@ export default function HostLobby() {
             .update({
               status: "active",
               started_at: new Date(getSyncedServerTime()).toISOString(),
-              countdown_started_at: null  
+              countdown_started_at: null
             })
             .eq("id", session.id);
-
-          // 2. Initial participants to Racing (minigame: true)
-          await supabase
-            .from("participants")
-            .update({
-                minigame: true, // TRUE = RACING
-                score: 0,
-                current_question: 0,
-                lap_race: 1
-            })
-            .eq("session_id", session.id);
 
           router.push(`/host/${roomCode}/monitor`);
         };
@@ -304,68 +308,105 @@ export default function HostLobby() {
         </div>
 
         {/* Main Layout */}
-        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 flex-1">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 flex-1">
 
           {/* ═══ LEFT CARD: Room Info ═══ */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
-            className="w-full md:w-[340px] lg:w-[390px] shrink-0 flex flex-col bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(45,106,242,0.15)] overflow-hidden relative"
+            className="w-full lg:w-[340px] xl:w-[390px] shrink-0 flex flex-col bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(45,106,242,0.15)] overflow-hidden relative"
           >
             <div className="absolute top-0 end-0 w-48 h-48 bg-gradient-to-bl from-[#2d6af2]/10 to-transparent rounded-bl-full pointer-events-none z-0"></div>
 
-            {/* MOBILE: compact top row */}
-            <div className="flex md:hidden items-center gap-3 p-4 border-b border-white/5">
-              <div
-                className="flex-1 group/code cursor-pointer bg-white/5 rounded-xl py-3 px-4 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-between relative overflow-hidden"
-                onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
-                <h1 className="font-display text-2xl font-black text-white tracking-wider">{roomCode}</h1>
-                <div>{copiedRoom ? <Check size={16} className="text-[#00ff9d]" /> : <Copy size={16} className="text-white/20 group-hover/code:text-[#2d6af2]" />}</div>
-              </div>
-              <button
-                onClick={() => setQrOpen(true)}
-                className="shrink-0 w-12 h-12 bg-white rounded-xl flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
-              >
-                <QRCode value={joinLink} size={36} bgColor="transparent" fgColor="#000000" />
-              </button>
-            </div>
+            {/* ═══ MOBILE / TABLET CONTENT (Below lg) ═══ */}
+            <div className="lg:hidden flex flex-col overflow-hidden">
+              {/* TOP ROW: Split Info & QR */}
+              <div className="flex border-b border-white/5">
+                {/* Left Side: Info (Code & Link) */}
+                <div className="flex-1 flex flex-col p-4 md:p-8 gap-3 md:gap-6 border-r border-white/5">
+                  <div 
+                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-3 md:py-8 px-4 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                    onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
+                    <h1 className="font-display text-2xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
+                      {roomCode}
+                    </h1>
+                    <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-5 opacity-40 group-hover:opacity-100 transition-opacity">
+                      {copiedRoom ? <Check size={16} className="md:size-5 text-[#00ff9d]" /> : <Copy size={16} className="md:size-5 text-white/20 group-hover/code:text-[#2d6af2]" />}
+                    </div>
+                  </div>
 
-            {/* MOBILE: join link */}
-            <div
-              className="flex md:hidden items-center gap-2 px-4 py-2.5 border-b border-white/5 cursor-pointer group/link"
-              onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-            >
-              <p className="flex-1 text-white/60 text-[11px] font-mono truncate">{joinLink}</p>
-              {copiedJoin ? <Check size={14} className="text-[#00ff9d] shrink-0" /> : <Copy size={14} className="text-white/20 group-hover/link:text-[#2d6af2] shrink-0" />}
-            </div>
+                  <div 
+                    className="flex items-center justify-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 bg-white/5 rounded-lg md:rounded-xl border border-white/5 cursor-pointer group/link hover:border-[#2d6af2]/30 transition-all relative"
+                    onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
+                  >
+                    <p className="text-white/50 text-[9px] md:text-xs font-mono truncate tracking-wide text-center max-w-[85%]">{joinLink}</p>
+                    <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-4">
+                      {copiedJoin ? <Check size={12} className="md:size-3.5 text-[#00ff9d] shrink-0" /> : <Copy size={12} className="md:size-3.5 text-white/20 group-hover/link:text-[#2d6af2] shrink-0" />}
+                    </div>
+                  </div>
 
-            {/* MOBILE: Action Buttons (Sticky at bottom) */}
-            <div className="fixed bottom-0 inset-x-0 md:hidden gap-2 p-4 pt-3 border-t border-white/10 bg-black/80 backdrop-blur-xl shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-[100] flex animate-in slide-in-from-bottom-5 duration-300">
-              <Button
-                onClick={() => setExitDialogOpen(true)}
-                className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-14 px-5 font-display text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 transition-all"
-              >
-                <LogOut size={20} className="rtl:rotate-180" />
-              </Button>
-              <Button
-                onClick={startGame}
-                disabled={participants.length === 0 || countdown !== null}
-                className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-14 rounded-xl shadow-[0_5px_20px_rgba(45,106,242,0.4)] tracking-[0.15em] uppercase text-sm transition-all disabled:opacity-50 active:scale-95"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Play className="fill-current w-5 h-5" />
-                  <span>{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
+                  {/* TABLET ONLY BUTTONS: Inside left column on md screens */}
+                  <div className="hidden md:flex gap-3 mt-auto">
+                    <Button
+                      onClick={() => setExitDialogOpen(true)}
+                      className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-14 xl:h-16 px-6 font-display text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0"
+                    >
+                      <LogOut size={22} className="rtl:rotate-180" />
+                    </Button>
+                    <Button
+                      onClick={startGame}
+                      disabled={participants.length === 0 || countdown !== null}
+                      className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-14 xl:h-16 rounded-xl shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-lg transition-all disabled:opacity-50 active:scale-[0.98]"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <Play className="fill-current w-6 h-6" />
+                        <span>{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
+                      </div>
+                    </Button>
+                  </div>
                 </div>
-              </Button>
+
+                {/* Right Side: QR Code Area */}
+                <div 
+                  className="w-[100px] sm:w-[140px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-3 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
+                  onClick={() => setQrOpen(true)}
+                >
+                  <div className="bg-white p-2 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                    <div className="w-[70px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
+                      <QRCode value={joinLink} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* MOBILE ONLY BUTTONS: Full width row ONLY for phones (< md) */}
+              <div className="md:hidden p-4 flex gap-3">
+                <Button
+                  onClick={() => setExitDialogOpen(true)}
+                  className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-12 md:h-16 px-4 md:px-6 font-display text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0"
+                >
+                  <LogOut size={20} className="md:size-6 rtl:rotate-180" />
+                </Button>
+                <Button
+                  onClick={startGame}
+                  disabled={participants.length === 0 || countdown !== null}
+                  className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-12 md:h-16 rounded-xl shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-sm md:text-lg transition-all disabled:opacity-50 active:scale-[0.98]"
+                >
+                  <div className="flex items-center justify-center gap-2 md:gap-3">
+                    <Play className="fill-current w-5 h-5 md:w-6 md:h-6" />
+                    <span>{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
+                  </div>
+                </Button>
+              </div>
             </div>
 
-            {/* Spacer for sticky buttons on mobile */}
-            <div className="md:hidden h-24 shrink-0" />
+            {/* Hidden Space placeholder for mobile list padding */}
+            <div className="lg:hidden h-2 shrink-0" />
 
             {/* DESKTOP: full vertical layout */}
-            <div className="hidden md:flex flex-col gap-4 p-5 flex-1 relative z-10">
+            <div className="hidden lg:flex flex-col gap-4 p-5 flex-1 relative z-10">
               {/* Room Code */}
               <div
                 className="group/code cursor-pointer bg-white/5 rounded-xl py-5 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
@@ -432,7 +473,7 @@ export default function HostLobby() {
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex-1 flex flex-col bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden min-h-[300px] md:min-h-0 relative"
+            className="flex-1 flex flex-col bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden min-h-[300px] lg:min-h-0 relative"
           >
             <div className="absolute top-0 end-0 w-80 h-80 bg-gradient-to-bl from-[#00ff9d]/5 to-transparent rounded-bl-full pointer-events-none z-0"></div>
 
@@ -712,6 +753,21 @@ export default function HostLobby() {
           `}</style>
         </div>
       )}
+
+      {/* ═══ FLOATING FULLSCREEN BUTTON ═══ */}
+      <div className="fixed bottom-6 end-6 z-[250] flex">
+        <Button
+          onClick={toggleFullscreen}
+          variant="outline"
+          className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-black/60 backdrop-blur-xl border-white/10 hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10 text-white/50 hover:text-white transition-all shadow-2xl group flex items-center justify-center p-0"
+        >
+          {isFullscreen ? (
+            <Minimize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
+          ) : (
+            <Maximize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
+          )}
+        </Button>
+      </div>
 
       <style jsx>{`
         .city-silhouette {

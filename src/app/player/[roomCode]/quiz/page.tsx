@@ -34,6 +34,8 @@ export default function QuizPage() {
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [statusText, setStatusText] = useState(t("player_quiz.round_complete"));
     const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
+    const [isTimerReady, setIsTimerReady] = useState(false);
+    const isTransitioningRef = useRef(false);
 
     const QUESTIONS_PER_ROUND = 3;
 
@@ -225,39 +227,54 @@ export default function QuizPage() {
 
     const nextQuestion = async () => {
         const nextIdx = currentIndex + 1;
-        
-        // 1-based logic for round checks
-        const isRoundEnd = nextIdx % QUESTIONS_PER_ROUND === 0;
-        const isEndOfQuiz = nextIdx >= questions.length;
 
-        if (isRoundEnd || isEndOfQuiz) {
-            // Update DB state to Racing BEFORE redirecting
+        const isEndOfQuiz = nextIdx >= questions.length;
+        const isRoundEnd = !isEndOfQuiz && (nextIdx % QUESTIONS_PER_ROUND === 0);
+
+        if (isEndOfQuiz) {
+            // Quiz selesai total → ke result
+            isTransitioningRef.current = true;
             const participantId = localStorage.getItem('nitroquiz_game_participantId');
             if (participantId) {
                 try {
                     await supabase.from('participants')
-                        .update({ 
-                            minigame: true, // Back to Racing
-                            current_question: nextIdx // Save progress
+                        .update({
+                            minigame: false,
+                            finished_at: new Date().toISOString(),
+                            current_question: nextIdx
+                        })
+                        .eq('id', participantId);
+                } catch (e) {
+                    console.error("Error finishing quiz:", e);
+                }
+            }
+            setStatusText(t("player_quiz.quiz_finished"));
+            router.push(`/player/${roomCode}/result`);
+            return;
+        }
+
+        if (isRoundEnd) {
+            // Selesai 1 round → balik ke game
+            isTransitioningRef.current = true;
+            const participantId = localStorage.getItem('nitroquiz_game_participantId');
+            if (participantId) {
+                try {
+                    await supabase.from('participants')
+                        .update({
+                            minigame: true,
+                            current_question: nextIdx
                         })
                         .eq('id', participantId);
                 } catch (e) {
                     console.error("Critical error during quiz transition:", e);
                 }
             }
-
-            if (isEndOfQuiz) {
-                setStatusText(t("player_quiz.quiz_finished"));
-            } else {
-                setStatusText(t("player_quiz.round_complete"));
-            }
-
-            // Immediately redirect
+            setStatusText(t("player_quiz.round_complete"));
             router.push(`/player/${roomCode}/game`);
             return;
         }
 
-        // Only update locally if we're not redirecting
+        // Soal biasa, lanjut
         setCurrentIndex(nextIdx);
         setIsAnswered(false);
         setSelectedOption(null);
@@ -291,6 +308,7 @@ export default function QuizPage() {
                 { event: 'UPDATE', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` },
                 (payload) => {
                     // If minigame is true, player should be on the race track
+                    if (isTransitioningRef.current) return;
                     if (payload.new.minigame === true && !payload.new.finished_at) {
                         router.push(`/player/${roomCode || roomCodeFromParams}/game`);
                     }
@@ -309,7 +327,18 @@ export default function QuizPage() {
 
         const fetchAndStartTimer = async () => {
             const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessionId).single();
-            if (!data?.started_at) return;
+            if (!data?.started_at) {
+                setIsTimerReady(true);
+                return;
+            }
+
+            // Hitung sekali dulu SEBELUM interval — ini yang hilangkan flicker
+            const start = new Date(data.started_at).getTime();
+            const now = getSyncedServerTime();
+            const elapsedSeconds = Math.floor((now - start) / 1000);
+            const initialRemaining = Math.max(0, (data.total_time_minutes || 5) * 60 - elapsedSeconds);
+            setGlobalTimeLeft(initialRemaining);
+            setIsTimerReady(true);
 
             const interval = setInterval(() => {
                 const start = new Date(data.started_at).getTime();
@@ -337,27 +366,11 @@ export default function QuizPage() {
         };
     }, [sessionId, router, roomCode, roomCodeFromParams]);
 
-    // Robust Guard: Auto-redirect if we land on a "Game Phase" index or end of quiz
-    useEffect(() => {
-        if (!mounted || questions.length === 0) return;
-
-        const isFinished = currentIndex >= questions.length;
-        const isRacingPhase = currentIndex > 0 && currentIndex % QUESTIONS_PER_ROUND === 0;
-
-        if (isFinished || isRacingPhase) {
-            if (isFinished) {
-                router.push(`/player/${roomCode || roomCodeFromParams}/result`);
-            } else {
-                router.push(`/player/${roomCode || roomCodeFromParams}/game`);
-            }
-        }
-    }, [currentIndex, questions.length, mounted]);
-
     if (!mounted || questions.length === 0 || (currentIndex >= questions.length && (currentIndex % QUESTIONS_PER_ROUND !== 0))) {
         return <div className="min-h-screen bg-[#04060f]" />;
     }
 
-    if ((currentIndex > 0 && currentIndex % QUESTIONS_PER_ROUND === 0) || currentIndex >= questions.length) {
+    if (!mounted || questions.length === 0 || !isTimerReady) {
         return (
             <div className="min-h-screen bg-[#04060f] flex items-center justify-center text-white font-rajdhani">
                 <div className="flex flex-col items-center gap-6">
