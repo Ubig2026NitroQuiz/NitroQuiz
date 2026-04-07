@@ -2,8 +2,8 @@
   "homepage": {
     "host": {
       "title": "BUAT GAME",
-      "subtitle": "Buat ruangan baru dan ajak pemain lain.",
-      "button": "Buat Ruangan"
+      "subtitle": "Buat balapan baru dan ajak pemain lain.",
+      "button": "Buat Balapan"
     },
     "join": {
       "title": "GABUNG",

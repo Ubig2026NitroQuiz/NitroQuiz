@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, supabaseCentral } from "@/lib/supabase";
 import { User } from "@/types";
@@ -20,7 +20,7 @@ import {
   Trophy,
   Target,
   DownloadIcon,
-  Gamepad2,
+  Flag,
   LogIn,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -50,6 +50,17 @@ export default function Home() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Generate random speed lines for the background
+  const speedLines = useMemo(() => {
+    return Array.from({ length: 5 }, (_, i) => ({
+      id: i,
+      top: `${15 + Math.random() * 70}%`,
+      width: `${100 + Math.random() * 200}px`,
+      delay: `${i * 1.2}s`,
+      duration: `${3 + Math.random() * 3}s`,
+    }));
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -140,10 +151,11 @@ export default function Home() {
 
   if (authLoading || isHosting || isRedirecting) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-display text-white">
+      <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-body text-white">
+        <div className="racing-stripe"></div>
         <div className="text-center z-10">
-          <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#00ff9d] rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="mt-4 text-[#00ff9d] text-xl tracking-[0.2em] uppercase animate-pulse">
+          <div className="w-14 h-14 border-[3px] border-white/10 border-t-[#7C3AED] rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="mt-4 text-white/60 text-sm tracking-[0.3em] uppercase font-body">
             {t('homepage.loading')}
           </p>
         </div>
@@ -152,8 +164,11 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body selection:bg-[#2d6af2] selection:text-white flex flex-col">
-      {/* Main Background Image */}
+    <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body selection:bg-[#7C3AED]/30 selection:text-white flex flex-col">
+      {/* Racing Stripe at top */}
+      <div className="racing-stripe"></div>
+
+      {/* Original Background Image */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
         style={{
@@ -162,20 +177,37 @@ export default function Home() {
         }}
       ></div>
 
-      {/* Overlays to ensure readability and mood */}
-      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/60 to-[#2d6af2]/10 pointer-events-none"></div>
+      {/* Overlays for readability */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/60 to-[#7C3AED]/10 pointer-events-none"></div>
+
+      {/* Speed lines animation */}
+      <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
+        {speedLines.map((line) => (
+          <div
+            key={line.id}
+            className="speed-line"
+            style={{
+              top: line.top,
+              width: line.width,
+              animationDelay: line.delay,
+              animationDuration: line.duration,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Very subtle scanlines */}
       <div className="scanlines"></div>
 
       {/* Top Bar: Corner Logo */}
       <div className="fixed top-0 left-0 z-[90] px-4 md:px-8 py-5 pointer-events-none flex items-start">
-        {/* Logo (Top Left) */}
         <div className="pointer-events-auto">
           <Image
             src="/assets/logo/logo2.png"
             alt="GameForSmart"
             width={180}
             height={50}
-            className="h-10 md:h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+            className="h-8 md:h-10 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity duration-300"
             priority
           />
         </div>
@@ -189,45 +221,45 @@ export default function Home() {
         >
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-2xl transition-all duration-300 border ${isDropdownOpen
-              ? "bg-[#2d6af2] border-[#2d6af2] text-white shadow-[0_0_20px_rgba(45,106,242,0.5)]"
-              : "bg-black/40 backdrop-blur-md border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 border ${isDropdownOpen
+              ? "bg-[#7C3AED] border-[#7C3AED] text-white shadow-[0_0_20px_rgba(124,58,237,0.4)]"
+              : "bg-white/[0.04] backdrop-blur-md border-white/[0.08] text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.08]"
               }`}
           >
             {isDropdownOpen ? (
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             ) : (
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             )}
           </button>
 
           <AnimatePresence>
             {isDropdownOpen && (
               <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                initial={{ opacity: 0, y: 8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                exit={{ opacity: 0, y: 8, scale: 0.96 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute top-14 right-0 w-72 bg-[#080d1a]/95 backdrop-blur-2xl border border-[#2d6af2]/30 rounded-[2rem] shadow-[0_0_50px_rgba(45,106,242,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden flex flex-col font-body z-[101]"
+                className="absolute top-14 right-0 w-72 bg-[#0c1020]/97 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col font-body z-[101]"
               >
                 {/* User Header */}
-                <div className="p-6 bg-gradient-to-br from-white/[0.05] to-transparent border-b border-white/5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border border-[#2d6af2]/30">
+                <div className="p-5 bg-gradient-to-br from-white/[0.03] to-transparent border-b border-white/[0.05]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10">
                       {user.avatar ? (
                         <Image
                           src={user.avatar}
                           alt={user.username}
-                          width={48}
-                          height={48}
+                          width={40}
+                          height={40}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div
-                          className="w-full h-full flex items-center justify-center text-sm font-black text-white select-none"
+                          className="w-full h-full flex items-center justify-center text-xs font-bold text-white select-none"
                           style={{
                             backgroundColor: (() => {
-                              const colors = ['#3b82f6','#ef4444','#f59e0b','#8b5cf6','#10b981','#ec4899','#06b6d4','#f97316'];
+                              const colors = ['#7C3AED','#2d6af2','#f59e0b','#8b5cf6','#10b981','#ec4899','#06b6d4','#f97316'];
                               let hash = 0;
                               for (let i = 0; i < user.username.length; i++) hash = user.username.charCodeAt(i) + ((hash << 5) - hash);
                               return colors[Math.abs(hash) % colors.length];
@@ -241,7 +273,7 @@ export default function Home() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-lg font-bold truncate tracking-tight">
+                      <p className="text-white text-base font-bold truncate">
                         {user.username}
                       </p>
                     </div>
@@ -249,20 +281,20 @@ export default function Home() {
                 </div>
 
                 {/* Actions List */}
-                <div className="p-3 flex flex-col gap-1">
+                <div className="p-2 flex flex-col gap-0.5">
                   <button
                     onClick={toggleFullscreen}
-                    className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group"
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-white/50 hover:text-white transition-all group"
                   >
-                    <div className="p-2 rounded-xl bg-gray-500/10 group-hover:bg-[#2d6af2]/20 transition-colors">
+                    <div className="p-1.5 rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
                       {isFullscreen ? (
-                        <Minimize className="w-4 h-4 text-[#00ff9d]" />
+                        <Minimize className="w-3.5 h-3.5 text-white/70" />
                       ) : (
-                        <Maximize className="w-4 h-4 text-[#00ff9d]" />
+                        <Maximize className="w-3.5 h-3.5 text-white/70" />
                       )}
                     </div>
 
-                    <span className="text-sm font-medium tracking-wide">
+                    <span className="text-sm font-medium">
                       {isFullscreen ? t('homepage.menu.exit_fullscreen') : t('homepage.menu.fullscreen')}
                     </span>
                   </button>
@@ -272,21 +304,21 @@ export default function Home() {
                       setShowHowToPlay(true);
                       setIsDropdownOpen(false);
                     }}
-                    className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group"
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-white/50 hover:text-white transition-all group"
                   >
-                    <div className="p-2 rounded-xl bg-gray-500/10 group-hover:bg-[#2d6af2]/20 transition-colors">
-                      <PlayCircle className="w-4 h-4 text-[#00ff9d]" />
+                    <div className="p-1.5 rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
+                      <PlayCircle className="w-3.5 h-3.5 text-white/70" />
                     </div>
-                    <span className="text-sm font-medium tracking-wide">
+                    <span className="text-sm font-medium">
                       {t('homepage.menu.how_to_play')}
                     </span>
                   </button>
 
-                  <button className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group opacity-50 cursor-not-allowed">
-                    <div className="p-2 rounded-xl bg-gray-500/10 transition-colors">
-                      <DownloadIcon className="w-4 h-4 text-[#00ff9d]" />
+                  <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-white/50 hover:text-white transition-all group opacity-40 cursor-not-allowed">
+                    <div className="p-1.5 rounded-lg bg-white/[0.04] transition-colors">
+                      <DownloadIcon className="w-3.5 h-3.5 text-white/70" />
                     </div>
-                    <span className="text-sm font-medium tracking-wide">
+                    <span className="text-sm font-medium">
                       {t('homepage.menu.install_app')}
                     </span>
                   </button>
@@ -294,15 +326,15 @@ export default function Home() {
                   <div className="relative">
                     <button
                       onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                      className="flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group"
+                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-white/50 hover:text-white transition-all group"
                     >
-                      <div className="p-2 rounded-xl bg-gray-500/10 group-hover:bg-[#2d6af2]/20 transition-colors">
-                        <Globe className="w-4 h-4 text-[#2d6af2]" />
+                      <div className="p-1.5 rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
+                        <Globe className="w-3.5 h-3.5 text-white/70" />
                       </div>
-                      <span className="text-sm font-medium tracking-wide flex-1 text-start">
+                      <span className="text-sm font-medium flex-1 text-start">
                         {t('homepage.menu.language')}
                       </span>
-                      <ChevronRight className={`w-4 h-4 transition-transform rtl:scale-x-[-1] ${isLanguageOpen ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-3.5 h-3.5 transition-transform rtl:scale-x-[-1] ${isLanguageOpen ? 'rotate-90' : ''}`} />
                     </button>
 
                     <AnimatePresence>
@@ -312,7 +344,7 @@ export default function Home() {
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="px-3 pb-2 space-y-1 overflow-hidden"
+                          className="px-2 pb-2 space-y-0.5 overflow-hidden"
                         >
                           {[
                             { code: "en", label: "English", sub: "Global" },
@@ -326,16 +358,16 @@ export default function Home() {
                                 setIsLanguageOpen(false);
                                 setIsDropdownOpen(false);
                               }}
-                              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all ${i18n.language.startsWith(lang.code)
-                                ? "bg-[#2d6af2]/10 text-[#2d6af2] border border-[#2d6af2]/20 shadow-[0_4px_12px_rgba(45,106,242,0.1)]"
-                                : "hover:bg-white/5 text-gray-500 hover:text-gray-300"
+                              className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all ${i18n.language.startsWith(lang.code)
+                                ? "bg-[#7C3AED]/10 text-[#a78bfa] border border-[#7C3AED]/20"
+                                : "hover:bg-white/[0.03] text-white/40 hover:text-white/60"
                                 }`}
                             >
                               <div className="flex flex-col items-start translate-x-1 rtl:-translate-x-1">
                                 <span className="text-xs font-bold uppercase tracking-widest">{lang.label}</span>
                               </div>
                               {i18n.language.startsWith(lang.code) && (
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#2d6af2] shadow-[0_0_8px_#2d6af2]" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" />
                               )}
                             </button>
                           ))}
@@ -346,15 +378,15 @@ export default function Home() {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-3 bg-black/20 border-t border-white/5">
+                <div className="p-2 pt-0 border-t border-white/[0.05]">
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-4 w-full px-4 py-4 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all group font-bold"
+                    className="flex items-center gap-3 w-full mt-2 px-3 py-3 rounded-xl bg-red-500/[0.06] hover:bg-red-500/[0.15] text-red-400/80 hover:text-red-400 transition-all group"
                   >
-                    <div className="p-2 rounded-xl bg-red-500/20 group-hover:bg-white/20 transition-colors">
-                      <LogOut className="w-4 h-4" />
+                    <div className="p-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                      <LogOut className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-sm tracking-[0.1em] uppercase">
+                    <span className="text-sm font-semibold tracking-wide uppercase">
                       {t('homepage.menu.logout')}
                     </span>
                   </button>
@@ -376,90 +408,90 @@ export default function Home() {
             onClick={() => setShowHowToPlay(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.3, type: "spring", stiffness: 150 }}
-              className="w-full max-w-lg bg-[#080d1a]/98 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_0_50px_rgba(45,106,242,0.12)] overflow-hidden"
+              className="w-full max-w-lg bg-[#0c1020]/98 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Top accent */}
-              <div className="h-1 bg-gradient-to-r from-[#2d6af2] via-[#00ff9d] to-[#2d6af2]"></div>
+              <div className="h-[2px] bg-gradient-to-r from-transparent via-[#7C3AED] to-transparent"></div>
 
               {/* Header */}
-              <div className="p-6 pb-4 flex items-center justify-between border-b border-white/5">
+              <div className="p-6 pb-4 flex items-center justify-between border-b border-white/[0.05]">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-[#2d6af2]/20 border border-[#2d6af2]/30">
-                    <PlayCircle className="w-5 h-5 text-[#2d6af2]" />
+                  <div className="p-2 rounded-lg bg-[#7C3AED]/10 border border-[#7C3AED]/20">
+                    <Flag className="w-4 h-4 text-[#a78bfa]" />
                   </div>
-                  <h2 className="text-xl font-display uppercase tracking-wider text-white drop-shadow-[0_0_10px_rgba(45,106,242,0.5)]">
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-white">
                     {t('homepage.how_to_play.title')}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowHowToPlay(false)}
-                  className="p-2 rounded-xl hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-white/40 hover:text-white transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Steps */}
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
                 {[
                   {
-                    icon: <Zap className="w-5 h-5" />,
+                    icon: <Zap className="w-4 h-4" />,
                     title: t('homepage.how_to_play.step1.title'),
                     desc: t('homepage.how_to_play.step1.desc'),
-                    color: "text-[#00ff9d]",
-                    bg: "bg-[#00ff9d]/10 border-[#00ff9d]/20",
+                    color: "text-[#a78bfa]",
+                    bg: "bg-[#7C3AED]/[0.08] border-[#7C3AED]/[0.15]",
                   },
                   {
-                    icon: <Target className="w-5 h-5" />,
+                    icon: <Target className="w-4 h-4" />,
                     title: t('homepage.how_to_play.step2.title'),
                     desc: t('homepage.how_to_play.step2.desc'),
                     color: "text-[#2d6af2]",
-                    bg: "bg-[#2d6af2]/10 border-[#2d6af2]/20",
+                    bg: "bg-[#2d6af2]/[0.06] border-[#2d6af2]/[0.12]",
                   },
                   {
-                    icon: <Users className="w-5 h-5" />,
+                    icon: <Users className="w-4 h-4" />,
                     title: t('homepage.how_to_play.step3.title'),
                     desc: t('homepage.how_to_play.step3.desc'),
-                    color: "text-purple-400",
-                    bg: "bg-purple-400/10 border-purple-400/20",
+                    color: "text-amber-400",
+                    bg: "bg-amber-400/[0.06] border-amber-400/[0.12]",
                   },
                   {
-                    icon: <Trophy className="w-5 h-5" />,
+                    icon: <Trophy className="w-4 h-4" />,
                     title: t('homepage.how_to_play.step4.title'),
                     desc: t('homepage.how_to_play.step4.desc'),
-                    color: "text-yellow-400",
-                    bg: "bg-yellow-400/10 border-yellow-400/20",
+                    color: "text-emerald-400",
+                    bg: "bg-emerald-400/[0.06] border-emerald-400/[0.12]",
                   },
                 ].map((step, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: i18n.language === 'ar' ? 10 : -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className={`flex items-start gap-4 p-4 rounded-2xl border ${step.bg} transition-all`}
+                    transition={{ delay: i * 0.08 }}
+                    className={`flex items-start gap-3 p-3.5 rounded-xl border ${step.bg} transition-all`}
                   >
                     <div
-                      className={`flex-shrink-0 p-2 rounded-xl ${step.bg} ${step.color}`}
+                      className={`flex-shrink-0 p-1.5 rounded-lg ${step.bg} ${step.color}`}
                     >
                       {step.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-display tracking-widest text-gray-500 uppercase">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[9px] font-bold tracking-[0.15em] text-white/30 uppercase">
                           Step {i + 1}
                         </span>
                       </div>
                       <h3
-                        className={`font-display text-sm uppercase tracking-wider mb-1 ${step.color}`}
+                        className={`font-bold text-sm uppercase tracking-wide mb-0.5 ${step.color}`}
                       >
                         {step.title}
                       </h3>
-                      <p className="text-gray-400 text-xs leading-relaxed">
+                      <p className="text-white/40 text-xs leading-relaxed">
                         {step.desc}
                       </p>
                     </div>
@@ -468,10 +500,10 @@ export default function Home() {
               </div>
 
               {/* Footer */}
-              <div className="p-6 pt-4 border-t border-white/5">
+              <div className="p-6 pt-4 border-t border-white/[0.05]">
                 <button
                   onClick={() => setShowHowToPlay(false)}
-                  className="w-full py-3.5 bg-gradient-to-r from-[#2d6af2] to-[#4da6ff] text-white font-display text-xs tracking-widest uppercase rounded-xl hover:shadow-[0_0_20px_rgba(45,106,242,0.5)] transition-all active:scale-[0.98]"
+                  className="w-full py-3 bg-gradient-to-r from-[#7C3AED] to-[#2d6af2] text-white font-bold text-xs tracking-[0.15em] uppercase rounded-xl hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] transition-all active:scale-[0.98]"
                 >
                   {t('homepage.how_to_play.button')}
                 </button>
@@ -482,113 +514,150 @@ export default function Home() {
       </AnimatePresence>
 
       <main className="relative z-20 flex flex-col items-center justify-center h-screen w-full max-w-5xl mx-auto p-4 md:p-6 overflow-hidden">
-        <header className="text-center mb-4 md:mb-6 relative z-30 w-full flex flex-col items-center">
-          <div className="relative group">
+        {/* Logo & Tagline */}
+        <header className="text-center mb-6 md:mb-10 relative z-30 w-full flex flex-col items-center">
+          <motion.div 
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative"
+          >
             <Image
               src="/assets/logo/logo1.png"
-              alt="GameForSmart Logo"
+              alt="NitroQuiz Logo"
               width={500}
               height={150}
-              className="object-contain w-[200px] md:w-[320px] drop-shadow-[0_0_30px_rgba(45,106,242,0.6)] group-hover:drop-shadow-[0_0_40px_rgba(45,106,242,0.8)] transition-all duration-500 scale-95 group-hover:scale-100"
+              className="object-contain w-[200px] md:w-[320px] drop-shadow-[0_0_30px_rgba(124,58,237,0.4)] group-hover:drop-shadow-[0_0_40px_rgba(124,58,237,0.6)] transition-all duration-500 scale-95 group-hover:scale-100"
               priority
             />
-          </div>
+          </motion.div>
           
-          {/* Interactive Slogan */}
-          <div className="mt-1 md:mt-2">
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="flex items-center justify-center gap-2 md:gap-3"
-            >
-              {[
-                { word: "RACE", color: "white" },
-                { word: "LEARN", color: "#00ff9d" },
-                { word: "DOMINATE", color: "white" }
-              ].map((item, idx) => (
-                <div key={item.word} className="flex items-center">
-                  <span 
-                    className="font-display text-[8px] sm:text-sm md:text-lg font-black italic tracking-[0.05em] sm:tracking-[0.1em] md:tracking-[0.2em] transition-all duration-300 cursor-default hover:text-[#00ff9d] hover:scale-110 hover:skew-x-[-12deg] active:scale-95"
-                    style={{ 
-                      color: item.color,
-                      textShadow: '0 0 15px rgba(255,255,255,0.2)'
-                    }}
-                  >
-                    {item.word}
-                  </span>
-                  {idx < 2 && (
-                    <div className="mx-1 sm:mx-1.5 md:mx-2 w-1 h-1 md:w-1 md:h-1 rounded-full bg-[#2d6af2] shadow-[0_0_10px_#2d6af2]" />
-                  )}
-                </div>
-              ))}
-            </motion.div>
-          </div>
+          {/* Tagline */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="mt-3 md:mt-4 flex items-center justify-center gap-3 md:gap-4"
+          >
+            {[
+              { word: "RACE", color: "#a78bfa" },
+              { word: "LEARN", color: "#00ff9d" },
+              { word: "DOMINATE", color: "#a78bfa" }
+            ].map((item, idx) => (
+              <div key={item.word} className="flex items-center gap-3 md:gap-4">
+                <span 
+                  className="font-body text-[10px] sm:text-xs md:text-sm font-bold tracking-[0.25em] uppercase transition-all duration-300 cursor-default hover:tracking-[0.35em]"
+                  style={{ 
+                    color: item.color,
+                  }}
+                >
+                  {item.word}
+                </span>
+                {idx < 2 && (
+                  <div className="w-[3px] h-[3px] rounded-full bg-white/20" />
+                )}
+              </div>
+            ))}
+          </motion.div>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-5 lg:gap-8 w-full justify-center items-stretch max-w-4xl px-4 md:px-0">
-          {/* Host Card */}
-          <div className="host-card rounded-[2rem] p-5 md:p-6 lg:p-7 flex-1 flex flex-col items-center justify-between gap-6 relative overflow-hidden group transition-all duration-300">
-            <div className="absolute top-0 end-0 w-24 h-24 bg-gradient-to-bl rtl:bg-gradient-to-br from-[#00ff9d]/20 to-transparent rounded-bl-full rtl:rounded-br-full pointer-events-none"></div>
-            <div className="w-full text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#000000]/50 border border-white/10 mb-3 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-                <Gamepad2 className="w-6 h-6 text-[#00ff9d]" />
+        {/* Cards */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="flex flex-col md:flex-row gap-4 lg:gap-6 w-full justify-center items-stretch max-w-5xl px-4 md:px-0"
+        >
+          {/* ═══ HOST CARD (AERODYNAMIC SLANT) ═══ */}
+          <div className="host-card race-card flex-1 flex flex-col p-8 relative group">
+            <div className="motion-texture"></div>
+            <div className="laser-edge text-[#7C3AED]"></div>
+            <div className="checkered-tag"></div>
+
+            <div className="relative z-10 flex flex-col">
+              <div className="mb-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 flex items-center justify-center bg-[#7C3AED]/10 text-[#a78bfa] border border-[#7C3AED]/20">
+                    <Flag className="w-5 h-5" />
+                  </div>
+                  <div className="flex items-baseline gap-4">
+                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
+                      {t('homepage.host.title')}
+                    </h2>
+                    <p className="text-white/40 text-[10px] font-bold tracking-[0.1em] leading-none uppercase hidden sm:block">
+                      {t('homepage.host.subtitle')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 mt-1">
+                  <div className="h-0.5 w-12 bg-[#7C3AED] group-hover:w-20 transition-all duration-500"></div>
+                  <div className="flex gap-1">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className={`h-1 w-4 ${i < 3 ? 'bg-[#7C3AED]' : 'bg-white/10'}`}></div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <h2 className="font-body font-bold text-2xl text-white mb-2 tracking-wide glow-text uppercase">
-                {t('homepage.host.title')}
-              </h2>
-              <p className="text-gray-400 text-[10px] font-light tracking-wider leading-relaxed">
-                {t('homepage.host.subtitle')}
-              </p>
-            </div>
-            <div className="w-full">
-              <button
-                onClick={handleHost}
-                className="w-full bg-gradient-to-r from-[#1a45c4] via-[#2d6af2] to-[#1a45c4] hover:shadow-[0_0_20px_rgba(45,106,242,0.6)] text-white font-display text-[10px] py-3 px-6 rounded-xl transition-all duration-300 uppercase tracking-wider transform active:scale-[0.98] font-bold"
-              >
-                  {t('homepage.host.button')}
-              </button>
+
+              <div className="mb-4">
+                <button
+                  onClick={handleHost}
+                  className="px-6 py-3 bg-[#7C3AED]/10 hover:bg-[#7C3AED]/20 border border-[#7C3AED]/30 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(124,58,237,0.2)] active:scale-95"
+                >
+                  <span className="text-lg font-bold text-white uppercase tracking-wider">
+                    {t('homepage.host.button')}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Join Card */}
-          <div className="join-card rounded-[2rem] p-5 md:p-6 lg:p-7 flex-1 flex flex-col items-center justify-center gap-6 relative overflow-hidden group transition-all duration-300">
-            <div className="absolute top-0 start-0 w-20 h-20 bg-gradient-to-br rtl:bg-gradient-to-bl from-[#2d6af2]/20 to-transparent rounded-br-full rtl:rounded-bl-full pointer-events-none"></div>
-            <div className="w-full text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#000000]/50 border border-white/10 mb-3 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-                <LogIn className="w-6 h-6 text-[#2d6af2]" />
+          {/* ═══ JOIN CARD (AERODYNAMIC SLANT) ═══ */}
+          <div className="join-card race-card flex-1 flex flex-col p-8 relative group">
+            <div className="motion-texture"></div>
+            <div className="laser-edge text-[#2d6af2]"></div>
+            <div className="checkered-tag"></div>
+
+            <div className="relative z-10 flex flex-col">
+              <div className="mb-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 flex items-center justify-center bg-[#2d6af2]/10 text-[#5a9cff] border border-[#2d6af2]/20">
+                    <PlayCircle className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
+                    {t('homepage.join.title')}
+                  </h2>
+                </div>
+                <div className="mt-1 h-0.5 w-12 bg-[#2d6af2] group-hover:w-20 transition-all duration-500"></div>
               </div>
-              <h2 className="font-body font-bold text-2xl text-white mb-2 tracking-wide glow-text uppercase">
-                {t('homepage.join.title')}
-              </h2>
-              <p className="text-gray-400 text-[10px] font-light tracking-wider leading-relaxed">
-                {t('homepage.join.subtitle')}
-              </p>
-            </div>
-            <div className="w-full space-y-2">
-              <div className="relative group/input">
-                <input
-                  className="w-full bg-white/[0.03] border border-white/[0.07] text-white font-display text-center text-xs py-3 px-4 rounded-xl focus:outline-none focus:border-[#00ff9d]/60 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_rgba(0,255,157,0.1)] transition-all placeholder:font-display placeholder:text-[9px] uppercase tracking-widest placeholder:text-gray-600"
-                  maxLength={6}
-                  placeholder={t('homepage.join.placeholder')}
-                  type="text"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                />
+
+              <div className="flex items-end gap-4">
+                <div className="flex-1 relative">
+                  <input
+                    className="w-full bg-white/[0.03] border-b border-white/10 text-white font-bold text-lg py-2 focus:outline-none focus:border-[#2d6af2] transition-colors placeholder:text-[10px] placeholder:font-bold uppercase tracking-[0.3em] placeholder:text-white/20 text-center"
+                    maxLength={6}
+                    placeholder={t('homepage.join.placeholder')}
+                    type="text"
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                  />
+                </div>
+
+                <button
+                  onClick={handleJoin}
+                  className="px-8 py-2.5 bg-[#2d6af2]/10 hover:bg-[#2d6af2]/20 border border-[#2d6af2]/30 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(45,106,242,0.2)] active:scale-95 whitespace-nowrap"
+                >
+                  <span className="text-base font-bold text-white uppercase tracking-widest">
+                    {t('homepage.join.button')}
+                  </span>
+                </button>
               </div>
-              <button
-                onClick={handleJoin}
-                className="w-full bg-gradient-to-r from-teal-500 via-[#00ff9d] to-teal-500 hover:shadow-[0_0_20px_rgba(0,255,157,0.5)] text-[#04060f] font-display text-[10px] py-3 px-6 rounded-xl transition-all duration-300 uppercase tracking-wider transform active:scale-[0.98] font-bold"
-              >
-                  {t('homepage.join.button')}
-              </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="absolute top-1/4 left-10 w-1 h-24 bg-gradient-to-b from-transparent via-[#2d6af2]/50 to-transparent blur-sm hidden lg:block"></div>
-        <div className="absolute bottom-1/3 right-10 w-1 h-32 bg-gradient-to-b from-transparent via-[#00ff9d]/40 to-transparent blur-sm hidden lg:block"></div>
+
       </main>
 
       {/* Logout Confirmation Dialog */}
@@ -601,31 +670,31 @@ export default function Home() {
             className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-[#0c1225] border border-[#2d6af2]/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl overflow-hidden relative"
+              className="bg-[#0c1020] border border-white/[0.08] rounded-2xl p-7 max-w-sm w-full shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden relative"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
+              <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#7C3AED] to-transparent" />
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
-                  <LogOut className="w-8 h-8 text-red-500" />
+                <div className="w-14 h-14 rounded-xl bg-[#7C3AED]/[0.08] flex items-center justify-center mb-5 border border-[#7C3AED]/15">
+                  <LogOut className="w-6 h-6 text-red-400" />
                 </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
                   {t("homepage.logout_confirm.title")}
                 </h3>
-                <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                <p className="text-white/40 text-sm mb-7 leading-relaxed">
                   {t("homepage.logout_confirm.description")}
                 </p>
-                <div className="flex gap-4 w-full">
+                <div className="flex gap-3 w-full">
                   <button
                     onClick={() => setIsLogoutDialogOpen(false)}
-                    className="flex-1 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all outline-none"
+                    className="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-white/[0.04] text-white/60 border border-white/[0.08] hover:bg-white/[0.08] hover:text-white transition-all outline-none"
                   >
                     {t("homepage.logout_confirm.cancel")}
                   </button>
                   <button
                     onClick={performLogout}
-                    className="flex-1 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-red-600 text-white hover:bg-red-500 transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] outline-none"
+                    className="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-[#E10600] text-white hover:bg-red-500 transition-all shadow-[0_0_20px_rgba(225,6,0,0.2)] outline-none"
                   >
                     {t("homepage.logout_confirm.confirm")}
                   </button>
