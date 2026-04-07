@@ -107,40 +107,34 @@ const OFF_ROAD_LIMIT = MAX_SPEED / 4;
 // --- Difficulty-based config helper ---
 function getDifficultyConfig(difficulty: string) {
     if (difficulty === 'hard') {
-        // Hard: high camera (drone feel), max 180 KPH, more NPCs, all obstacles, lighter fog for visibility
+        // Hard: high camera (top-down drone feel), more NPCs, all obstacles
         return {
             fieldOfView: 85,
             cameraHeight: 1000,
-            fogDensity: 5,       // Less dense fog so players can see further
+            fogDensity: 3,
             npcCount: 30,
             obstacleCount: 25,
-            trackType: 'complex',
-            speedFactor: 0.9,    // 180 KPH
-            accelFactor: 1.0,
+            trackType: 'complex', // twisty S-curves + bumps like medium
         };
     } else if (difficulty === 'normal' || difficulty === 'medium') {
         // Normal/Medium: standard camera, twisty track, obstacles
         return {
             fieldOfView: 100,
             cameraHeight: 500,
-            fogDensity: 4,
+            fogDensity: 5,
             npcCount: 20,
-            obstacleCount: 20,
+            obstacleCount: 25,
             trackType: 'complex',
-            speedFactor: 0.75,   // 150 KPH
-            accelFactor: 0.9,
         };
     } else {
-        // Easy: simple track, no obstacles, clear view
+        // Easy: standard everything, simple track, no obstacles
         return {
             fieldOfView: 100,
             cameraHeight: 500,
-            fogDensity: 3,
-            npcCount: 15,
+            fogDensity: 5,
+            npcCount: 20,
             obstacleCount: 0,
             trackType: 'simple',
-            speedFactor: 0.6,    // 120 KPH
-            accelFactor: 0.8,
         };
     }
 }
@@ -577,10 +571,7 @@ export default function GameSpeedPage() {
         for (let n = 0; n < diffConfig.npcCount; n++) {
             const z = (n + 1) * (len * SEGMENT_LENGTH / diffConfig.npcCount);
             const offset = Util.randomChoice([-0.8, -0.4, 0.4, 0.8]);
-            
-            // Scaled NPC Speed based on difficulty
-            const baseNPCSpeed = MAX_SPEED * diffConfig.speedFactor;
-            const speed = baseNPCSpeed / 4 + Math.random() * (baseNPCSpeed / 1.8);
+            const speed = MAX_SPEED / 4 + Math.random() * (MAX_SPEED / 2);
 
             const vehicleTypeRnd = Math.random();
             let vehicleType: 'truck' | 'jne' | 'odong' | 'taxi' = 'truck';
@@ -641,7 +632,7 @@ export default function GameSpeedPage() {
             offset: -0.4,
             z: 200 * SEGMENT_LENGTH,
             sprite: state.current.sprites.car_rival || state.current.sprites.npc_car,
-            speed: MAX_SPEED * diffConfig.speedFactor * 0.8, // Rival stays competitive
+            speed: MAX_SPEED * 0.7,
             percent: 0,
             isRival: true
         };
@@ -1122,18 +1113,13 @@ export default function GameSpeedPage() {
         let nextSpeed = speed;
         let nextNos = state.current.nos;
 
-        const difficulty = localStorage.getItem('nitroquiz_game_difficulty') || 'easy';
-        const diffConfig = getDifficultyConfig(difficulty);
-        const CURRENT_MAX_SPEED = MAX_SPEED * diffConfig.speedFactor;
-        const CURRENT_ACCEL = ACCEL * diffConfig.accelFactor;
-
-        const GAS_LIMIT = CURRENT_MAX_SPEED * 0.9;
-        const BOOST_LIMIT = CURRENT_MAX_SPEED * 1.1;
-        const REVVING_LIMIT = CURRENT_MAX_SPEED * 0.2;
+        const GAS_LIMIT = MAX_SPEED * 0.9;    // ~180 KPH
+        const BOOST_LIMIT = MAX_SPEED * 1.1;  // ~220 KPH
+        const REVVING_LIMIT = MAX_SPEED * 0.2; // ~40 KPH
 
         if (isPreparing) {
             if (keyFaster) {
-                nextSpeed = Util.accelerate(speed, CURRENT_ACCEL * 0.5, dt);
+                nextSpeed = Util.accelerate(speed, ACCEL * 0.5, dt);
                 nextSpeed = Math.min(nextSpeed, REVVING_LIMIT);
             } else {
                 nextSpeed = Util.accelerate(speed, DECEL, dt);
@@ -1143,11 +1129,11 @@ export default function GameSpeedPage() {
             const tryingToBoost = keyBoost && nextNos > 0;
 
             if (keySlower) {
-                // BRAKING / STOPPING
+                // BRAKING / STOPPING - Higher priority than Gas for mobile auto-forward
                 nextSpeed = Util.accelerate(speed, BREAKING, dt);
             } else if (tryingToBoost) {
                 // NOS BOOSTING
-                nextSpeed = Util.accelerate(speed, CURRENT_ACCEL * 2.5, dt);
+                nextSpeed = Util.accelerate(speed, ACCEL * 2.5, dt);
                 nextNos = Math.max(0, nextNos - dt * 25); // Consumption
 
                 if (nextSpeed >= BOOST_LIMIT - 300) {
@@ -1156,7 +1142,7 @@ export default function GameSpeedPage() {
                 }
             } else if (keyFaster) {
                 // NORMAL GAS
-                nextSpeed = Util.accelerate(speed, CURRENT_ACCEL, dt);
+                nextSpeed = Util.accelerate(speed, ACCEL, dt);
                 if (nextSpeed > GAS_LIMIT) {
                     nextSpeed = Util.accelerate(nextSpeed, DECEL, dt);
                     nextSpeed = Math.max(nextSpeed, GAS_LIMIT);
@@ -1192,9 +1178,9 @@ export default function GameSpeedPage() {
             }
         }
 
-        // Road Boundary Limit
+        // Road Boundary Limit (Acts as invisible barrier)
         nextPlayerX = Util.limit(nextPlayerX, -1.5, 1.5);
-        nextSpeed = Util.limit(nextSpeed, 0, CURRENT_MAX_SPEED);
+        nextSpeed = Util.limit(nextSpeed, 0, MAX_SPEED);
 
         state.current.playerX = nextPlayerX;
         state.current.speed = nextSpeed;
@@ -1362,7 +1348,7 @@ export default function GameSpeedPage() {
         const totalRounds = Math.max(1, Math.ceil(state.current.allQuizQuestions.length / QUESTIONS_PER_ROUND));
 
         setStats({
-            speed: Math.floor(speed / 60), // Display actual calculated KPH (e.g. 19200 / 60 = 320 KPH)
+            speed: Math.floor(speed / 100),
             nos: Math.floor(state.current.nos),
             lap: currentRound,
             totalLaps: totalRounds
@@ -2321,8 +2307,8 @@ export default function GameSpeedPage() {
                 touchAction: 'none',
                 WebkitUserSelect: 'none',
                 textAlign: 'left',
-                filter: (state.current.keyBoost && stats.nos > 0 ? 'blur(1.5px) contrast(1.1) brightness(1.1) saturate(1.2)' : 'contrast(1.05) brightness(1) saturate(1.1)'),
-                transition: 'filter 0.5s ease'
+                filter: (stats.speed > 150 ? `blur(${((stats.speed - 150) / 60) + (state.current.keyBoost && stats.nos > 0 ? 2 : 0)}px) ` : (state.current.keyBoost && stats.nos > 0 ? 'blur(2px) ' : '')) + 'contrast(1.05) brightness(1) saturate(1.1)', // Milder Lighter Blur
+                transition: 'filter 0.4s ease'
             }}
         >
             {/* Main Game Canvas */}
