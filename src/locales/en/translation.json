@@ -2,8 +2,8 @@
   "homepage": {
     "host": {
       "title": "HOST",
-      "subtitle": "Create a new room and invite players.",
-      "button": "Create Room"
+      "subtitle": "Create a new race and invite players.",
+      "button": "Create Race"
     },
     "join": {
       "title": "JOIN",

@@ -165,19 +165,19 @@ export default function SelectQuizPage() {
                     .from('profiles')
                     .update({ favorite_quiz: { favorites: newFavs } })
                     .eq('id', currentProfileId);
-                
+
                 // 2. Sync to quiz record (list of users who like this quiz)
                 const { data: quizData } = await supabaseCentral
                     .from('quizzes')
                     .select('favorite')
                     .eq('id', quizId)
                     .single();
-                
+
                 if (quizData) {
                     let quizFavs: string[] = [];
                     try {
-                        const parsed = typeof quizData.favorite === 'string' 
-                            ? JSON.parse(quizData.favorite) 
+                        const parsed = typeof quizData.favorite === 'string'
+                            ? JSON.parse(quizData.favorite)
                             : quizData.favorite;
                         quizFavs = Array.isArray(parsed) ? parsed : [];
                     } catch { quizFavs = []; }
@@ -191,8 +191,8 @@ export default function SelectQuizPage() {
                         .update({ favorite: JSON.stringify(updatedQuizFavs) })
                         .eq('id', quizId);
                 }
-            } catch (err) { 
-                console.error("Failed to sync favorite status", err); 
+            } catch (err) {
+                console.error("Failed to sync favorite status", err);
             }
         }
     };
@@ -597,13 +597,13 @@ export default function SelectQuizPage() {
                                 <DialogTitle className="text-xl font-display font-bold uppercase tracking-wide text-white leading-tight">
                                     {selectedQuizDetail.title}
                                 </DialogTitle>
-                                
+
                                 <div className="mt-3">
                                     <p className={`text-gray-400 text-xs font-body leading-relaxed transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-1'}`}>
                                         {selectedQuizDetail.description || t('select_quiz.detail.no_description')}
                                     </p>
                                     {(selectedQuizDetail.description && selectedQuizDetail.description.length > 80) && (
-                                        <button 
+                                        <button
                                             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                                             className="text-[#00ff9d] text-[10px] font-display uppercase tracking-widest mt-2 hover:underline focus:outline-none">
                                             {isDescriptionExpanded ? t('select_quiz.detail.show_less') : t('select_quiz.detail.show_more')}
