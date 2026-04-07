@@ -111,6 +111,16 @@ export default function Home() {
     init();
   }, [router]);
 
+  // Safety: Check for pending room code if user is logged in
+  useEffect(() => {
+    if (profile && !authLoading) {
+      const pendingCode = localStorage.getItem("nitroquiz_pendingRoomCode");
+      if (pendingCode) {
+        localStorage.removeItem("nitroquiz_pendingRoomCode");
+        router.replace(`/join/${pendingCode.toUpperCase()}`);
+      }
+    }
+  }, [profile, authLoading, router]);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (

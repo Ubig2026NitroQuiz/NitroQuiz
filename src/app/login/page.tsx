@@ -34,8 +34,8 @@ export default function LoginPage() {
   const registerUrl =
     typeof window !== "undefined" &&
       window.location.hostname.includes("gameforsmart.com")
-      ? "https://gameforsmart.com/auth/register"
-      : "https://gameforsmartnewui.vercel.app/auth/register";
+      ? "https://app.gameforsmart.com/login"
+      : "https://gameforsmartnewui.vercel.app/login";
 
   useEffect(() => {
     setParticles(Array.from({ length: 24 }, (_, i) => ({
@@ -109,9 +109,11 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
+      // Use the current login page URL so we come back here to trigger the room redirect logic
+      const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
       const { error } = await supabaseCentral.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/` },
+        options: { redirectTo: currentUrl },
       });
       if (error) throw error;
     } catch (err: any) {

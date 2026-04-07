@@ -1,9 +1,42 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+class SharedCookieStorage {
+  private storageKey: string;
+
+  // ← kasih default value, jadi bisa dipanggil tanpa argumen
+  constructor(storageKey: string = 'gfs-auth-token') {
+    this.storageKey = storageKey;
+  }
+
+  getItem(key: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split('; ');
+    const found = cookies.find(c => c.startsWith(`${key}=`));
+    return found ? decodeURIComponent(found.split('=')[1]) : null;
+  }
+
+  setItem(key: string, value: string): void {
+    if (typeof document === 'undefined') return;
+    const maxAge = 60 * 60 * 24 * 365;
+    document.cookie = [
+      `${key}=${encodeURIComponent(value)}`,
+      `domain=.gameforsmart.com`,
+      `path=/`,
+      `max-age=${maxAge}`,
+      `SameSite=Lax`,
+      `Secure`,
+    ].join('; ');
+  }
+
+  removeItem(key: string): void {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${key}=; domain=.gameforsmart.com; path=/; max-age=0`;
+  }
+}
+
 // ==========================================
 // 1. SUPABASE CLIENT UTAMA (PROJECT-MU SENDIRI)
 // Digunakan untuk:
-// - Menyimpan Sessions
 // - Menyimpan Participants
 // - Mencatat Jawaban, Score, Time
 // ==========================================
@@ -31,6 +64,7 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
 // ==========================================
 // 2. SUPABASE CLIENT PUSAT (DATABASE QUIZ PUSAT)
 // Digunakan HANYA untuk:
+// - Menyimpan Sessions
 // - Menarik (Read-only) data Quiz dari Host/Pusat
 // - Menarik soal-soal dan jawabannya
 // ==========================================
@@ -44,7 +78,16 @@ export const supabaseCentral: SupabaseClient = new Proxy({} as SupabaseClient, {
       if (!centralSupabaseUrl || !centralSupabaseAnonKey) {
         throw new Error('Central Supabase env vars are not set. Make sure NEXT_PUBLIC_CENTRAL_SUPABASE_URL and NEXT_PUBLIC_CENTRAL_SUPABASE_ANON_KEY are defined.');
       }
-      _supabaseCentral = createClient(centralSupabaseUrl, centralSupabaseAnonKey);
+      _supabaseCentral = createClient(centralSupabaseUrl, centralSupabaseAnonKey, {
+        auth: {
+          storage: new SharedCookieStorage(),
+          storageKey: 'gfs-auth-token', // sama di axiom, zigma, app, landing
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+        }
+
+      });
     }
     const value = (_supabaseCentral as any)[prop];
     if (typeof value === 'function') {

@@ -350,7 +350,7 @@ export default function LeaderboardPage() {
             onClick={() =>
               sessionId &&
               window.open(
-                `https://gameforsmartnewui.vercel.app/stat/${sessionId}`,
+                `https://app.gameforsmart.com/stat/${sessionId}`,
                 "_blank",
               )
             }
@@ -616,7 +616,7 @@ export default function LeaderboardPage() {
             onClick={() =>
               sessionId &&
               window.open(
-                `https://gameforsmartnewui.vercel.app/stat/${sessionId}`,
+                `https://app.gameforsmart.com/stat/${sessionId}`,
                 "_blank",
               )
             }
