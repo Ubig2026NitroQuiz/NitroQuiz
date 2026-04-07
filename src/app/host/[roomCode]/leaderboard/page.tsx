@@ -425,7 +425,7 @@ export default function LeaderboardPage() {
                     <th className="px-2 sm:px-4 py-3 w-12 sm:w-16 text-center">
                       {t("host_leaderboard.rank")}
                     </th>
-                    <th className="px-2 sm:px-4 py-3">{t("host_leaderboard.player")}</th>
+                    <th className="px-2 sm:px-4 py-3 text-left rtl:text-right">{t("host_leaderboard.player")}</th>
                     <th className="px-2 sm:px-4 py-3 text-right">{t("host_leaderboard.score")}</th>
                     <th className="px-2 sm:px-4 py-3 text-center">{t("host_leaderboard.time")}</th>
                   </tr>
@@ -440,28 +440,26 @@ export default function LeaderboardPage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 2.5 + index * 0.1 }}
-                          className={`border-b border-[#2d6af2]/10 transition-colors ${
-                            isTop3
+                          className={`border-b border-[#2d6af2]/10 transition-colors ${isTop3
                               ? index === 0
                                 ? "bg-yellow-500/5"
                                 : index === 1
                                   ? "bg-slate-300/5"
                                   : "bg-orange-600/5"
                               : "hover:bg-[#2d6af2]/5"
-                          }`}
+                            }`}
                         >
                           <td className="px-2 sm:px-4 py-3 text-center">
                             <div
                               className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto font-display text-xs sm:text-sm
-                                                            ${
-                                                              index === 0
-                                                                ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/50"
-                                                                : index === 1
-                                                                  ? "bg-slate-300/20 text-slate-300 border border-slate-300/50"
-                                                                  : index === 2
-                                                                    ? "bg-orange-600/20 text-orange-400 border border-orange-600/50"
-                                                                    : "bg-white/5 text-gray-500"
-                                                            }`}
+                                                            ${index === 0
+                                  ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/50"
+                                  : index === 1
+                                    ? "bg-slate-300/20 text-slate-300 border border-slate-300/50"
+                                    : index === 2
+                                      ? "bg-orange-600/20 text-orange-400 border border-orange-600/50"
+                                      : "bg-white/5 text-gray-500"
+                                }`}
                             >
                               {index + 1}
                             </div>
@@ -469,20 +467,18 @@ export default function LeaderboardPage() {
                           <td className="px-2 sm:px-4 py-3">
                             <div className="flex items-center gap-2 sm:gap-3">
                               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-lg shadow-inner overflow-hidden flex-shrink-0">
-                                {player.eliminated
-                                  ? "💀"
-                                  : player.avatar_url ? (
-                                      <img
-                                        src={player.avatar_url}
-                                        alt="Avatar"
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <InitialsAvatar name={player.nickname} size="sm" />
-                                    )}
+                                {player.avatar_url ? (
+                                    <img
+                                      src={player.avatar_url}
+                                      alt="Avatar"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <InitialsAvatar name={player.nickname} size="sm" />
+                                  )}
                               </div>
                               <p
-                                className={`font-display tracking-wider uppercase text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"}`}
+                                className={`font-display tracking-wider text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"}`}
                                 title={player.nickname}
                               >
                                 {player.nickname}

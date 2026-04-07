@@ -100,6 +100,21 @@
       "prev": "Prev",
       "next": "Next",
       "page": "PAGE"
+    },
+    "detail": {
+      "title": "Quiz Detail",
+      "questions": "Questions",
+      "played": "Played",
+      "favorites": "Favorites",
+      "language": "Language",
+      "start": "Start",
+      "cancel": "Cancel",
+      "no_description": "No description available.",
+      "show_more": "Show more",
+      "show_less": "Show less",
+      "qs_suffix": "Qs",
+      "play_suffix": "Plays",
+      "fav_suffix": "Favs"
     }
   },
   "categories": {

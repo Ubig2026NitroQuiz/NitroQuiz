@@ -15,6 +15,15 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { generateXID } from "@/lib/id-generator";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Globe, Users, Clock, Languages, Layers, Star } from "lucide-react";
 
 interface QuizView {
     id: string;
@@ -100,6 +109,11 @@ export default function SelectQuizPage() {
     const [isFetching, setIsFetching] = useState(true);
     const [isReturning, setIsReturning] = useState(false);
 
+    // Detail Dialog State
+    const [selectedQuizDetail, setSelectedQuizDetail] = useState<any>(null);
+    const [isDetailLoading, setIsDetailLoading] = useState(false);
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
     const itemsPerPage = 8;
     const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
@@ -139,24 +153,52 @@ export default function SelectQuizPage() {
 
     const toggleFavorite = async (quizId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        const isFav = favorites.includes(quizId);
-        const newFavs = isFav ? favorites.filter(id => id !== quizId) : [...favorites, quizId];
+        const isCurrentlyFav = favorites.includes(quizId);
+        const newFavs = isCurrentlyFav ? favorites.filter(id => id !== quizId) : [...favorites, quizId];
         setFavorites(newFavs);
         localStorage.setItem('quiz_favorites', JSON.stringify(newFavs));
 
         if (currentProfileId) {
             try {
-                const { error } = await supabaseCentral
+                // 1. Sync to user profile (list of quizzes this user likes)
+                await supabaseCentral
                     .from('profiles')
                     .update({ favorite_quiz: { favorites: newFavs } })
                     .eq('id', currentProfileId);
-                if (error) throw error;
-            } catch (err) { console.error("Failed to sync favorites to profile", err); }
+                
+                // 2. Sync to quiz record (list of users who like this quiz)
+                const { data: quizData } = await supabaseCentral
+                    .from('quizzes')
+                    .select('favorite')
+                    .eq('id', quizId)
+                    .single();
+                
+                if (quizData) {
+                    let quizFavs: string[] = [];
+                    try {
+                        const parsed = typeof quizData.favorite === 'string' 
+                            ? JSON.parse(quizData.favorite) 
+                            : quizData.favorite;
+                        quizFavs = Array.isArray(parsed) ? parsed : [];
+                    } catch { quizFavs = []; }
+
+                    const updatedQuizFavs = isCurrentlyFav
+                        ? quizFavs.filter(uid => uid !== currentProfileId)
+                        : Array.from(new Set([...quizFavs, currentProfileId]));
+
+                    await supabaseCentral
+                        .from('quizzes')
+                        .update({ favorite: JSON.stringify(updatedQuizFavs) })
+                        .eq('id', quizId);
+                }
+            } catch (err) { 
+                console.error("Failed to sync favorite status", err); 
+            }
         }
     };
 
-    const fetchQuizzes = async (pageToFetch = currentPage) => {
-        setIsFetching(true);
+    const fetchQuizzes = async (pageToFetch = currentPage, silent = false) => {
+        if (!silent) setIsFetching(true);
         try {
             const offset = (pageToFetch - 1) * itemsPerPage;
             const favIds = favorites.length > 0 ? favorites : ['00000000-0000-0000-0000-000000000000'];
@@ -194,14 +236,20 @@ export default function SelectQuizPage() {
 
     // Refetch when filters or page change
     useEffect(() => {
-        // Wait for profile mapping if needed before fetching
         fetchQuizzes(currentPage);
     }, [currentPage, searchQuery, selectedCategory, activeTab, currentProfileId, currentUserId]);
+
+    // Silent refresh for favorites tab when toggling favorites to avoid blinking
+    useEffect(() => {
+        if (activeTab === 'favorites') {
+            fetchQuizzes(currentPage, true);
+        }
+    }, [favorites]);
 
     // Reset pagination to 1 on tab, category, or search changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, selectedCategory, activeTab, favorites.length]);
+    }, [searchQuery, selectedCategory, activeTab]);
 
     const getCategoryDisplayName = (cat: string): string => {
         if (cat === 'All') return t('select_quiz.all_categories');
@@ -280,6 +328,27 @@ export default function SelectQuizPage() {
             console.error('Unexpected error:', err);
             setCreating(false);
             setCreatingQuizId(null);
+        }
+    };
+
+    const handleOpenQuizDetail = async (quizId: string) => {
+        setIsDetailLoading(true);
+        // Reset old data first
+        setSelectedQuizDetail(null);
+        setIsDescriptionExpanded(false);
+        try {
+            const { data, error } = await supabaseCentral
+                .from("quizzes")
+                .select("*")
+                .eq("id", quizId)
+                .single();
+
+            if (error) throw error;
+            setSelectedQuizDetail(data);
+        } catch (err) {
+            console.error("Error fetching quiz detail:", err);
+        } finally {
+            setIsDetailLoading(false);
         }
     };
 
@@ -376,6 +445,8 @@ export default function SelectQuizPage() {
                                             <motion.div key={quiz.id}
                                                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ duration: 0.2 }} whileHover={{ scale: 1.01 }}
+                                                className="cursor-pointer"
+                                                onClick={() => handleOpenQuizDetail(quiz.id)}
                                                 style={{ willChange: "transform, opacity" }}>
                                                 <Card className="h-full flex flex-col bg-black/40 border transition-all duration-200 relative overflow-hidden group rounded-xl pb-0"
                                                     style={{
@@ -507,6 +578,114 @@ export default function SelectQuizPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Quiz Detail Dialog */}
+            <Dialog open={!!selectedQuizDetail || isDetailLoading} onOpenChange={(open) => { if (!open) setSelectedQuizDetail(null); }}>
+                <DialogContent className="bg-[#080d1a] border border-[#2d6af2]/30 text-white backdrop-blur-xl p-0 overflow-hidden max-w-lg shadow-2xl rounded-xl">
+                    {isDetailLoading ? (
+                        <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                            <div className="w-10 h-10 border-2 border-[#2d6af2]/30 border-t-[#00ff9d] rounded-full animate-spin" />
+                            <p className="font-display text-[10px] uppercase tracking-widest text-gray-500">Loading...</p>
+                        </div>
+                    ) : selectedQuizDetail && (
+                        <div className="flex flex-col">
+                            {/* Larger Header */}
+                            <div className="p-6 pb-4 border-b border-white/5">
+                                <span className="text-[9px] font-display font-bold uppercase tracking-[0.2em] text-[#00ff9d] mb-2 block">
+                                    {getCategoryDisplayName(selectedQuizDetail.category)}
+                                </span>
+                                <DialogTitle className="text-xl font-display font-bold uppercase tracking-wide text-white leading-tight">
+                                    {selectedQuizDetail.title}
+                                </DialogTitle>
+                                
+                                <div className="mt-3">
+                                    <p className={`text-gray-400 text-xs font-body leading-relaxed transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-1'}`}>
+                                        {selectedQuizDetail.description || t('select_quiz.detail.no_description')}
+                                    </p>
+                                    {(selectedQuizDetail.description && selectedQuizDetail.description.length > 80) && (
+                                        <button 
+                                            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                            className="text-[#00ff9d] text-[10px] font-display uppercase tracking-widest mt-2 hover:underline focus:outline-none">
+                                            {isDescriptionExpanded ? t('select_quiz.detail.show_less') : t('select_quiz.detail.show_more')}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Balanced Stats Grid */}
+                            <div className="px-6 py-4 grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
+                                    <HelpCircle size={14} className="text-[#2d6af2]" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.questions')}</span>
+                                        <span className="text-[12px] font-display font-bold text-white">
+                                            {typeof selectedQuizDetail.questions === 'string'
+                                                ? JSON.parse(selectedQuizDetail.questions).length
+                                                : (Array.isArray(selectedQuizDetail.questions) ? selectedQuizDetail.questions.length : 0)} {t('select_quiz.detail.qs_suffix')}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
+                                    <Play size={14} className="text-[#00ff9d]" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.played')}</span>
+                                        <span className="text-[12px] font-display font-bold text-white">
+                                            {selectedQuizDetail.played || 0} {t('select_quiz.detail.play_suffix')}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
+                                    <Heart size={14} className="text-pink-500" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.favorites')}</span>
+                                        <span className="text-[12px] font-display font-bold text-white">
+                                            {(() => {
+                                                try {
+                                                    const favs = typeof selectedQuizDetail.favorite === 'string'
+                                                        ? JSON.parse(selectedQuizDetail.favorite)
+                                                        : selectedQuizDetail.favorite;
+                                                    return Array.isArray(favs) ? favs.length : 0;
+                                                } catch { return 0; }
+                                            })()} {t('select_quiz.detail.fav_suffix')}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
+                                    <Languages size={14} className="text-purple-500" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.language')}</span>
+                                        <span className="text-[12px] font-display font-bold text-white uppercase">
+                                            {selectedQuizDetail.language || 'ID'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Premium Footer */}
+                            <div className="p-6 pt-2 flex items-center justify-between gap-4">
+                                <button
+                                    onClick={() => setSelectedQuizDetail(null)}
+                                    className="px-6 py-3 font-display text-[10px] tracking-widest uppercase text-gray-500 hover:text-white transition-all bg-white/5 rounded-xl border border-white/10">
+                                    {t('select_quiz.detail.cancel')}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const qid = selectedQuizDetail.id;
+                                        setSelectedQuizDetail(null);
+                                        handleSelectQuiz(qid);
+                                    }}
+                                    disabled={creating}
+                                    className="px-12 py-3 text-[#04060f] font-display text-[11px] font-bold tracking-widest uppercase rounded-xl transition-all duration-300 bg-[#00ff9d] hover:shadow-[0_0_20px_rgba(0,255,157,0.4)] disabled:opacity-50">
+                                    {t('select_quiz.detail.start')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
