@@ -748,7 +748,8 @@ export default function GameMonitorPage() {
                 fontFamily: "Orbitron, monospace",
                 fontSize: "28px",
                 fontWeight: 700,
-                letterSpacing: "0.15em",
+                letterSpacing: "0.18em",
+                fontVariantNumeric: "tabular-nums",
                 color: timeLeft < 60 ? "#ef4444" : "#93c5fd",
                 textShadow: `0 0 12px ${timeLeft < 60 ? "#ef4444" : "#93c5fd"}`,
               }}

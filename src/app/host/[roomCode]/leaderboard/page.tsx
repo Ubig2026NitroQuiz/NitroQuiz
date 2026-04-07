@@ -12,14 +12,15 @@ import {
   ChevronRight,
   LayoutDashboard,
   House,
-  RotateCcw,
   BarChart2,
+  RotateCw,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseCentral } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { useTranslation } from "react-i18next";
+import { generateXID } from "@/lib/id-generator";
 
 const carImageMap: Record<string, string> = {
   purple: "/assets/characters/rico/showroom/showroom1.png",
@@ -59,6 +60,16 @@ const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md
   );
 };
 
+// Helper: Shuffle Array
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 interface Participant {
   id: string;
   nickname: string;
@@ -67,7 +78,7 @@ interface Participant {
   current_question: number;
   finished_at: string | null;
   duration: number;
-  eliminated: boolean;
+  joined_at: string;
   avatar_url?: string | null;
 }
 
@@ -81,6 +92,7 @@ export default function LeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showResults, setShowResults] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isRestarting, setIsRestarting] = useState(false);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -114,32 +126,24 @@ export default function LeaderboardPage() {
     };
 
     fetchResults();
-
-    const channel = supabase
-      .channel(`host_leaderboard_guards_${roomCode}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "sessions", filter: `game_pin=eq.${roomCode}` },
-        (payload) => {
-          if (payload.new.status === "active") {
-            router.push(`/host/${roomCode}/monitor`);
-          } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
-            router.push(`/host/${roomCode}/lobby`);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [roomCode, router]);
 
   const rankedPlayers = [...participants].sort((a, b) => {
+    // 1. Higher score first
     if (b.score !== a.score) return b.score - a.score;
-    const dA = a.duration || Infinity;
-    const dB = b.duration || Infinity;
-    return dA - dB;
+
+    // 2. Lower duration first (faster)
+    const durA = a.duration || 999999;
+    const durB = b.duration || 999999;
+    if (durA !== durB) return durA - durB;
+
+    // 3. Earlier join first (more motivated)
+    const joinA = new Date(a.joined_at).getTime();
+    const joinB = new Date(b.joined_at).getTime();
+    if (joinA !== joinB) return joinA - joinB;
+
+    // 4. Final fallback
+    return a.id.localeCompare(b.id);
   });
 
   const triggerConfetti = () => {
@@ -201,6 +205,85 @@ export default function LeaderboardPage() {
     return `${m}:${s}`;
   };
 
+  const handleRestart = async () => {
+    if (isRestarting) return;
+    setIsRestarting(true);
+
+    try {
+      // 1. Ambil session saat ini
+      const { data: oldSess, error: oldSessErr } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("game_pin", roomCode)
+        .single();
+
+      if (oldSessErr || !oldSess) throw new Error("Session not found");
+
+      // 2. Ambil data kuis original untuk mendapatkan semua pertanyaannya
+      const { data: quizData, error: quizError } = await supabaseCentral
+        .from("quizzes")
+        .select("questions")
+        .eq("id", oldSess.quiz_id)
+        .single();
+
+      if (quizError || !quizData) throw new Error("Quiz data not found");
+
+      const allQuestions = typeof quizData.questions === 'string' 
+        ? JSON.parse(quizData.questions) 
+        : quizData.questions;
+
+      // 3. Acak soal-soalnya
+      const shuffled = shuffleArray(allQuestions);
+      const limit = oldSess.question_limit || 5;
+      const sliced = shuffled.slice(0, limit);
+
+      const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+      const newSessionId = generateXID();
+
+      const newSession = {
+        id: newSessionId,
+        quiz_id: oldSess.quiz_id,
+        host_id: oldSess.host_id,
+        game_pin: newPin,
+        total_time_minutes: oldSess.total_time_minutes,
+        question_limit: limit,
+        difficulty: oldSess.difficulty,
+        current_questions: sliced,
+        status: "waiting",
+      };
+
+      const newMainSession = {
+        ...newSession,
+        game_end_mode: "manual",
+        allow_join_after_start: false,
+        participants: [],
+        responses: [],
+        application: "nitroquiz",
+      };
+
+      // 4. Insert ke kedua database
+      const [mainResult, gameResult] = await Promise.allSettled([
+        supabaseCentral.from("game_sessions").insert(newMainSession),
+        supabase.from("sessions").insert(newSession),
+      ]);
+
+      const mainError = mainResult.status === "rejected" ? mainResult.reason : mainResult.value.error;
+      const gameError = gameResult.status === "rejected" ? gameResult.reason : gameResult.value.error;
+
+      if (mainError || gameError) {
+        throw new Error("Failed to create new session");
+      }
+
+      // 5. Update localStorage dan redirect
+      localStorage.setItem("hostGamePin", newPin);
+      router.push(`/host/${newPin}/lobby`);
+
+    } catch (err) {
+      console.error("Restart failed:", err);
+      setIsRestarting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] font-display text-white">
@@ -252,11 +335,12 @@ export default function LeaderboardPage() {
             <House size={20} />
           </Button>
           <Button
-            onClick={() => router.push(`/host/${roomCode}/lobby`)}
-            className="w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#00ff9d]/50 hover:bg-[#00ff9d]/20 hover:scale-110 flex items-center justify-center text-[#00ff9d] shadow-[0_0_15px_rgba(0,255,157,0.4)] transition-all"
+            onClick={handleRestart}
+            disabled={isRestarting}
+            className={`w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#00ff9d]/50 hover:bg-[#00ff9d]/20 hover:scale-110 flex items-center justify-center text-[#00ff9d] shadow-[0_0_15px_rgba(0,255,157,0.4)] transition-all ${isRestarting ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={t("host_leaderboard.play_again_tooltip")}
           >
-            <RotateCcw size={20} />
+            <RotateCw size={20} className={isRestarting ? 'animate-spin' : ''} />
           </Button>
         </div>
 
@@ -519,11 +603,12 @@ export default function LeaderboardPage() {
 
           {/* Tombol Play Again (Restart) */}
           <button
-            onClick={() => router.push(`/host/${roomCode}/lobby`)}
-            className="flex-1 bg-[#00ff9d] border border-white/20 rounded-xl text-black py-3.5 text-xs font-display font-bold tracking-widest uppercase hover:bg-[#00ff9d]/80 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,157,0.3)]"
+            onClick={handleRestart}
+            disabled={isRestarting}
+            className={`flex-1 bg-[#00ff9d] border border-white/20 rounded-xl text-black py-3.5 text-xs font-display font-bold tracking-widest uppercase hover:bg-[#00ff9d]/80 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,157,0.3)] ${isRestarting ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            <RotateCcw size={16} />
-            {t("host_leaderboard.play_again_tooltip")}
+            <RotateCw size={16} className={isRestarting ? 'animate-spin' : ''} />
+            {isRestarting ? "Restarting..." : t("host_leaderboard.play_again_tooltip")}
           </button>
 
           {/* Tombol Statistics */}
