@@ -1356,7 +1356,7 @@ export default function GameSpeedPage() {
 
         // Lap & Finish line check
         if (position > trackLength - playerZ && gameState !== 'finished' && !(state.current as any).hasFinishedLine) {
-            
+
             // Check if we have quiz questions remaining (from state ref)
             const questions = state.current.allQuizQuestions;
             const hasQuizRemaining = questions.length > 0 && state.current.quizQuestionIndex < questions.length;
@@ -2190,7 +2190,7 @@ export default function GameSpeedPage() {
                         .select('current_questions, difficulty')
                         .eq('id', sessId)
                         .single();
-                    
+
                     if (sessionData?.current_questions) {
                         questionsData = sessionData.current_questions;
                         localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
@@ -2243,7 +2243,7 @@ export default function GameSpeedPage() {
                             image: qImage
                         };
                     });
-                    
+
                     console.log('[GameSpeed] Successfully initialized questions:', normalized.length);
                     setAllQuizQuestions(normalized);
                     state.current.allQuizQuestions = normalized;
@@ -2295,7 +2295,7 @@ export default function GameSpeedPage() {
     }, [gameState, endGame]);
 
     return (
-        <div 
+        <div
             dir="ltr"
             style={{
                 width: '100%',
@@ -2494,9 +2494,9 @@ export default function GameSpeedPage() {
                             pointerEvents: 'none',
                             animation: globalTimeLeft <= 30 ? 'timerPulse 1s infinite alternate' : 'none'
                         }}>
-                            <span style={{ 
-                                fontSize: isMobile ? '1.1rem' : '1.5rem', 
-                                fontWeight: 900, 
+                            <span style={{
+                                fontSize: isMobile ? '1.1rem' : '1.5rem',
+                                fontWeight: 900,
                                 color: '#fff',
                                 fontFamily: 'Orbitron, sans-serif',
                                 fontVariantNumeric: 'tabular-nums',

@@ -171,20 +171,20 @@ export default function PlayerWaitingPage() {
     useEffect(() => {
         if (authLoading) return;
         let isMounted = true;
- 
+
         const fetchSessionState = async () => {
             try {
                 const { data: sessionData, error: sessionError } = await supabase
                     .from("sessions").select("id, status, countdown_started_at, started_at, created_at").eq("game_pin", roomCode).single();
- 
-                if (sessionError || !sessionData || !isMounted) { 
+
+                if (sessionError || !sessionData || !isMounted) {
                     if (sessionError) {
-                        setStatus("error"); 
+                        setStatus("error");
                         setErrorMessage("Room not found or invalid.");
                     }
-                    return; 
+                    return;
                 }
- 
+
                 if (sessionData.status === "active") {
                     router.push(`/player/${roomCode}/game`);
                     return;
@@ -194,14 +194,14 @@ export default function PlayerWaitingPage() {
                     router.push(`/player/${roomCode}/result`);
                     return;
                 }
- 
+
                 // If countdown has already started but session not yet active
                 if (sessionData.countdown_started_at && !sessionData.started_at) {
                     const startTime = new Date(sessionData.countdown_started_at).getTime();
                     const nowOnServer = getSyncedServerTime();
                     const elapsed = nowOnServer - startTime;
                     const remaining = Math.max(0, 3000 - elapsed);
- 
+
                     if (remaining > 0) {
                         startCountdown(startTime, sessionData.id);
                     } else {
@@ -236,7 +236,7 @@ export default function PlayerWaitingPage() {
                                 }
                             })
                         .subscribe();
-                    
+
                     channelRef.current = channel;
                 }
 
@@ -273,10 +273,10 @@ export default function PlayerWaitingPage() {
                         }
                     }
                 }
-            } catch (err: any) { 
+            } catch (err: any) {
                 if (isMounted) {
-                    setStatus("error"); 
-                    setErrorMessage(err.message || "Unknown error occurred."); 
+                    setStatus("error");
+                    setErrorMessage(err.message || "Unknown error occurred.");
                 }
             }
         };
@@ -292,7 +292,7 @@ export default function PlayerWaitingPage() {
         };
         window.addEventListener('visibilitychange', handleVisibilityChange);
 
-        return () => { 
+        return () => {
             isMounted = false;
             if (channelRef.current) {
                 supabase.removeChannel(channelRef.current);
