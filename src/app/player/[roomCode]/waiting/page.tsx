@@ -7,9 +7,7 @@ import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
 import { Loader2, Zap, Users, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
-import { useAuth } from '@/contexts/AuthContext';
-import { useParticipantRecovery } from "@/hooks/useParticipantRecovery";
-import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
+import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
 
 export const PLAYER_CHARACTERS = [
     {
@@ -115,7 +113,6 @@ export default function PlayerWaitingPage() {
     const { t } = useTranslation();
     const roomCode = (params.roomCode as string)?.toUpperCase();
     const { profile, loading: authLoading } = useAuth();
-    const { participantId: recoveredId, isRecovering } = useParticipantRecovery(roomCode);
 
     const [status, setStatus] = useState<"loading" | "waiting" | "countdown" | "go" | "error">("loading");
     const [errorMessage, setErrorMessage] = useState("");
@@ -172,7 +169,7 @@ export default function PlayerWaitingPage() {
     const channelRef = useRef<any>(null);
 
     useEffect(() => {
-        if (authLoading || isRecovering) return;
+        if (authLoading) return;
         let isMounted = true;
 
         const fetchSessionState = async () => {
@@ -243,9 +240,11 @@ export default function PlayerWaitingPage() {
                     channelRef.current = channel;
                 }
 
-                // Initial fetch for additional info (participants) using hook result
-                if (!recoveredId) {
-                    console.warn("[NitroQuiz] Session invalid or missing, redirecting to join/autologin...");
+                // Initial fetch for additional info (participants)
+                const storedParticipantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+                const storedRoomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
+
+                if (!storedParticipantId || storedRoomCode !== roomCode) {
                     router.replace(`/join/${roomCode}`);
                     return;
                 }
@@ -253,7 +252,7 @@ export default function PlayerWaitingPage() {
                 const storedCarCharacter = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_carCharacter') : null;
                 const assignedCar = storedCarCharacter || "rico";
 
-                setParticipantId(recoveredId);
+                setParticipantId(storedParticipantId);
                 setAssignedCarId(assignedCar);
                 setPendingCharacterId(assignedCar);
 
@@ -264,7 +263,7 @@ export default function PlayerWaitingPage() {
                     if (count !== null) setParticipantCount(count);
                     if (pList) {
                         setAllParticipants(pList);
-                        const me = pList.find(p => p.id === recoveredId);
+                        const me = pList.find(p => p.id === storedParticipantId);
                         if (me) {
                             setUsername(me.nickname);
                             setUserAvatar(profile?.avatar_url || me.avatar_url || null);
