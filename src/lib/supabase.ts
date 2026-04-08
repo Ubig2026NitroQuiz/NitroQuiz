@@ -1,60 +1,68 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // ============================================================
-// SHARED SESSION via REFRESH TOKEN COOKIE
+// SHARED SESSION via COOKIE (SSO antar subdomain)
 // ============================================================
-// Masalah lama: Menyimpan SELURUH sesi Supabase di cookie
-//   → Google Login gagal karena data sesi terlalu besar (>4KB)
-//   → Browser diam-diam membuang cookie yang terlalu besar
-//
-// Solusi baru:
-//   - Sesi penuh disimpan di localStorage (batas 5-10MB, aman)
-//   - Hanya refresh_token (~50 byte) yang disimpan di cookie
-//   - Cookie ini di-share antar subdomain .gameforsmart.com
-//   - Saat user buka subdomain lain, refresh_token dipakai
-//     untuk memulihkan sesi penuh dari Supabase
+// Strategi:
+//   - Sesi penuh disimpan di localStorage (per-origin, batas 5-10MB)
+//   - access_token + refresh_token disimpan di cookie (shared .gameforsmart.com)
+//   - Saat user buka subdomain lain, kita pakai setSession() (BUKAN refreshSession!)
+//     agar token tidak dirotasi dan semua app tetap sinkron
+//   - Saat salah satu app melakukan auto-refresh, token baru ditulis ke cookie
+//     dan app lain akan "ikut" saat user focus/kembali ke tab tersebut
 // ============================================================
 
-/**
- * Simpan refresh_token ke shared cookie (.gameforsmart.com)
- * Cookie ini kecil (~50 byte), jauh di bawah batas 4KB
- */
-export function syncSessionCookie(refreshToken: string | null) {
-  if (typeof document === 'undefined') return;
-  const hostname = window.location.hostname;
-  const isGfs = hostname.endsWith('gameforsmart.com');
-  const isHttps = window.location.protocol === 'https:';
+  /**
+   * Simpan access_token + refresh_token ke shared cookie (.gameforsmart.com)
+   * Format: access_token|refresh_token (~1.5KB, aman di bawah batas 4KB)
+   */
+  export function syncSessionCookie(tokens: { access_token: string; refresh_token: string } | null) {
+    if (typeof document === 'undefined') return;
+    const hostname = window.location.hostname;
+    const isGfs = hostname.endsWith('gameforsmart.com');
+    const isHttps = window.location.protocol === 'https:';
 
-  if (!refreshToken) {
-    // Hapus cookie
-    let cookieStr = `gfs-rt=; path=/; max-age=0`;
-    if (isGfs) cookieStr += `; domain=.gameforsmart.com`;
-    document.cookie = cookieStr;
-    return;
+    if (!tokens) {
+      // Hapus cookie
+      let cookieStr = `gfs-session=; path=/; max-age=0`;
+      if (isGfs) cookieStr += `; domain=.gameforsmart.com`;
+      document.cookie = cookieStr;
+      return;
+    }
+
+    const value = `${tokens.access_token}|${tokens.refresh_token}`;
+    const parts = [
+      `gfs-session=${encodeURIComponent(value)}`,
+      `path=/`,
+      `max-age=${60 * 60 * 24 * 365}`,
+      `SameSite=Lax`,
+    ];
+    if (isGfs) parts.push(`domain=.gameforsmart.com`);
+    if (isHttps) parts.push(`Secure`);
+    document.cookie = parts.join('; ');
   }
 
-  const parts = [
-    `gfs-rt=${encodeURIComponent(refreshToken)}`,
-    `path=/`,
-    `max-age=${60 * 60 * 24 * 365}`,
-    `SameSite=Lax`,
-  ];
-  if (isGfs) parts.push(`domain=.gameforsmart.com`);
-  if (isHttps) parts.push(`Secure`);
-  document.cookie = parts.join('; ');
-}
-
-/**
- * Baca refresh_token dari shared cookie
- */
-export function getRefreshTokenFromCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split('; ');
-  const found = cookies.find(c => c.startsWith('gfs-rt='));
-  if (!found) return null;
-  const eqIndex = found.indexOf('=');
-  return decodeURIComponent(found.substring(eqIndex + 1));
-}
+  /**
+   * Baca access_token + refresh_token dari shared cookie
+   */
+  export function getSessionFromCookie(): { access_token: string; refresh_token: string } | null {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split('; ');
+    const found = cookies.find(c => c.startsWith('gfs-session='));
+    if (!found) return null;
+    try {
+      const eqIndex = found.indexOf('=');
+      const value = decodeURIComponent(found.substring(eqIndex + 1));
+      const pipeIndex = value.indexOf('|');
+      if (pipeIndex === -1) return null;
+      const access_token = value.substring(0, pipeIndex);
+      const refresh_token = value.substring(pipeIndex + 1);
+      if (!access_token || !refresh_token) return null;
+      return { access_token, refresh_token };
+    } catch {
+      return null;
+    }
+  }
 
 // ============================================================
 // 1. SUPABASE CLIENT PROYEK (nitroquiz database)

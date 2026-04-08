@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { supabaseCentral, syncSessionCookie, getRefreshTokenFromCookie } from "@/lib/supabase"
+import { supabaseCentral, syncSessionCookie, getSessionFromCookie } from "@/lib/supabase"
 
 interface Profile {
   id: string
@@ -140,18 +140,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         //    Ini terjadi saat user buka subdomain baru yang belum pernah login
         //    tapi sudah login di subdomain lain (SSO)
         if (!session) {
-          const cookieRT = getRefreshTokenFromCookie()
-          if (cookieRT) {
-            console.log('[SSO] Mencoba pulihkan sesi dari shared cookie...')
-            const { data, error } = await supabaseCentral.auth.refreshSession({
-              refresh_token: cookieRT
-            })
+          const cookieSession = getSessionFromCookie()
+          if (cookieSession) {
+            console.log('[SSO] Mencoba pulihkan sesi dari shared cookie (setSession)...')
+            // PENTING: Pakai setSession(), BUKAN refreshSession()!
+            // setSession() tidak merotasi token → semua app tetap sinkron
+            const { data, error } = await supabaseCentral.auth.setSession(cookieSession)
             if (!error && data.session) {
               session = data.session
               console.log('[SSO] Sesi berhasil dipulihkan!')
             } else {
-              // Refresh token sudah expired/invalid, hapus cookie
-              console.warn('[SSO] Refresh token expired, menghapus cookie')
+              // Token sudah expired/invalid, hapus cookie
+              console.warn('[SSO] Token expired, menghapus cookie')
               syncSessionCookie(null)
             }
           }
@@ -160,9 +160,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = session?.user ?? null
         setUser(currentUser)
 
-        if (currentUser) {
-          // Sync refresh token ke shared cookie
-          syncSessionCookie(session?.refresh_token ?? null)
+        if (currentUser && session) {
+          // Sync tokens ke shared cookie
+          syncSessionCookie({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+          })
           await loadProfile(currentUser, setProfile, setIsProfileFetching, setLoading)
         } else {
           setProfile(null)
@@ -182,15 +185,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentUser = session?.user ?? null
         setUser(currentUser)
 
-        if (event === 'SIGNED_IN' && currentUser) {
-          // Sync refresh token ke shared cookie saat login berhasil
-          syncSessionCookie(session?.refresh_token ?? null)
+        if (event === 'SIGNED_IN' && currentUser && session) {
+          // Sync tokens ke shared cookie saat login berhasil
+          syncSessionCookie({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+          })
           loadProfile(currentUser, setProfile, setIsProfileFetching).catch(console.error)
         } else if (event === 'TOKEN_REFRESHED' && session) {
-          // Update cookie saat token di-refresh
-          syncSessionCookie(session.refresh_token ?? null)
+          // Update cookie saat token di-refresh (token baru untuk semua app)
+          syncSessionCookie({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+          })
         } else if (!currentUser) {
-          // Hapus shared cookie saat logout
+          // Hapus shared cookie saat logout → semua app ikut logout
           syncSessionCookie(null)
           setProfile(null)
           setIsProfileFetching(false)
@@ -198,7 +207,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => listener.subscription.unsubscribe()
+    // SINKRONISASI ANTAR-TAB: Cek cookie saat user kembali ke tab ini
+    const syncFromCookie = async () => {
+      const cookieSession = getSessionFromCookie()
+
+      // Logout sync: cookie kosong tapi kita masih login
+      if (!cookieSession) {
+        const { data: { session: localSession } } = await supabaseCentral.auth.getSession()
+        if (localSession) {
+          console.log('[SSO] Logout terdeteksi di app lain, sinkronisasi...')
+          await supabaseCentral.auth.signOut()
+          window.location.reload()
+        }
+        return
+      }
+
+      // Token sync: cookie ada dan berbeda dari lokal kita
+      const { data: { session: localSession } } = await supabaseCentral.auth.getSession()
+      if (!localSession) {
+        // Kita belum login tapi cookie ada → login sync
+        console.log('[SSO] Login terdeteksi di app lain, sinkronisasi...')
+        await supabaseCentral.auth.setSession(cookieSession)
+        window.location.reload()
+      } else if (localSession.access_token !== cookieSession.access_token) {
+        // Token berbeda → update tanpa reload
+        console.log('[SSO] Token baru terdeteksi, mengupdate session lokal...')
+        await supabaseCentral.auth.setSession(cookieSession)
+      }
+    }
+
+    // Event-based: langsung sinkron saat user kembali ke tab
+    window.addEventListener('focus', syncFromCookie)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') syncFromCookie()
+    }
+    window.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      listener.subscription.unsubscribe()
+      window.removeEventListener('focus', syncFromCookie)
+      window.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [])
 
   return (
