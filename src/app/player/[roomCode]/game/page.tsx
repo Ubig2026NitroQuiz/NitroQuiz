@@ -15,6 +15,8 @@ interface QuizQuestion {
 import { supabase } from '@/lib/supabase';
 import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
 import { Clock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useParticipantRecovery } from '@/hooks/useParticipantRecovery';
 
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
@@ -154,6 +156,8 @@ export default function GameSpeedPage() {
     const router = useRouter();
     const params = useParams();
     const roomCode = (params?.roomCode as string)?.toUpperCase();
+    const { user, profile } = useAuth();
+    const { participantId: recoveredId, isRecovering } = useParticipantRecovery(roomCode);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Game State
@@ -265,6 +269,24 @@ export default function GameSpeedPage() {
     const animationFrameRef = useRef<number>(0);
     const miniMapRef = useRef<HTMLCanvasElement>(null);
 
+    const setSize = useCallback(() => {
+        if (canvasRef.current) {
+            canvasRef.current.width = window.innerWidth;
+            canvasRef.current.height = window.innerHeight;
+        }
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const ratio = w / h;
+        setAspectRatio(ratio);
+
+        // Detect mobile: small width OR portrait mode with touch support
+        const hasTouchSupport = (typeof window !== 'undefined') && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        const isPortrait = ratio < 1;
+        const isSmallScreen = w < 768;
+        const detectedMobile = (isSmallScreen || isPortrait) && hasTouchSupport;
+        setIsMobile(detectedMobile);
+    }, [mobileOrientationChoice]);
+
 
     // --- Loading Assets ---
     useEffect(() => {
@@ -282,10 +304,17 @@ export default function GameSpeedPage() {
         state.current.sprites = { ...state.current.sprites };
 
         const loadAssets = async () => {
-            console.log("Starting asset load...");
+            console.log("[NitroQuiz] Starting asset load logic...");
 
-            // Determine selected character ID for dynamic sprite loading
-            let selectedCharId = 'rico'; // Default fallback
+            // Determine if we have preloaded assets from waiting room
+            const globalStore = (typeof window !== 'undefined') ? (window as any).__nitroquiz_asset_store : null;
+            if (globalStore) {
+                console.log("[NitroQuiz] Found global asset store, adopting preloaded assets...");
+            }
+
+            // Determine selected character ID - Forced to 'rico' for asset completeness
+            let selectedCharId = 'rico';
+            /* 
             try {
                 const stored = localStorage.getItem('edurace_selected_character');
                 if (stored) {
@@ -295,6 +324,7 @@ export default function GameSpeedPage() {
             } catch (e) {
                 console.error("Failed to load character", e);
             }
+            */
 
             const promises: Promise<void>[] = [];
 
@@ -304,96 +334,103 @@ export default function GameSpeedPage() {
                 { name: 'obstacle2', src: '/assets/material/pembatas_jalan/1roadbarrier.webp' }
             ] : [];
 
-            // Load from ASSET_LIST + obstacles (named assets)
-            // Dynamically replace 'rico' with selected character in asset paths
+            // Process ASSET_LIST + obstacles
             [...ASSET_LIST, ...obstacles].forEach(item => {
                 promises.push(new Promise<void>((resolve) => {
-                    if (!item.src) {
-                        resolve();
-                        return;
-                    }
-                    const img = new Image();
-                    // Replace character path if this is a character asset
+                    if (!item.src) { resolve(); return; }
+
                     let srcPath = item.src;
                     if (srcPath.includes('/characters/rico/')) {
                         srcPath = srcPath.replace('/characters/rico/', `/characters/${selectedCharId}/`);
                     }
+
+                    // Check if already in global store AND fully loaded
+                    if (globalStore && (globalStore[item.name] || globalStore[srcPath])) {
+                        const existing = globalStore[item.name] || globalStore[srcPath];
+                        // Only use if image is fully loaded (complete + has dimensions)
+                        if (existing.complete && existing.naturalWidth > 0) {
+                            if (!(existing as any).assetName) {
+                                (existing as any).assetName = item.name;
+                            }
+                            state.current.sprites[item.name] = existing;
+                            resolve();
+                            return;
+                        }
+                        // Image started loading in waiting room but not done yet —
+                        // wait for it instead of creating a new request
+                        existing.onload = () => {
+                            if (!(existing as any).assetName) {
+                                (existing as any).assetName = item.name;
+                            }
+                            state.current.sprites[item.name] = existing;
+                            resolve();
+                        };
+                        existing.onerror = () => resolve();
+                        return;
+                    }
+
+                    const img = new Image();
                     img.onload = () => {
                         (img as any).assetName = item.name;
                         state.current.sprites[item.name] = img;
                         resolve();
                     };
                     img.onerror = () => {
-                        // If selected character doesn't have this sprite, fall back to rico
-                        if (selectedCharId !== 'rico' && item.src.includes('/characters/')) {
-                            const fallbackImg = new Image();
-                            fallbackImg.onload = () => {
-                                (fallbackImg as any).assetName = item.name;
-                                state.current.sprites[item.name] = fallbackImg;
-                                resolve();
-                            };
-                            fallbackImg.onerror = () => {
-                                // Final fallback: gray placeholder
-                                const cvs = document.createElement('canvas');
-                                cvs.width = 128; cvs.height = 128;
-                                const ctx = cvs.getContext('2d');
-                                if (ctx) { ctx.fillStyle = '#444'; ctx.fillRect(0, 0, 128, 128); }
-                                (cvs as any).assetName = item.name;
-                                state.current.sprites[item.name] = cvs;
-                                resolve();
-                            };
-                            fallbackImg.src = item.src; // Original rico path
-                        } else {
-                            const cvs = document.createElement('canvas');
-                            cvs.width = 128; cvs.height = 128;
-                            const ctx = cvs.getContext('2d');
-                            if (ctx) { ctx.fillStyle = '#444'; ctx.fillRect(0, 0, 128, 128); }
-                            (cvs as any).assetName = item.name;
-                            state.current.sprites[item.name] = cvs;
-                            resolve();
-                        }
+                        // Fallback logic...
+                        const cvs = document.createElement('canvas');
+                        cvs.width = 128; cvs.height = 128;
+                        const ctx = cvs.getContext('2d');
+                        if (ctx) { ctx.fillStyle = '#444'; ctx.fillRect(0, 0, 128, 128); }
+                        (cvs as any).assetName = item.name;
+                        state.current.sprites[item.name] = cvs;
+                        resolve();
                     };
                     img.src = srcPath;
                 }));
             });
 
-            // Load from TRACK_ASSETS (direct src assets)
-            // Use a specific prefix or exact match logic if needed, 
-            // but here we just ensure the image is loaded into the sprite map keyed by its src path.
-            // Only load unique sources that aren't already covered (though re-loading is safe-ish, better to check)
-
-            // To properly support the new direct 'src' usage in TRACK_ASSETS without re-defining them in ASSET_LIST:
+            // Process TRACK_ASSETS
             const uniqueSources = Array.from(new Set(TRACK_ASSETS.map(item => item.src))).filter(Boolean);
-
             uniqueSources.forEach(src => {
                 promises.push(new Promise<void>((resolve) => {
+                    // Check if already in global store AND fully loaded
+                    if (globalStore && globalStore[src]) {
+                        const existing = globalStore[src];
+                        if (existing.complete && existing.naturalWidth > 0) {
+                            if (!(existing as any).assetName) {
+                                (existing as any).assetName = src;
+                            }
+                            state.current.sprites[src] = existing;
+                            resolve();
+                            return;
+                        }
+                        // Wait for in-flight request to finish
+                        existing.onload = () => {
+                            if (!(existing as any).assetName) {
+                                (existing as any).assetName = src;
+                            }
+                            state.current.sprites[src] = existing;
+                            resolve();
+                        };
+                        existing.onerror = () => resolve();
+                        return;
+                    }
+
                     const img = new Image();
                     img.onload = () => {
-                        (img as any).assetName = src; // Use src as name for these
-                        // Simpan dengan key 'src' 
+                        (img as any).assetName = src;
                         state.current.sprites[src] = img;
                         resolve();
                     };
-                    img.onerror = () => {
-                        // Fallback
-                        const cvs = document.createElement('canvas');
-                        cvs.width = 128; cvs.height = 128;
-                        const ctx = cvs.getContext('2d');
-                        if (ctx) {
-                            ctx.fillStyle = '#f0f'; // Pink for error
-                            ctx.fillRect(0, 0, 128, 128);
-                            state.current.sprites[src] = cvs;
-                        }
-                        resolve();
-                    };
+                    img.onerror = () => { resolve(); };
                     img.src = src;
                 }));
             });
 
             await Promise.all(promises);
 
-            // Initialize road immediately after assets are loaded to ensure segments exist before first render
-            // Always reset road to ensure new assets/sequences are applied
+            // Sync canvas size before triggering state update to prevent "shrinking"
+            setSize();
             resetRoad();
             setAssetsLoaded(true);
         };
@@ -1578,8 +1615,14 @@ export default function GameSpeedPage() {
         setMounted(true);
 
         const fetchServerState = async () => {
-            const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
-            if (!participantId) return;
+            if (isRecovering) return;
+            const participantId = recoveredId;
+
+            if (!participantId) {
+                console.warn("[NitroQuiz] No participant found, redirecting to join/autologin...");
+                router.replace(`/join/${roomCode}`);
+                return;
+            }
 
             const { data } = await supabase.from('participants').select('minigame, finished_at, lap_race').eq('id', participantId).single();
             if (data) {
@@ -1789,43 +1832,20 @@ export default function GameSpeedPage() {
         };
     }, [isMobile, mobileOrientationChoice]);
 
-    // Resize handling with mobile detection and aspect ratio
+    // Resize handling and orientation hint
     useEffect(() => {
-        const setSize = () => {
-            if (canvasRef.current) {
-                canvasRef.current.width = window.innerWidth;
-                canvasRef.current.height = window.innerHeight;
-            }
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            const ratio = w / h;
-            setAspectRatio(ratio);
-
-            // Detect mobile: small width OR portrait mode with touch support
-            const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const isPortrait = ratio < 1;
-            const isSmallScreen = w < 768;
-            const detectedMobile = (isSmallScreen || isPortrait) && hasTouchSupport;
-
-            setIsMobile(detectedMobile);
-
-            // Orientation Hint
-            if (detectedMobile && mobileOrientationChoice === 'landscape' && isPortrait) {
-                // If they chose landscape but are in portrait, try to lock or just let it resize
-                if (screen.orientation && (screen.orientation as any).lock) {
-                    (screen.orientation as any).lock('landscape').catch(() => { });
-                }
-            }
-
-            // On mobile, auto-forward is always enabled (car drives automatically)
-            if (detectedMobile && gameState === 'playing') {
-                state.current.keyFaster = true;
-            }
-        };
         window.addEventListener('resize', setSize);
         if (mounted) setSize();
+
+        // Mobile orientation lock hint
+        if (isMobile && mobileOrientationChoice === 'landscape' && aspectRatio < 1) {
+            if (screen.orientation && (screen.orientation as any).lock) {
+                (screen.orientation as any).lock('landscape').catch(() => { });
+            }
+        }
+
         return () => window.removeEventListener('resize', setSize);
-    }, [mounted, gameState, mobileOrientationChoice]);
+    }, [mounted, isMobile, mobileOrientationChoice, aspectRatio, setSize]);
 
     // Mobile auto-forward: Keep gas pressed while playing on mobile
     useEffect(() => {
@@ -1997,10 +2017,10 @@ export default function GameSpeedPage() {
                 const rx = tx(rPoint.x);
                 const ry = ty(rPoint.z);
 
-                // Rival Icon (Blue, matching player style)
+                // Rival Icon (Red, matching player style)
                 ctx.shadowBlur = 10;
-                ctx.shadowColor = 'rgba(59, 130, 246, 0.8)'; // Blue glow
-                ctx.fillStyle = '#3b82f6'; // Blue fill
+                ctx.shadowColor = 'rgba(239, 68, 68, 0.8)'; // Red glow
+                ctx.fillStyle = '#ef4444'; // Red fill
                 ctx.beginPath();
                 ctx.arc(rx, ry, 6, 0, Math.PI * 2);
                 ctx.fill();
@@ -2010,17 +2030,17 @@ export default function GameSpeedPage() {
             }
         });
 
-        // Player Pulse
+        // Player Pulse (Blue)
         const pulse = (Date.now() % 1000) / 1000;
         ctx.beginPath();
         ctx.arc(px, py, 6 + pulse * 10, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(239, 68, 68, ${0.5 - pulse * 0.5})`;
+        ctx.fillStyle = `rgba(59, 130, 246, ${0.5 - pulse * 0.5})`;
         ctx.fill();
 
-        // Player Icon
+        // Player Icon (Blue)
         ctx.shadowBlur = 10;
-        ctx.shadowColor = 'white';
-        ctx.fillStyle = '#ef4444';
+        ctx.shadowColor = '#3b82f6';
+        ctx.fillStyle = '#3b82f6';
         ctx.beginPath();
         ctx.arc(px, py, 6, 0, Math.PI * 2);
         ctx.fill();
@@ -2182,31 +2202,38 @@ export default function GameSpeedPage() {
         };
     }, []);
 
-    // Load quiz questions from localStorage or Supabase if missing
+    // Load quiz questions - ALWAYS prioritize DB for fresh settings, then sync to localStorage
     useEffect(() => {
         (async () => {
+            if (!roomCode) return;
             try {
                 let questionsData = [];
-                const stored = localStorage.getItem('nitroquiz_game_questions');
-                const sessId = localStorage.getItem('nitroquiz_game_sessionId');
-
-                if (stored) {
-                    questionsData = JSON.parse(stored);
-                } else if (sessId) {
-                    // Fallback: Fetch directly from DB if localStorage is empty
-                    console.log('[GameSpeed] No questions in localStorage, fetching from DB...');
-                    const { data: sessionData } = await supabase
-                        .from('sessions')
-                        .select('current_questions, difficulty')
-                        .eq('id', sessId)
-                        .single();
+                
+                // 1. Fetch current questions from DB using roomCode (Game PIN)
+                // This ensures we get the LATEST config from host settings
+                console.log(`[GameSpeed] Fetching session data for room: ${roomCode}`);
+                const { data: sessionData, error } = await supabase
+                    .from('sessions')
+                    .select('id, current_questions, difficulty')
+                    .eq('game_pin', roomCode)
+                    .single();
+                
+                if (!error && sessionData?.current_questions) {
+                    questionsData = sessionData.current_questions;
+                    console.log(`[GameSpeed] Loaded ${questionsData.length} questions from DB.`);
                     
-                    if (sessionData?.current_questions) {
-                        questionsData = sessionData.current_questions;
-                        localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
-                        if (sessionData.difficulty) {
-                            localStorage.setItem('nitroquiz_game_difficulty', sessionData.difficulty);
-                        }
+                    // Sync to localStorage so other hooks/pages can use it
+                    localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
+                    localStorage.setItem('nitroquiz_game_sessionId', sessionData.id);
+                    if (sessionData.difficulty) {
+                        localStorage.setItem('nitroquiz_game_difficulty', sessionData.difficulty);
+                    }
+                } else {
+                    // Fallback to localStorage ONLY if DB fetch fails
+                    const stored = localStorage.getItem('nitroquiz_game_questions');
+                    if (stored) {
+                        questionsData = JSON.parse(stored);
+                        console.log('[GameSpeed] DB fetch failed, using fallback questions from localStorage.');
                     }
                 }
 
@@ -2489,13 +2516,13 @@ export default function GameSpeedPage() {
                     <div style={{
                         position: 'absolute',
                         left: '50%',
-                        top: isMobile ? '0.75rem' : '1.25rem',
+                        top: isMobilePortrait ? '0.4rem' : (isMobile ? '0.75rem' : '1.25rem'),
                         transform: 'translateX(-50%)',
                         zIndex: 1000,
                         backgroundColor: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 0, 0, 0.65)',
                         backdropFilter: 'blur(15px)',
-                        padding: isMobile ? '0.4rem 0.75rem' : '0.6rem 1.25rem',
-                        borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
+                        padding: isMobilePortrait ? '0.2rem 0.6rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1.25rem'),
+                        borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
                         border: (globalTimeLeft !== null && globalTimeLeft <= 30) ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
                         boxShadow: (globalTimeLeft !== null && globalTimeLeft <= 30) ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 10px 30px rgba(0,0,0,0.3)',
                         display: 'flex',
@@ -2505,7 +2532,7 @@ export default function GameSpeedPage() {
                         animation: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'timerPulse 1s infinite alternate' : 'none'
                     }}>
                         <span style={{ 
-                            fontSize: isMobile ? '1.1rem' : '1.5rem', 
+                            fontSize: isMobilePortrait ? '0.9rem' : (isMobile ? '1.1rem' : '1.5rem'), 
                             fontWeight: 900, 
                             color: '#fff',
                             fontFamily: 'Orbitron, sans-serif',
@@ -2520,32 +2547,32 @@ export default function GameSpeedPage() {
                     </div>
 
                     {/* Header: Stats & Map */}
-                    <div style={{ display: 'flex', flexDirection: usePCLayout ? 'row' : 'column', justifyContent: 'space-between', alignItems: usePCLayout ? 'start' : 'center', width: '100%', gap: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'start', width: '100%', gap: isMobilePortrait ? '0.5rem' : '1rem' }}>
                         {/* Velocity & Points - Premium Glassmorphism */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: usePCLayout ? 'auto' : '100%' }}>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: usePCLayout ? 'flex-start' : 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobilePortrait ? '0.4rem' : '1rem', width: 'auto', flex: 1 }}>
+                            <div style={{ display: 'flex', gap: isMobilePortrait ? '0.4rem' : '1rem', alignItems: 'center', justifyContent: 'flex-start' }}>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.6rem 1rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem'),
-                                    borderRadius: usePCLayout ? '2rem' : '0.8rem',
+                                    padding: isMobileLandscape ? '0.6rem 1rem' : (isMobilePortrait ? '0.3rem 0.5rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem')),
+                                    borderRadius: usePCLayout ? '2rem' : '0.6rem',
                                     border: '1px solid rgba(255, 255, 255, 0.15)',
-                                    flex: usePCLayout ? 'none' : 1,
-                                    textAlign: usePCLayout ? 'left' : 'center'
+                                    flex: 'none',
+                                    textAlign: 'left'
                                 }}>
-                                    <div style={{ fontSize: isMobileLandscape ? '8px' : (usePCLayout ? '10px' : '7px'), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>{t('player_game.speedometer')}</div>
-                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', justifyContent: usePCLayout ? 'flex-start' : 'center' }}>
+                                    <div style={{ fontSize: isMobilePortrait ? '6px' : (isMobileLandscape ? '8px' : (usePCLayout ? '10px' : '7px')), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>{t('player_game.speedometer')}</div>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', justifyContent: 'flex-start' }}>
                                         <span style={{
-                                            fontSize: isMobileLandscape ? '1.8rem' : (usePCLayout ? '4.5rem' : '1.75rem'),
+                                            fontSize: isMobilePortrait ? '1.2rem' : (isMobileLandscape ? '1.8rem' : (usePCLayout ? '4.5rem' : '1.75rem')),
                                             fontWeight: 900,
                                             fontFamily: 'var(--font-rajdhani)',
                                             color: '#fff',
                                             fontStyle: 'italic',
-                                            textShadow: '0 0 15px rgba(255,255,255,0.7)'
+                                            textShadow: '0 0 10px rgba(255,255,255,0.7)'
                                         }}>
                                             {stats.speed}
                                         </span>
-                                        <span style={{ fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '1rem' : '0.6rem'), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                                        <span style={{ fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '1rem' : '0.6rem')), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
                                     </div>
                                 </div>
 
@@ -2559,9 +2586,9 @@ export default function GameSpeedPage() {
                                         pointerEvents: 'auto',
                                         backgroundColor: 'rgba(59, 130, 246, 0.25)',
                                         backdropFilter: 'blur(15px)',
-                                        width: isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem'),
-                                        height: isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem'),
-                                        borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
+                                        width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                                        height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                                        borderRadius: usePCLayout ? '1.25rem' : '0.5rem',
                                         border: '2px solid rgba(59, 130, 246, 0.5)',
                                         color: 'white',
                                         cursor: 'pointer',
@@ -2573,57 +2600,56 @@ export default function GameSpeedPage() {
                                         gap: '2px'
                                     }}
                                 >
-                                    <span style={{ fontSize: isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1rem'), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
+                                    <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1rem')), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
                                         {viewMode === 'first' ? '🎥' : '👤'}
                                     </span>
-                                    {usePCLayout && <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', opacity: 0.8 }}>{t('player_game.pov_hint')}</span>}
                                 </button>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.3rem', width: usePCLayout ? 'auto' : '100%' }}>
+                            <div style={{ display: 'flex', gap: '0.3rem', width: 'auto' }}>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.5rem 0.8rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem'),
-                                    borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
+                                    padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.5rem 0.8rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem')),
+                                    borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: usePCLayout ? '0.75rem' : '0.5rem',
-                                    flex: usePCLayout ? 'none' : 1
+                                    flex: isMobilePortrait ? 'none' : (usePCLayout ? 'none' : 1)
                                 }}>
-                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>{t('player_game.nos')}</span>
-                                    <div style={{ flex: 1, minWidth: isMobileLandscape ? '70px' : (usePCLayout ? '80px' : '30px'), height: usePCLayout ? '6px' : '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem')), textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>{t('player_game.nos')}</span>
+                                    <div style={{ flex: 1, minWidth: isMobilePortrait ? '40px' : (isMobileLandscape ? '70px' : (usePCLayout ? '80px' : '30px')), height: '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
                                         <div style={{ width: `${stats.nos}%`, height: '100%', backgroundColor: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
                                     </div>
                                 </div>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.5rem 0.8rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem'),
-                                    borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
+                                    padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.5rem 0.8rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem')),
+                                    borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.35rem',
+                                    gap: '0.3rem',
                                     flex: 'none'
                                 }}>
-                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
-                                    <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{Math.min(stats.totalLaps, lapRace + 1)}/{stats.totalLaps}</span>
+                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem')), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
+                                    <span style={{ fontSize: isMobilePortrait ? '0.7rem' : (isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem')), fontWeight: 900, color: '#fff' }}>{Math.min(stats.totalLaps, lapRace + 1)}/{stats.totalLaps}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Mini Map - Enlarge for Mobile with Minimize capability */}
+                        {/* Mini Map Container */}
                         <div
                             onClick={() => isMobile && setMiniMapMinimized(!miniMapMinimized)}
                             style={{
                                 position: 'relative',
                                 pointerEvents: 'auto',
-                                alignSelf: usePCLayout ? 'auto' : 'flex-end',
-                                cursor: 'pointer',
+                                zIndex: 300,
+                                alignSelf: 'start',
                                 transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
-                                zIndex: 300
+                                cursor: 'pointer'
                             }}
                         >
                             <div style={{
@@ -2631,43 +2657,33 @@ export default function GameSpeedPage() {
                                 backdropFilter: 'blur(10px)',
                                 padding: isMobile ? '0.25rem' : '0.4rem',
                                 borderRadius: isMobile ? '0.6rem' : '1rem',
-                                transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobile ? 'scale(0.85)' : 'none'),
+                                transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobilePortrait ? 'scale(0.55)' : (isMobile ? 'scale(0.85)' : 'none')),
                                 transformOrigin: 'top right',
-                                marginTop: (isMobile && !usePCLayout) ? '0.5rem' : '0',
-                                marginRight: (isMobile && !usePCLayout) ? '0.5rem' : '0',
                                 position: 'relative',
-                                transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
                                 border: isMobile ? '2px solid rgba(255,255,255,0.2)' : 'none'
                             }}>
                                 <canvas
                                     ref={miniMapRef}
                                     style={{ borderRadius: usePCLayout ? '0.75rem' : '0.4rem', display: 'block' }}
                                 />
-
                                 {isMobile && (
                                     <div style={{
                                         position: 'absolute',
                                         bottom: '-8px',
                                         left: '-8px',
-                                        width: '32px',
-                                        height: '32px',
+                                        width: '24px',
+                                        height: '24px',
                                         backgroundColor: '#3b82f6',
                                         borderRadius: '50%',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        fontSize: '16px',
+                                        fontSize: '12px',
                                         border: '2px solid white',
-                                        boxShadow: '0 0 15px rgba(59, 130, 246, 0.7)',
-                                        transform: miniMapMinimized ? 'scale(2.2)' : 'none',
-                                        transformOrigin: 'bottom left',
+                                        transform: miniMapMinimized ? 'scale(2.5)' : 'none',
                                         transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
-                                        zIndex: 10
                                     }}>
-                                        <div style={{ position: 'relative', width: '12px', height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <div style={{ position: 'absolute', width: '100%', height: '2px', backgroundColor: 'white', borderRadius: '1px' }} />
-                                            {miniMapMinimized && <div style={{ position: 'absolute', width: '2px', height: '100%', backgroundColor: 'white', borderRadius: '1px' }} />}
-                                        </div>
+                                        {miniMapMinimized ? '🗺️' : '➖'}
                                     </div>
                                 )}
                             </div>

@@ -284,7 +284,7 @@ export default function HostLobby() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] text-white">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
+          <div className="w-16 h-16 border-4 border-[#2d6af2]/30 rounded-full animate-spin mx-auto mb-6"></div>
           <p className="text-[#2d6af2] text-xl tracking-widest uppercase animate-pulse">{t('host_lobby.loading')}</p>
         </div>
       </div>
@@ -444,7 +444,7 @@ export default function HostLobby() {
               </div>
 
               {/* Action Buttons */}
-              <div className="shrink-0 border-t border-white/5 bg-gradient-to-t from-black/40 to-transparent relative z-10">
+              <div className="shrink-0 border-white/5 bg-gradient-to-t from-black/40 to-transparent relative z-10">
                 <div className="flex gap-2">
                   <Button
                     onClick={() => setExitDialogOpen(true)}

@@ -7,7 +7,9 @@ import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
 import { Loader2, Zap, Users, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
-import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
+import { useAuth } from '@/contexts/AuthContext';
+import { useParticipantRecovery } from "@/hooks/useParticipantRecovery";
+import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
 
 export const PLAYER_CHARACTERS = [
     {
@@ -113,6 +115,7 @@ export default function PlayerWaitingPage() {
     const { t } = useTranslation();
     const roomCode = (params.roomCode as string)?.toUpperCase();
     const { profile, loading: authLoading } = useAuth();
+    const { participantId: recoveredId, isRecovering } = useParticipantRecovery(roomCode);
 
     const [status, setStatus] = useState<"loading" | "waiting" | "countdown" | "go" | "error">("loading");
     const [errorMessage, setErrorMessage] = useState("");
@@ -169,7 +172,7 @@ export default function PlayerWaitingPage() {
     const channelRef = useRef<any>(null);
 
     useEffect(() => {
-        if (authLoading) return;
+        if (authLoading || isRecovering) return;
         let isMounted = true;
 
         const fetchSessionState = async () => {
@@ -240,11 +243,9 @@ export default function PlayerWaitingPage() {
                     channelRef.current = channel;
                 }
 
-                // Initial fetch for additional info (participants)
-                const storedParticipantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
-                const storedRoomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
-
-                if (!storedParticipantId || storedRoomCode !== roomCode) {
+                // Initial fetch for additional info (participants) using hook result
+                if (!recoveredId) {
+                    console.warn("[NitroQuiz] Session invalid or missing, redirecting to join/autologin...");
                     router.replace(`/join/${roomCode}`);
                     return;
                 }
@@ -252,7 +253,7 @@ export default function PlayerWaitingPage() {
                 const storedCarCharacter = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_carCharacter') : null;
                 const assignedCar = storedCarCharacter || "rico";
 
-                setParticipantId(storedParticipantId);
+                setParticipantId(recoveredId);
                 setAssignedCarId(assignedCar);
                 setPendingCharacterId(assignedCar);
 
@@ -263,7 +264,7 @@ export default function PlayerWaitingPage() {
                     if (count !== null) setParticipantCount(count);
                     if (pList) {
                         setAllParticipants(pList);
-                        const me = pList.find(p => p.id === storedParticipantId);
+                        const me = pList.find(p => p.id === recoveredId);
                         if (me) {
                             setUsername(me.nickname);
                             setUserAvatar(profile?.avatar_url || me.avatar_url || null);
@@ -326,61 +327,82 @@ export default function PlayerWaitingPage() {
     };
 
     // --- Asset Background Preloader ---
+    // Runs during idle in waiting room (2s after mount).
+    // Non-blocking: each Image loads asynchronously via browser.
+    // Only stores to global store AFTER onload (ensures valid width/height).
     useEffect(() => {
-        // Preload all global assets when in waiting room
         const preloadAssets = () => {
-            console.log("[NitroQuiz] Starting global background preloading...");
+            console.log("[NitroQuiz] Starting background asset preload...");
 
-            // Create global store if not exists
-            if (typeof window !== 'undefined' && !(window as any).__nitroquiz_asset_store) {
+            if (typeof window === 'undefined') return;
+            if (!(window as any).__nitroquiz_asset_store) {
                 (window as any).__nitroquiz_asset_store = {};
             }
             const store = (window as any).__nitroquiz_asset_store;
+            // let charId = assignedCarId || 'rico';
+            let charId = 'rico'; // Forced to 'rico'
+            let loaded = 0;
+            let total = 0;
 
-            // Determine selected character for dynamic paths
-            let charId = assignedCarId || 'rico';
+            const onDone = () => {
+                loaded++;
+                if (loaded === total) {
+                    console.log(`[NitroQuiz] Preload complete: ${loaded}/${total} assets cached.`);
+                }
+            };
 
             // 1. ASSET_LIST (Characters, UI, effects)
             ASSET_LIST.forEach(asset => {
-                if (asset.src) {
-                    const img = new Image();
-                    let src = asset.src;
-                    if (src.includes('/characters/rico/')) {
-                        src = src.replace('/characters/rico/', `/characters/${charId}/`);
-                    }
-                    img.src = src;
-                    // Save to global store - use name or src as key
-                    store[asset.name] = img;
+                if (!asset.src) return;
+                total++;
+                let src = asset.src;
+                if (src.includes('/characters/rico/')) {
+                    src = src.replace('/characters/rico/', `/characters/${charId}/`);
                 }
+                const img = new Image();
+                img.onload = () => {
+                    (img as any).assetName = asset.name;
+                    store[asset.name] = img;
+                    onDone();
+                };
+                img.onerror = () => onDone(); // Skip failures silently
+                img.src = src;
             });
 
             // 2. TRACK_ASSETS (Road, landmarks, obstacles)
             const uniqueTrackSources = Array.from(new Set(TRACK_ASSETS.map(item => item.src))).filter(Boolean);
             uniqueTrackSources.forEach(src => {
-                if (!(window as any).__nitroquiz_asset_store[src]) {
-                    const img = new Image();
-                    img.src = src;
-                    (window as any).__nitroquiz_asset_store[src] = img;
-                }
+                if (store[src]) return; // Already loaded
+                total++;
+                const img = new Image();
+                img.onload = () => {
+                    (img as any).assetName = src;
+                    store[src] = img;
+                    onDone();
+                };
+                img.onerror = () => onDone();
+                img.src = src;
             });
 
             // 3. Showroom visuals (Characters)
             PLAYER_CHARACTERS.forEach(char => {
-                if (!(window as any).__nitroquiz_asset_store[char.imageSrc]) {
-                    const img1 = new Image(); img1.src = char.imageSrc;
-                    (window as any).__nitroquiz_asset_store[char.imageSrc] = img1;
-                }
-                if (char.gifSrc && !(window as any).__nitroquiz_asset_store[char.gifSrc]) {
-                    const img2 = new Image(); img2.src = char.gifSrc;
-                    (window as any).__nitroquiz_asset_store[char.gifSrc] = img2;
-                }
+                [char.imageSrc, char.gifSrc].filter(Boolean).forEach(src => {
+                    if (!src || store[src]) return;
+                    total++;
+                    const img = new Image();
+                    img.onload = () => { store[src] = img; onDone(); };
+                    img.onerror = () => onDone();
+                    img.src = src;
+                });
             });
+
+            if (total === 0) console.log("[NitroQuiz] No assets to preload.");
         };
 
-        // Delay slightly to prioritize core UI mounting
+        // Delay 2s to let waiting room UI mount first
         const timeout = setTimeout(preloadAssets, 2000);
         return () => clearTimeout(timeout);
-    }, [assignedCarId]); // Re-preload if character changes
+    }, [assignedCarId]);
 
     const getCountdownLabel = (val: number) => {
         if (val === 3) return t("player_waiting.ready");

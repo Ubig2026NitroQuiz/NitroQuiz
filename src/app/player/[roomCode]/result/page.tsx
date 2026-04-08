@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { useAuth } from "@/contexts/AuthContext";
+import { useParticipantRecovery } from "@/hooks/useParticipantRecovery";
 import { useTranslation } from "react-i18next";
 
 const carImageMap: Record<string, string> = {
@@ -91,13 +92,14 @@ export default function PlayerResultPage() {
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { user, profile, loading: authLoading } = useAuth();
+  const { participantId: recoveredId } = useParticipantRecovery(roomCode);
   const [storedParticipantId, setStoredParticipantId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setStoredParticipantId(localStorage.getItem("nitroquiz_game_participantId"));
+    if (recoveredId) {
+      setStoredParticipantId(recoveredId);
     }
-  }, []);
+  }, [recoveredId]);
 
   const fetchResults = async () => {
     try {
@@ -174,14 +176,16 @@ export default function PlayerResultPage() {
   });
 
   const isCurrentPlayer = (p: Participant) => {
-    // 1. Match by user_id if logged in
-    if (user?.id && p.user_id === user.id) return true;
-    // 2. Match by stored participantId from joining
+    // 1. Match by profile.id (Primary link)
+    if (profile?.id && p.user_id === profile.id) return true;
+    // 2. Fallback to auth_user_id or user.id
+    if (user?.id && (p.user_id === user.id || (p as any).auth_user_id === user.id)) return true;
+    // 3. Match by stored participantId from join session
     if (storedParticipantId && p.id === storedParticipantId) return true;
-    // 3. Fallback to nickname for extreme cases
-    if (!user?.id && !storedParticipantId && p.nickname === profile?.username) return true;
     return false;
   };
+
+  // Recovery is handled by the hook
 
   const currentPlayerRank = rankedPlayers.findIndex(isCurrentPlayer) + 1;
   const currentPlayerData = rankedPlayers.find(isCurrentPlayer);
