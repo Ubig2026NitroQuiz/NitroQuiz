@@ -83,16 +83,8 @@ export default function Home() {
     }
     setIsDropdownOpen(false);
   };
-  useEffect(() => {
-    if (!authLoading && !profile) {
-      // Double check session in case AuthContext is still initializing
-      supabaseCentral.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-          router.push("/login");
-        }
-      });
-    }
-  }, [profile, authLoading, router]);
+  // AuthGate sudah menangani redirect ke /login jika belum login.
+  // Tidak perlu double-check di sini.
 
   useEffect(() => {
     async function init() {

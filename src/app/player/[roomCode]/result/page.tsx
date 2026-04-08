@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Trophy,
-  Crown,
-  Medal,
   Users,
   Clock,
   Star,
@@ -42,11 +39,13 @@ interface Participant {
   nickname: string;
   car_character: string;
   score: number;
+  correct: number;
   current_question: number;
   finished_at: string | null;
   duration: number;
   eliminated: boolean;
   avatar_url?: string | null;
+  user_id?: string | null;
 }
 
 // Helper: Generate initials from a name
@@ -69,7 +68,7 @@ const getAvatarColor = (name: string): string => {
 const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) => {
   const fontSize = size === 'lg' ? 'text-3xl' : size === 'md' ? 'text-xl' : 'text-xs';
   return (
-    <div 
+    <div
       className={`w-full h-full rounded-full flex items-center justify-center ${fontSize} font-black text-white`}
       style={{ backgroundColor: getAvatarColor(name) }}
     >
@@ -115,7 +114,7 @@ export default function PlayerResultPage() {
 
       if (sessionData.question_limit)
         setTotalQuestions(sessionData.question_limit);
-      
+
       setSessionId(sessionData.id);
       setSessionStatus(sessionData.status);
 
@@ -140,7 +139,12 @@ export default function PlayerResultPage() {
       .channel(`leaderboard_updates_${roomCode}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "participants" },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "participants",
+          filter: sessionId ? `session_id=eq.${sessionId}` : undefined
+        },
         () => {
           fetchResults();
         },
@@ -150,9 +154,9 @@ export default function PlayerResultPage() {
         { event: "UPDATE", schema: "public", table: "sessions", filter: `game_pin=eq.${roomCode}` },
         (payload) => {
           if (payload.new.status === "active") {
-             router.push(`/player/${roomCode}/game`);
+            router.push(`/player/${roomCode}/game`);
           } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
-             router.push(`/player/${roomCode}/waiting`);
+            router.push(`/player/${roomCode}/waiting`);
           }
         }
       )
@@ -169,11 +173,25 @@ export default function PlayerResultPage() {
     return dA - dB;
   });
 
-  const currentPlayerRank =
-    rankedPlayers.findIndex((p) => p.id === storedParticipantId || (p.nickname === profile?.username && !storedParticipantId)) + 1;
-  const currentPlayerData = rankedPlayers.find(
-    (p) => p.id === storedParticipantId || (p.nickname === profile?.username && !storedParticipantId),
-  );
+  const isCurrentPlayer = (p: Participant) => {
+    // 1. Match by user_id if logged in
+    if (user?.id && p.user_id === user.id) return true;
+    // 2. Match by stored participantId from joining
+    if (storedParticipantId && p.id === storedParticipantId) return true;
+    // 3. Fallback to nickname for extreme cases
+    if (!user?.id && !storedParticipantId && p.nickname === profile?.username) return true;
+    return false;
+  };
+
+  const currentPlayerRank = rankedPlayers.findIndex(isCurrentPlayer) + 1;
+  const currentPlayerData = rankedPlayers.find(isCurrentPlayer);
+  const getDisplayName = (p: Participant) => {
+    if (p.nickname) return p.nickname;
+    if (profile?.fullname) return profile.fullname;
+    if (profile?.username) return profile.username;
+    return user?.email || t("player_result.player_fallback");
+  };
+
   const currentPlayerCarSrc = (() => {
     if (!currentPlayerData) return carImageMap["purple"];
     const base = (currentPlayerData.car_character || "purple").replace(
@@ -182,6 +200,7 @@ export default function PlayerResultPage() {
     );
     return carImageMap[base] || carImageMap["purple"];
   })();
+
   const getRankSuffix = (rank: number) => {
     if (rank === 1) return "st";
     if (rank === 2) return "nd";
@@ -234,9 +253,9 @@ export default function PlayerResultPage() {
         (screen.orientation as any).unlock();
       }
       if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
+        document.exitFullscreen().catch(() => { });
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const podiumVariants: any = {
@@ -361,7 +380,7 @@ export default function PlayerResultPage() {
   }
 
   // Separated waiting screens deleted to unify layout
-  
+
   return (
     <>
       {/* ══ MOBILE — TIDAK DIUBAH ══ */}
@@ -408,7 +427,7 @@ export default function PlayerResultPage() {
                     {currentPlayerData?.avatar_url ? (
                       <img src={currentPlayerData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <InitialsAvatar name={profile?.username || currentPlayerData?.nickname || 'P'} size="lg" />
+                      <InitialsAvatar name={currentPlayerData ? getDisplayName(currentPlayerData) : 'P'} size="lg" />
                     )}
                   </motion.div>
                 </div>
@@ -418,7 +437,7 @@ export default function PlayerResultPage() {
                   className="font-display text-[#00d4ff] text-xl font-bold tracking-[0.18em] uppercase"
                   style={{ textShadow: "0 0 12px rgba(0,212,255,0.55)" }}
                 >
-                  {profile?.username || currentPlayerData?.nickname || t("player_result.player_fallback")}
+                  {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                 </p>
                 {!allFinished && (
                   <p className="text-[#00ff9d]/70 text-[10px] uppercase tracking-[0.2em] font-mono mt-1 animate-pulse">
@@ -434,7 +453,6 @@ export default function PlayerResultPage() {
               className="grid grid-cols-4 gap-2 mb-6 flex-shrink-0"
             >
               <MobileStatCard>
-                <span className="text-yellow-400 text-lg mb-0.5">🏆</span>
                 <div className="flex items-baseline gap-0.5">
                   <span className="font-display text-white text-2xl font-black leading-none">
                     {allFinished ? currentPlayerRank : "?"}
@@ -456,17 +474,17 @@ export default function PlayerResultPage() {
                 </span>
               </MobileStatCard>
               <MobileStatCard>
-                <span className="font-display text-white text-xl font-black leading-none font-mono">
+                <span className="font-display text-white text-2xl font-black leading-none">
                   {totalQuestions > 0
-                    ? `${currentPlayerData?.current_question ?? 0}/${totalQuestions}`
-                    : (currentPlayerData?.current_question ?? 0)}
+                    ? `${currentPlayerData?.correct ?? 0}/${totalQuestions}`
+                    : (currentPlayerData?.correct ?? 0)}
                 </span>
                 <span className="text-gray-400 text-[9px] uppercase tracking-widest mt-1.5 font-mono">
                   {t("player_result.correct")}
                 </span>
               </MobileStatCard>
               <MobileStatCard>
-                <span className="font-display text-white text-base font-black leading-none font-mono">
+                <span className="font-display text-white text-2xl font-black leading-none">
                   {formatDuration(currentPlayerData?.duration)}
                 </span>
                 <span className="text-gray-400 text-[9px] uppercase tracking-widest mt-1.5 font-mono">
@@ -555,10 +573,10 @@ export default function PlayerResultPage() {
                       )}
                     </div>
                     <div className="absolute -right-2 -bottom-1 w-10 h-10 bg-black/60 rounded-full border border-white/20 p-1 flex items-center justify-center z-20 shadow-xl">
-                      <img 
-                        src={carImageMap[(secondPlace.car_character || "white").replace("-bot", "")] || carImageMap["white"]} 
-                        alt="Car" 
-                        className="w-full h-full object-contain" 
+                      <img
+                        src={carImageMap[(secondPlace.car_character || "white").replace("-bot", "")] || carImageMap["white"]}
+                        alt="Car"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   </div>
@@ -577,13 +595,6 @@ export default function PlayerResultPage() {
                   animate="visible"
                   className="flex flex-col items-center z-20 mx-0.5 -mb-1"
                 >
-                  <motion.div
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="mb-0.5"
-                  >
-                    <Crown className="w-6 h-6 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" />
-                  </motion.div>
                   <div className="mb-1 text-center">
                     <div className="bg-[#1a1500]/80 border border-yellow-500/60 backdrop-blur-md px-2.5 py-1 rounded-xl">
                       <p
@@ -608,10 +619,10 @@ export default function PlayerResultPage() {
                       )}
                     </div>
                     <div className="absolute -right-3 -bottom-1 w-12 h-12 bg-black/60 rounded-full border border-yellow-500/40 p-1.5 flex items-center justify-center z-20 shadow-xl">
-                      <img 
-                        src={carImageMap[(firstPlace.car_character || "purple").replace("-bot", "")] || carImageMap["purple"]} 
-                        alt="Car" 
-                        className="w-full h-full object-contain" 
+                      <img
+                        src={carImageMap[(firstPlace.car_character || "purple").replace("-bot", "")] || carImageMap["purple"]}
+                        alt="Car"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   </div>
@@ -655,10 +666,10 @@ export default function PlayerResultPage() {
                       )}
                     </div>
                     <div className="absolute -right-2 -bottom-1 w-9 h-9 bg-black/60 rounded-full border border-white/20 p-1 flex items-center justify-center z-20 shadow-xl">
-                      <img 
-                        src={carImageMap[(thirdPlace.car_character || "black").replace("-bot", "")] || carImageMap["black"]} 
-                        alt="Car" 
-                        className="w-full h-full object-contain" 
+                      <img
+                        src={carImageMap[(thirdPlace.car_character || "black").replace("-bot", "")] || carImageMap["black"]}
+                        alt="Car"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   </div>
@@ -703,7 +714,7 @@ export default function PlayerResultPage() {
                           className={`font-display text-[10px] tracking-wider uppercase truncate ${isMe ? "text-[#00ff9d] font-bold" : index === 0 ? "text-yellow-400" : "text-gray-300"}`}
                           title={player.nickname}
                         >
-                          {player.nickname} {isMe && t("player_result.you")}
+                          {getDisplayName(player)} {isMe && t("player_result.you")}
                         </p>
                       </div>
                       <span
@@ -810,10 +821,10 @@ export default function PlayerResultPage() {
               transition={{ delay: 0.2, type: "spring", stiffness: 90 }}
               className="absolute z-10 flex items-center"
               style={{
-                top: "60px",
-                left: "150px",
-                bottom: "60px",
-                width: "260px",
+                top: "10%",
+                left: "8%",
+                bottom: "10%",
+                width: "min(280px, 18vw)",
               }}
             >
               <div
@@ -846,27 +857,21 @@ export default function PlayerResultPage() {
                       }}
                     >
                       {currentPlayerData?.avatar_url ? (
-                        <img 
-                          src={currentPlayerData.avatar_url} 
-                          alt="Avatar" 
-                          className="w-full h-full object-cover" 
+                        <img
+                          src={currentPlayerData.avatar_url}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
-                        <InitialsAvatar name={profile?.username || currentPlayerData?.nickname || 'P'} size="lg" />
+                        <InitialsAvatar name={currentPlayerData ? getDisplayName(currentPlayerData) : 'P'} size="lg" />
                       )}
                     </div>
                     <div className="absolute inset-[-8px] rounded-full border border-[#2d6af2]/20 animate-pulse" />
                   </div>
-                  <div className="bg-[#2d6af2]/20 px-3 py-1 rounded-full border border-[#2d6af2]/40">
-                    <p className="text-[10px] font-bold text-[#00d4ff] uppercase tracking-widest">
-                      {t("player_result.racer_profile")}
-                    </p>
-                  </div>
                 </div>
-                {/* Player name + Status — transparent, no divider between them */}
                 <div className="flex flex-col items-center justify-center gap-6 px-6 py-10 flex-1">
-                  <p className="font-display text-white text-xl font-bold uppercase tracking-widest text-center leading-tight" title={profile?.username || currentPlayerData?.nickname || ""}>
-                    {profile?.username || currentPlayerData?.nickname || t("player_result.player_fallback")}
+                  <p className="font-display text-white text-xl font-bold uppercase tracking-widest text-center leading-tight" title={currentPlayerData ? getDisplayName(currentPlayerData) : ""}>
+                    {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                   </p>
                   {currentPlayerData?.eliminated ? (
                     <span
@@ -913,13 +918,12 @@ export default function PlayerResultPage() {
               </div>
             </motion.div>
 
-            {/* CENTER: Car — adjusted for wider left panel */}
             <div
               className="absolute z-10 flex items-center justify-center"
               style={{
                 top: "60px",
-                left: "425px",
-                right: "425px",
+                left: "28%",
+                right: "28%",
                 bottom: "60px",
               }}
             >
@@ -955,17 +959,16 @@ export default function PlayerResultPage() {
               </motion.div>
             </div>
 
-            {/* RIGHT: stat cards */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.25, type: "spring", stiffness: 90 }}
               className="absolute z-10 flex flex-col p-[22px]"
               style={{
-                top: "150px",
-                right: "150px",
-                bottom: "60px",
-                width: "260px",
+                top: "15%",
+                right: "8%",
+                bottom: "10%",
+                width: "min(300px, 20vw)",
                 background: "rgba(160,180,210,0.12)",
                 border: "1px solid rgba(220,230,250,0.18)",
                 backdropFilter: "blur(32px) saturate(1.4)",
@@ -1003,8 +1006,8 @@ export default function PlayerResultPage() {
                     style={{ fontSize: "clamp(26px,2.8vw,40px)" }}
                   >
                     {totalQuestions > 0
-                      ? `${currentPlayerData?.current_question ?? 0}/${totalQuestions}`
-                      : (currentPlayerData?.current_question ?? 0)}
+                      ? `${currentPlayerData?.correct ?? 0}/${totalQuestions}`
+                      : (currentPlayerData?.correct ?? 0)}
                   </p>
                 </DesktopStatCard>
                 <DesktopStatCard label={t("player_result.time")}>

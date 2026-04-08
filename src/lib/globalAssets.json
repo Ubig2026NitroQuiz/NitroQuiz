@@ -335,224 +335,59 @@
         "name": "nos_28",
         "src": "/assets/characters/rico/nos/28.png"
     },
-    {
-        "name": "nos_29",
-        "src": "/assets/characters/rico/nos/29.png"
-    },
-    {
-        "name": "nos_30",
-        "src": "/assets/characters/rico/nos/30.png"
-    },
-    {
-        "name": "nos_31",
-        "src": "/assets/characters/rico/nos/31.png"
-    },
-    {
-        "name": "nos_32",
-        "src": "/assets/characters/rico/nos/32.png"
-    },
-    {
-        "name": "nos_33",
-        "src": "/assets/characters/rico/nos/33.png"
-    },
-    {
-        "name": "nos_34",
-        "src": "/assets/characters/rico/nos/34.png"
-    },
-    {
-        "name": "nos_35",
-        "src": "/assets/characters/rico/nos/35.png"
-    },
-    {
-        "name": "nos_36",
-        "src": "/assets/characters/rico/nos/36.png"
-    },
-    {
-        "name": "nos_37",
-        "src": "/assets/characters/rico/nos/37.png"
-    },
-    {
-        "name": "nos_38",
-        "src": "/assets/characters/rico/nos/38.png"
-    },
-    {
-        "name": "nos_39",
-        "src": "/assets/characters/rico/nos/39.png"
-    },
-    {
-        "name": "nos_40",
-        "src": "/assets/characters/rico/nos/40.png"
-    },
-    {
-        "name": "nos_41",
-        "src": "/assets/characters/rico/nos/41.png"
-    },
-    {
-        "name": "nos_42",
-        "src": "/assets/characters/rico/nos/42.png"
-    },
-    {
-        "name": "nos_43",
-        "src": "/assets/characters/rico/nos/43.png"
-    },
-    {
-        "name": "nos_44",
-        "src": "/assets/characters/rico/nos/44.png"
-    },
-    {
-        "name": "nos_45",
-        "src": "/assets/characters/rico/nos/45.png"
-    },
-    {
-        "name": "nos_46",
-        "src": "/assets/characters/rico/nos/46.png"
-    },
-    {
-        "name": "nos_47",
-        "src": "/assets/characters/rico/nos/47.png"
-    },
-    {
-        "name": "nos_48",
-        "src": "/assets/characters/rico/nos/48.png"
-    },
-    {
-        "name": "nos_49",
-        "src": "/assets/characters/rico/nos/49.png"
-    },
-    {
-        "name": "nos_50",
-        "src": "/assets/characters/rico/nos/50.png"
-    },
-    {
-        "name": "nos_51",
-        "src": "/assets/characters/rico/nos/51.png"
-    },
-    {
-        "name": "nos_52",
-        "src": "/assets/characters/rico/nos/52.png"
-    },
-    {
-        "name": "nos_53",
-        "src": "/assets/characters/rico/nos/53.png"
-    },
-    {
-        "name": "nos_54",
-        "src": "/assets/characters/rico/nos/54.png"
-    },
-    {
-        "name": "nos_55",
-        "src": "/assets/characters/rico/nos/55.png"
-    },
-    {
-        "name": "nos_56",
-        "src": "/assets/characters/rico/nos/56.png"
-    },
-    {
-        "name": "nos_57",
-        "src": "/assets/characters/rico/nos/57.png"
-    },
-    {
-        "name": "nos_58",
-        "src": "/assets/characters/rico/nos/58.png"
-    },
-    {
-        "name": "nos_59",
-        "src": "/assets/characters/rico/nos/59.png"
-    },
-    {
-        "name": "nos_60",
-        "src": "/assets/characters/rico/nos/60.png"
-    },
-    {
-        "name": "nos_61",
-        "src": "/assets/characters/rico/nos/61.png"
-    },
-    {
-        "name": "nos_62",
-        "src": "/assets/characters/rico/nos/62.png"
-    },
-    {
-        "name": "nos_63",
-        "src": "/assets/characters/rico/nos/63.png"
-    },
-    {
-        "name": "nos_64",
-        "src": "/assets/characters/rico/nos/64.png"
-    },
-    {
-        "name": "nos_65",
-        "src": "/assets/characters/rico/nos/65.png"
-    },
-    {
-        "name": "nos_66",
-        "src": "/assets/characters/rico/nos/66.png"
-    },
-    {
-        "name": "nos_67",
-        "src": "/assets/characters/rico/nos/67.png"
-    },
-    {
-        "name": "nos_68",
-        "src": "/assets/characters/rico/nos/68.png"
-    },
-    {
-        "name": "nos_69",
-        "src": "/assets/characters/rico/nos/69.png"
-    },
-    {
-        "name": "nos_70",
-        "src": "/assets/characters/rico/nos/70.png"
-    },
-    {
-        "name": "nos_71",
-        "src": "/assets/characters/rico/nos/71.png"
-    },
-    {
-        "name": "nos_72",
-        "src": "/assets/characters/rico/nos/72.png"
-    },
-    {
-        "name": "nos_73",
-        "src": "/assets/characters/rico/nos/73.png"
-    },
-    {
-        "name": "nos_74",
-        "src": "/assets/characters/rico/nos/74.png"
-    },
-    {
-        "name": "nos_75",
-        "src": "/assets/characters/rico/nos/75.png"
-    },
-    {
-        "name": "nos_76",
-        "src": "/assets/characters/rico/nos/76.png"
-    },
-    {
-        "name": "nos_77",
-        "src": "/assets/characters/rico/nos/77.png"
-    },
-    {
-        "name": "nos_78",
-        "src": "/assets/characters/rico/nos/78.png"
-    },
-    {
-        "name": "nos_79",
-        "src": "/assets/characters/rico/nos/79.png"
-    },
-    {
-        "name": "nos_80",
-        "src": "/assets/characters/rico/nos/80.png"
-    },
-    {
-        "name": "nos_81",
-        "src": "/assets/characters/rico/nos/81.png"
-    },
-    {
-        "name": "nos_82",
-        "src": "/assets/characters/rico/nos/82.png"
-    },
-    {
-        "name": "nos_83",
-        "src": "/assets/characters/rico/nos/83.png"
-    }
-]
+    { "name": "nos_29", "___inactive_src___": "/assets/characters/rico/nos/29.png" },
+    { "name": "nos_30", "___inactive_src___": "/assets/characters/rico/nos/30.png" },
+    { "name": "nos_31", "___inactive_src___": "/assets/characters/rico/nos/31.png" },
+    { "name": "nos_32", "___inactive_src___": "/assets/characters/rico/nos/32.png" },
+    { "name": "nos_33", "___inactive_src___": "/assets/characters/rico/nos/33.png" },
+    { "name": "nos_34", "___inactive_src___": "/assets/characters/rico/nos/34.png" },
+    { "name": "nos_35", "___inactive_src___": "/assets/characters/rico/nos/35.png" },
+    { "name": "nos_36", "___inactive_src___": "/assets/characters/rico/nos/36.png" },
+    { "name": "nos_37", "___inactive_src___": "/assets/characters/rico/nos/37.png" },
+    { "name": "nos_38", "___inactive_src___": "/assets/characters/rico/nos/38.png" },
+    { "name": "nos_39", "___inactive_src___": "/assets/characters/rico/nos/39.png" },
+    { "name": "nos_40", "___inactive_src___": "/assets/characters/rico/nos/40.png" },
+    { "name": "nos_41", "___inactive_src___": "/assets/characters/rico/nos/41.png" },
+    { "name": "nos_42", "___inactive_src___": "/assets/characters/rico/nos/42.png" },
+    { "name": "nos_43", "___inactive_src___": "/assets/characters/rico/nos/43.png" },
+    { "name": "nos_44", "___inactive_src___": "/assets/characters/rico/nos/44.png" },
+    { "name": "nos_45", "___inactive_src___": "/assets/characters/rico/nos/45.png" },
+    { "name": "nos_46", "___inactive_src___": "/assets/characters/rico/nos/46.png" },
+    { "name": "nos_47", "___inactive_src___": "/assets/characters/rico/nos/47.png" },
+    { "name": "nos_48", "___inactive_src___": "/assets/characters/rico/nos/48.png" },
+    { "name": "nos_49", "___inactive_src___": "/assets/characters/rico/nos/49.png" },
+    { "name": "nos_50", "___inactive_src___": "/assets/characters/rico/nos/50.png" },
+    { "name": "nos_51", "___inactive_src___": "/assets/characters/rico/nos/51.png" },
+    { "name": "nos_52", "___inactive_src___": "/assets/characters/rico/nos/52.png" },
+    { "name": "nos_53", "___inactive_src___": "/assets/characters/rico/nos/53.png" },
+    { "name": "nos_54", "___inactive_src___": "/assets/characters/rico/nos/54.png" },
+    { "name": "nos_55", "___inactive_src___": "/assets/characters/rico/nos/55.png" },
+    { "name": "nos_56", "___inactive_src___": "/assets/characters/rico/nos/56.png" },
+    { "name": "nos_57", "___inactive_src___": "/assets/characters/rico/nos/57.png" },
+    { "name": "nos_58", "___inactive_src___": "/assets/characters/rico/nos/58.png" },
+    { "name": "nos_59", "___inactive_src___": "/assets/characters/rico/nos/59.png" },
+    { "name": "nos_60", "___inactive_src___": "/assets/characters/rico/nos/60.png" },
+    { "name": "nos_61", "___inactive_src___": "/assets/characters/rico/nos/61.png" },
+    { "name": "nos_62", "___inactive_src___": "/assets/characters/rico/nos/62.png" },
+    { "name": "nos_63", "___inactive_src___": "/assets/characters/rico/nos/63.png" },
+    { "name": "nos_64", "___inactive_src___": "/assets/characters/rico/nos/64.png" },
+    { "name": "nos_65", "___inactive_src___": "/assets/characters/rico/nos/65.png" },
+    { "name": "nos_66", "___inactive_src___": "/assets/characters/rico/nos/66.png" },
+    { "name": "nos_67", "___inactive_src___": "/assets/characters/rico/nos/67.png" },
+    { "name": "nos_68", "___inactive_src___": "/assets/characters/rico/nos/68.png" },
+    { "name": "nos_69", "___inactive_src___": "/assets/characters/rico/nos/69.png" },
+    { "name": "nos_70", "___inactive_src___": "/assets/characters/rico/nos/70.png" },
+    { "name": "nos_71", "___inactive_src___": "/assets/characters/rico/nos/71.png" },
+    { "name": "nos_72", "___inactive_src___": "/assets/characters/rico/nos/72.png" },
+    { "name": "nos_73", "___inactive_src___": "/assets/characters/rico/nos/73.png" },
+    { "name": "nos_74", "___inactive_src___": "/assets/characters/rico/nos/74.png" },
+    { "name": "nos_75", "___inactive_src___": "/assets/characters/rico/nos/75.png" },
+    { "name": "nos_76", "___inactive_src___": "/assets/characters/rico/nos/76.png" },
+    { "name": "nos_77", "___inactive_src___": "/assets/characters/rico/nos/77.png" },
+    { "name": "nos_78", "___inactive_src___": "/assets/characters/rico/nos/78.png" },
+    { "name": "nos_79", "___inactive_src___": "/assets/characters/rico/nos/79.png" },
+    { "name": "nos_80", "___inactive_src___": "/assets/characters/rico/nos/80.png" },
+    { "name": "nos_81", "___inactive_src___": "/assets/characters/rico/nos/81.png" },
+    { "name": "nos_82", "___inactive_src___": "/assets/characters/rico/nos/82.png" },
+    { "name": "nos_83", "___inactive_src___": "/assets/characters/rico/nos/83.png" }
+]

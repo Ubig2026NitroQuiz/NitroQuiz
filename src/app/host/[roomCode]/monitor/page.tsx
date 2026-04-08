@@ -479,8 +479,7 @@ export default function GameMonitorPage() {
         (payload) => {
           if (payload.eventType === "UPDATE") {
             const updated = payload.new as Participant;
-            if (updated.session_id !== sessionId) return;
-            setParticipants((prev) => prev.map((p) => (String(p.id) === String(updated.id) ? updated : p)));
+            setParticipants((prev) => prev.map((p) => (String(p.id) === String(updated.id) ? { ...p, ...updated } : p)));
           } else if (payload.eventType === "INSERT") {
             const inserted = payload.new as Participant;
             if (inserted.session_id !== sessionId) return;
@@ -498,7 +497,7 @@ export default function GameMonitorPage() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         (payload) => {
-          setSession(payload.new);
+          setSession((prev: any) => ({ ...prev, ...payload.new }));
           if (payload.new.status === "finished" || payload.new.status === "completed") {
             router.push(`/host/${roomCode}/leaderboard`);
           } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {

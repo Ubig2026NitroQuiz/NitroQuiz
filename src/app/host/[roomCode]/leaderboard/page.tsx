@@ -305,26 +305,26 @@ export default function LeaderboardPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#2d6af2]/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
 
       {/* Top Bar: Logo1 left, Logo2 right */}
-      <div className="w-full z-30 px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
+      <div className="w-full z-30 px-4 md:px-6 pt-2 flex items-center justify-between">
         <div className="flex items-center justify-center">
           <img
             src="/assets/logo/logo1.png"
             alt="NitroQuiz Logo"
-            width={140}
-            height={40}
+            width={120}
+            height={36}
             className="object-contain"
           />
         </div>
         <img
           src="/assets/logo/logo2.png"
           alt="GameForSmart.com"
-          width={240}
-          height={60}
+          width={200}
+          height={50}
           className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(45,106,242,0.3)]"
         />
       </div>
 
-      <div className="w-full max-w-5xl z-20 px-4 sm:px-6">
+      <div className="w-full max-w-5xl z-20 px-4 sm:px-6 -mt-2">
         {/* Floating Side Buttons - Desktop only */}
         <div className="fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-50 hidden md:flex">
           <Button
@@ -363,7 +363,7 @@ export default function LeaderboardPage() {
 
         {/* Compact Podium */}
         {showResults && rankedPlayers.length > 0 && (
-          <div className="relative flex items-end justify-center w-full h-[220px] sm:h-[300px] mt-8 mb-4 px-2">
+          <div className="relative flex items-end justify-center w-full h-[220px] sm:h-[300px] mb-4 px-2">
             <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-2/3 h-16 bg-[#2d6af2]/20 blur-[30px] rounded-full pointer-events-none" />
 
             {/* 2nd Place */}

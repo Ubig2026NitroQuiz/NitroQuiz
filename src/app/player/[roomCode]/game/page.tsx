@@ -308,6 +308,10 @@ export default function GameSpeedPage() {
             // Dynamically replace 'rico' with selected character in asset paths
             [...ASSET_LIST, ...obstacles].forEach(item => {
                 promises.push(new Promise<void>((resolve) => {
+                    if (!item.src) {
+                        resolve();
+                        return;
+                    }
                     const img = new Image();
                     // Replace character path if this is a character asset
                     let srcPath = item.src;
@@ -1356,7 +1360,7 @@ export default function GameSpeedPage() {
 
         // Lap & Finish line check
         if (position > trackLength - playerZ && gameState !== 'finished' && !(state.current as any).hasFinishedLine) {
-
+            
             // Check if we have quiz questions remaining (from state ref)
             const questions = state.current.allQuizQuestions;
             const hasQuizRemaining = questions.length > 0 && state.current.quizQuestionIndex < questions.length;
@@ -2102,7 +2106,7 @@ export default function GameSpeedPage() {
                     }
                 }
             )
-            // Listen for Participant changes (Minigame Guard)
+            // Listen for Participant changes (Minigame Guard & Lap Sync)
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'participants', filter: `id=eq.${participantId}` },
@@ -2110,6 +2114,12 @@ export default function GameSpeedPage() {
                     // If minigame is false, player should be on the quiz page
                     if (payload.new.minigame === false && !payload.new.finished_at) {
                         router.push(`/player/${roomCode}/quiz`);
+                    }
+
+                    // Sync Lap from DB
+                    if (payload.new.lap_race !== undefined) {
+                        console.log('[GameSpeed] Lap updated from DB:', payload.new.lap_race);
+                        setLapRace(payload.new.lap_race);
                     }
                 }
             )
@@ -2190,7 +2200,7 @@ export default function GameSpeedPage() {
                         .select('current_questions, difficulty')
                         .eq('id', sessId)
                         .single();
-
+                    
                     if (sessionData?.current_questions) {
                         questionsData = sessionData.current_questions;
                         localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
@@ -2243,7 +2253,7 @@ export default function GameSpeedPage() {
                             image: qImage
                         };
                     });
-
+                    
                     console.log('[GameSpeed] Successfully initialized questions:', normalized.length);
                     setAllQuizQuestions(normalized);
                     state.current.allQuizQuestions = normalized;
@@ -2295,7 +2305,7 @@ export default function GameSpeedPage() {
     }, [gameState, endGame]);
 
     return (
-        <div
+        <div 
             dir="ltr"
             style={{
                 width: '100%',
@@ -2475,37 +2485,39 @@ export default function GameSpeedPage() {
                     }}
                 >
                     {/* Top Center Timer Overlay - Redesigned to match Lap UI */}
-                    {globalTimeLeft !== null && (
-                        <div style={{
-                            position: 'absolute',
-                            left: '50%',
-                            top: isMobile ? '0.75rem' : '1.25rem',
-                            transform: 'translateX(-50%)',
-                            zIndex: 1000,
-                            backgroundColor: globalTimeLeft <= 30 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 0, 0, 0.65)',
-                            backdropFilter: 'blur(15px)',
-                            padding: isMobile ? '0.4rem 0.75rem' : '0.6rem 1.25rem',
-                            borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
-                            border: globalTimeLeft <= 30 ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
-                            boxShadow: globalTimeLeft <= 30 ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 10px 30px rgba(0,0,0,0.3)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.6rem',
-                            pointerEvents: 'none',
-                            animation: globalTimeLeft <= 30 ? 'timerPulse 1s infinite alternate' : 'none'
+                    {/* Top Center Timer Overlay - Redesigned to match Lap UI */}
+                    <div style={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: isMobile ? '0.75rem' : '1.25rem',
+                        transform: 'translateX(-50%)',
+                        zIndex: 1000,
+                        backgroundColor: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 0, 0, 0.65)',
+                        backdropFilter: 'blur(15px)',
+                        padding: isMobile ? '0.4rem 0.75rem' : '0.6rem 1.25rem',
+                        borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
+                        border: (globalTimeLeft !== null && globalTimeLeft <= 30) ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+                        boxShadow: (globalTimeLeft !== null && globalTimeLeft <= 30) ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 10px 30px rgba(0,0,0,0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        pointerEvents: 'none',
+                        animation: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'timerPulse 1s infinite alternate' : 'none'
+                    }}>
+                        <span style={{ 
+                            fontSize: isMobile ? '1.1rem' : '1.5rem', 
+                            fontWeight: 900, 
+                            color: '#fff',
+                            fontFamily: 'Orbitron, sans-serif',
+                            fontVariantNumeric: 'tabular-nums',
+                            letterSpacing: '0.05em'
                         }}>
-                            <span style={{
-                                fontSize: isMobile ? '1.1rem' : '1.5rem',
-                                fontWeight: 900,
-                                color: '#fff',
-                                fontFamily: 'Orbitron, sans-serif',
-                                fontVariantNumeric: 'tabular-nums',
-                                letterSpacing: '0.05em'
-                            }}>
-                                {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
-                            </span>
-                        </div>
-                    )}
+                            {globalTimeLeft !== null 
+                                ? `${Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:${(globalTimeLeft % 60).toString().padStart(2, '0')}`
+                                : "--:--"
+                            }
+                        </span>
+                    </div>
 
                     {/* Header: Stats & Map */}
                     <div style={{ display: 'flex', flexDirection: usePCLayout ? 'row' : 'column', justifyContent: 'space-between', alignItems: usePCLayout ? 'start' : 'center', width: '100%', gap: '1rem' }}>
@@ -2597,7 +2609,7 @@ export default function GameSpeedPage() {
                                     flex: 'none'
                                 }}>
                                     <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
-                                    <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
+                                    <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{Math.min(stats.totalLaps, lapRace + 1)}/{stats.totalLaps}</span>
                                 </div>
                             </div>
                         </div>

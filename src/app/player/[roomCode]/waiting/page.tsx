@@ -7,7 +7,7 @@ import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
 import { Loader2, Zap, Users, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
 
 export const PLAYER_CHARACTERS = [
     {
@@ -324,6 +324,63 @@ export default function PlayerWaitingPage() {
             const link = document.createElement('link'); link.rel = 'prefetch'; link.href = route; document.head.appendChild(link);
         } catch (err) { console.error('Failed to preload quiz:', err); }
     };
+
+    // --- Asset Background Preloader ---
+    useEffect(() => {
+        // Preload all global assets when in waiting room
+        const preloadAssets = () => {
+            console.log("[NitroQuiz] Starting global background preloading...");
+
+            // Create global store if not exists
+            if (typeof window !== 'undefined' && !(window as any).__nitroquiz_asset_store) {
+                (window as any).__nitroquiz_asset_store = {};
+            }
+            const store = (window as any).__nitroquiz_asset_store;
+
+            // Determine selected character for dynamic paths
+            let charId = assignedCarId || 'rico';
+
+            // 1. ASSET_LIST (Characters, UI, effects)
+            ASSET_LIST.forEach(asset => {
+                if (asset.src) {
+                    const img = new Image();
+                    let src = asset.src;
+                    if (src.includes('/characters/rico/')) {
+                        src = src.replace('/characters/rico/', `/characters/${charId}/`);
+                    }
+                    img.src = src;
+                    // Save to global store - use name or src as key
+                    store[asset.name] = img;
+                }
+            });
+
+            // 2. TRACK_ASSETS (Road, landmarks, obstacles)
+            const uniqueTrackSources = Array.from(new Set(TRACK_ASSETS.map(item => item.src))).filter(Boolean);
+            uniqueTrackSources.forEach(src => {
+                if (!(window as any).__nitroquiz_asset_store[src]) {
+                    const img = new Image();
+                    img.src = src;
+                    (window as any).__nitroquiz_asset_store[src] = img;
+                }
+            });
+
+            // 3. Showroom visuals (Characters)
+            PLAYER_CHARACTERS.forEach(char => {
+                if (!(window as any).__nitroquiz_asset_store[char.imageSrc]) {
+                    const img1 = new Image(); img1.src = char.imageSrc;
+                    (window as any).__nitroquiz_asset_store[char.imageSrc] = img1;
+                }
+                if (char.gifSrc && !(window as any).__nitroquiz_asset_store[char.gifSrc]) {
+                    const img2 = new Image(); img2.src = char.gifSrc;
+                    (window as any).__nitroquiz_asset_store[char.gifSrc] = img2;
+                }
+            });
+        };
+
+        // Delay slightly to prioritize core UI mounting
+        const timeout = setTimeout(preloadAssets, 2000);
+        return () => clearTimeout(timeout);
+    }, [assignedCarId]); // Re-preload if character changes
 
     const getCountdownLabel = (val: number) => {
         if (val === 3) return t("player_waiting.ready");

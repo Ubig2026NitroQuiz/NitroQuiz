@@ -204,7 +204,7 @@
     "finish": "FINISH",
     "crashed": "CRASHED",
     "quiz": "QUIZ",
-    "lap": "LAP",
+    "lap": "QUESTION",
     "score": "SCORE",
     "ending": "ENDING...",
     "end_race": "END GAME",
@@ -276,7 +276,7 @@
     "player_fallback": "PLAYER",
     "eliminated": "ELIMINATED",
     "waiting": "WAITING",
-    "champion": "🏆 CHAMPION",
+    "champion": "CHAMPION",
     "finished": "FINISHED",
     "wait_for_host": "WAIT FOR HOST"
   },
