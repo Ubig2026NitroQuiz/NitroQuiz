@@ -8,8 +8,6 @@ import { supabase } from '@/lib/supabase';
 import { useTranslation } from "react-i18next";
 import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
 import { generateXID } from '@/lib/id-generator';
-import { useAuth } from '@/contexts/AuthContext';
-import { useParticipantRecovery } from '@/hooks/useParticipantRecovery';
 
 // Reuse QuizQuestion type
 export interface QuizQuestion {
@@ -26,8 +24,6 @@ export default function QuizPage() {
     const params = useParams();
     const { t } = useTranslation();
     const roomCodeFromParams = (params?.roomCode as string)?.toUpperCase();
-    const { user, profile } = useAuth();
-    const { participantId: recoveredId, isRecovering } = useParticipantRecovery(roomCodeFromParams);
     const [mounted, setMounted] = useState(false);
     const [questions, setQuestions] = useState<QuizQuestion[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -60,13 +56,13 @@ export default function QuizPage() {
         syncServerTime();
 
         const fetchLatestData = async () => {
-            if (isRecovering) return;
-            const participantId = recoveredId;
-            const roomToUse = roomCodeFromParams;
+            const participantId = localStorage.getItem('nitroquiz_game_participantId');
+            const storedRoom = localStorage.getItem('nitroquiz_game_roomCode');
+            const roomToUse = roomCodeFromParams || storedRoom;
 
             if (!participantId || !roomToUse) {
-                console.warn("Quiz: No participantId or roomCode found, redirecting to join.");
-                router.replace(`/join/${roomCodeFromParams}`);
+                console.warn("Quiz: No participantId or roomCode found, redirecting home.");
+                router.push('/');
                 return;
             }
 

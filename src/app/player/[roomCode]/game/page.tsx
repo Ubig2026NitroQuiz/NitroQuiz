@@ -15,8 +15,6 @@ interface QuizQuestion {
 import { supabase } from '@/lib/supabase';
 import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
 import { Clock } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useParticipantRecovery } from '@/hooks/useParticipantRecovery';
 
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
@@ -156,8 +154,6 @@ export default function GameSpeedPage() {
     const router = useRouter();
     const params = useParams();
     const roomCode = (params?.roomCode as string)?.toUpperCase();
-    const { user, profile } = useAuth();
-    const { participantId: recoveredId, isRecovering } = useParticipantRecovery(roomCode);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Game State
@@ -1397,7 +1393,7 @@ export default function GameSpeedPage() {
 
         // Lap & Finish line check
         if (position > trackLength - playerZ && gameState !== 'finished' && !(state.current as any).hasFinishedLine) {
-            
+
             // Check if we have quiz questions remaining (from state ref)
             const questions = state.current.allQuizQuestions;
             const hasQuizRemaining = questions.length > 0 && state.current.quizQuestionIndex < questions.length;
@@ -1615,14 +1611,8 @@ export default function GameSpeedPage() {
         setMounted(true);
 
         const fetchServerState = async () => {
-            if (isRecovering) return;
-            const participantId = recoveredId;
-
-            if (!participantId) {
-                console.warn("[NitroQuiz] No participant found, redirecting to join/autologin...");
-                router.replace(`/join/${roomCode}`);
-                return;
-            }
+            const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
+            if (!participantId) return;
 
             const { data } = await supabase.from('participants').select('minigame, finished_at, lap_race').eq('id', participantId).single();
             if (data) {
@@ -2208,7 +2198,7 @@ export default function GameSpeedPage() {
             if (!roomCode) return;
             try {
                 let questionsData = [];
-                
+
                 // 1. Fetch current questions from DB using roomCode (Game PIN)
                 // This ensures we get the LATEST config from host settings
                 console.log(`[GameSpeed] Fetching session data for room: ${roomCode}`);
@@ -2217,11 +2207,11 @@ export default function GameSpeedPage() {
                     .select('id, current_questions, difficulty')
                     .eq('game_pin', roomCode)
                     .single();
-                
+
                 if (!error && sessionData?.current_questions) {
                     questionsData = sessionData.current_questions;
                     console.log(`[GameSpeed] Loaded ${questionsData.length} questions from DB.`);
-                    
+
                     // Sync to localStorage so other hooks/pages can use it
                     localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
                     localStorage.setItem('nitroquiz_game_sessionId', sessionData.id);
@@ -2280,7 +2270,7 @@ export default function GameSpeedPage() {
                             image: qImage
                         };
                     });
-                    
+
                     console.log('[GameSpeed] Successfully initialized questions:', normalized.length);
                     setAllQuizQuestions(normalized);
                     state.current.allQuizQuestions = normalized;
@@ -2332,7 +2322,7 @@ export default function GameSpeedPage() {
     }, [gameState, endGame]);
 
     return (
-        <div 
+        <div
             dir="ltr"
             style={{
                 width: '100%',
@@ -2531,15 +2521,15 @@ export default function GameSpeedPage() {
                         pointerEvents: 'none',
                         animation: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'timerPulse 1s infinite alternate' : 'none'
                     }}>
-                        <span style={{ 
-                            fontSize: isMobilePortrait ? '0.9rem' : (isMobile ? '1.1rem' : '1.5rem'), 
-                            fontWeight: 900, 
+                        <span style={{
+                            fontSize: isMobilePortrait ? '0.9rem' : (isMobile ? '1.1rem' : '1.5rem'),
+                            fontWeight: 900,
                             color: '#fff',
                             fontFamily: 'Orbitron, sans-serif',
                             fontVariantNumeric: 'tabular-nums',
                             letterSpacing: '0.05em'
                         }}>
-                            {globalTimeLeft !== null 
+                            {globalTimeLeft !== null
                                 ? `${Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:${(globalTimeLeft % 60).toString().padStart(2, '0')}`
                                 : "--:--"
                             }
