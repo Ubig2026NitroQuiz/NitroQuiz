@@ -1,45 +1,66 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-class SharedCookieStorage {
-  private storageKey: string;
+// ============================================================
+// SHARED SESSION via REFRESH TOKEN COOKIE
+// ============================================================
+// Masalah lama: Menyimpan SELURUH sesi Supabase di cookie
+//   → Google Login gagal karena data sesi terlalu besar (>4KB)
+//   → Browser diam-diam membuang cookie yang terlalu besar
+//
+// Solusi baru:
+//   - Sesi penuh disimpan di localStorage (batas 5-10MB, aman)
+//   - Hanya refresh_token (~50 byte) yang disimpan di cookie
+//   - Cookie ini di-share antar subdomain .gameforsmart.com
+//   - Saat user buka subdomain lain, refresh_token dipakai
+//     untuk memulihkan sesi penuh dari Supabase
+// ============================================================
 
-  // ← kasih default value, jadi bisa dipanggil tanpa argumen
-  constructor(storageKey: string = 'gfs-auth-token') {
-    this.storageKey = storageKey;
+/**
+ * Simpan refresh_token ke shared cookie (.gameforsmart.com)
+ * Cookie ini kecil (~50 byte), jauh di bawah batas 4KB
+ */
+export function syncSessionCookie(refreshToken: string | null) {
+  if (typeof document === 'undefined') return;
+  const hostname = window.location.hostname;
+  const isGfs = hostname.endsWith('gameforsmart.com');
+  const isHttps = window.location.protocol === 'https:';
+
+  if (!refreshToken) {
+    // Hapus cookie
+    let cookieStr = `gfs-rt=; path=/; max-age=0`;
+    if (isGfs) cookieStr += `; domain=.gameforsmart.com`;
+    document.cookie = cookieStr;
+    return;
   }
 
-  getItem(key: string): string | null {
-    if (typeof document === 'undefined') return null;
-    const cookies = document.cookie.split('; ');
-    const found = cookies.find(c => c.startsWith(`${key}=`));
-    return found ? decodeURIComponent(found.split('=')[1]) : null;
-  }
-
-  setItem(key: string, value: string): void {
-    if (typeof document === 'undefined') return;
-    const maxAge = 60 * 60 * 24 * 365;
-    document.cookie = [
-      `${key}=${encodeURIComponent(value)}`,
-      `domain=.gameforsmart.com`,
-      `path=/`,
-      `max-age=${maxAge}`,
-      `SameSite=Lax`,
-      `Secure`,
-    ].join('; ');
-  }
-
-  removeItem(key: string): void {
-    if (typeof document === 'undefined') return;
-    document.cookie = `${key}=; domain=.gameforsmart.com; path=/; max-age=0`;
-  }
+  const parts = [
+    `gfs-rt=${encodeURIComponent(refreshToken)}`,
+    `path=/`,
+    `max-age=${60 * 60 * 24 * 365}`,
+    `SameSite=Lax`,
+  ];
+  if (isGfs) parts.push(`domain=.gameforsmart.com`);
+  if (isHttps) parts.push(`Secure`);
+  document.cookie = parts.join('; ');
 }
 
-// ==========================================
-// 1. SUPABASE CLIENT UTAMA (PROJECT-MU SENDIRI)
-// Digunakan untuk:
-// - Menyimpan Participants
-// - Mencatat Jawaban, Score, Time
-// ==========================================
+/**
+ * Baca refresh_token dari shared cookie
+ */
+export function getRefreshTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie.split('; ');
+  const found = cookies.find(c => c.startsWith('gfs-rt='));
+  if (!found) return null;
+  const eqIndex = found.indexOf('=');
+  return decodeURIComponent(found.substring(eqIndex + 1));
+}
+
+// ============================================================
+// 1. SUPABASE CLIENT PROYEK (nitroquiz database)
+// Untuk: Participants, Score, Jawaban
+// TIDAK menangani login sama sekali
+// ============================================================
 let _supabase: SupabaseClient | null = null;
 
 export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
@@ -50,7 +71,13 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
       if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error('Supabase env vars are not set. Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are defined.');
       }
-      _supabase = createClient(supabaseUrl, supabaseAnonKey);
+      _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      });
     }
     const value = (_supabase as any)[prop];
     if (typeof value === 'function') {
@@ -60,14 +87,11 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
   },
 });
 
-
-// ==========================================
-// 2. SUPABASE CLIENT PUSAT (DATABASE QUIZ PUSAT)
-// Digunakan HANYA untuk:
-// - Menyimpan Sessions
-// - Menarik (Read-only) data Quiz dari Host/Pusat
-// - Menarik soal-soal dan jawabannya
-// ==========================================
+// ============================================================
+// 2. SUPABASE CLIENT PUSAT (central database)
+// Untuk: Login, Profil, Quiz, Sessions
+// Menggunakan localStorage (default) + shared cookie untuk SSO
+// ============================================================
 let _supabaseCentral: SupabaseClient | null = null;
 
 export const supabaseCentral: SupabaseClient = new Proxy({} as SupabaseClient, {
@@ -80,13 +104,12 @@ export const supabaseCentral: SupabaseClient = new Proxy({} as SupabaseClient, {
       }
       _supabaseCentral = createClient(centralSupabaseUrl, centralSupabaseAnonKey, {
         auth: {
-          storage: new SharedCookieStorage(),
-          storageKey: 'gfs-auth-token', // sama di axiom, zigma, app, landing
+          // Gunakan localStorage default (aman untuk semua ukuran sesi)
+          storageKey: 'gfs-auth-token',
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: true,
-        }
-
+        },
       });
     }
     const value = (_supabaseCentral as any)[prop];

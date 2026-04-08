@@ -204,7 +204,7 @@
     "finish": "نهاية",
     "crashed": "تحطم",
     "quiz": "اختبار",
-    "lap": "جولة",
+    "lap": "سؤال",
     "score": "النتيجة",
     "ending": "جاري الإنهاء...",
     "end_race": "إنهاء اللعبة",
@@ -276,7 +276,7 @@
     "player_fallback": "اللاعب",
     "eliminated": "مستبعد",
     "waiting": "في الانتظار",
-    "champion": "🏆 بطل",
+    "champion": "بطل",
     "finished": "اكتمل",
     "wait_for_host": "انتظر المضيف"
   },

@@ -204,7 +204,7 @@
     "finish": "SELESAI",
     "crashed": "HANCUR",
     "quiz": "KUIS",
-    "lap": "PUTARAN",
+    "lap": "SOAL",
     "score": "SKOR",
     "ending": "MENGAKHIRI...",
     "end_race": "AKHIRI PERMAINAN",
@@ -276,7 +276,7 @@
     "player_fallback": "PEMAIN",
     "eliminated": "TERELIMINASI",
     "waiting": "MENUNGGU",
-    "champion": "🏆 JUARA",
+    "champion": "JUARA",
     "finished": "SELESAI",
     "wait_for_host": "MENUNGGU HOST"
   },

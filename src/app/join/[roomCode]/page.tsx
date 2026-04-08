@@ -146,7 +146,7 @@ export default function AutoJoinPage() {
     return (
         <div className="min-h-screen bg-[#07091a] text-white flex items-center justify-center p-4 relative overflow-hidden font-rajdhani">
             <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#07091a] to-[#050508] pointer-events-none" />
-            
+
             <div className="relative z-10 w-full max-w-md">
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center gap-4">
