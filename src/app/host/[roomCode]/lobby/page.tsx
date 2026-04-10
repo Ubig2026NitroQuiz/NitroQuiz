@@ -297,7 +297,18 @@ export default function HostLobby() {
         if (remaining > 0) {
           setCountdown(remaining);
         } else if (remaining <= 0) {
-          router.push(`/host/${roomCode}/monitor`);
+          const startSessionFallback = async () => {
+            await supabase
+              .from("sessions")
+              .update({
+                status: "active",
+                started_at: new Date(getSyncedServerTime()).toISOString(),
+                countdown_started_at: null
+              })
+              .eq("id", data.id);
+            router.push(`/host/${roomCode}/monitor`);
+          };
+          startSessionFallback();
         }
       }
 
@@ -366,10 +377,16 @@ export default function HostLobby() {
     if (!session || participants.length === 0) return;
     await syncServerTime(); // Ensure offset is ready before logic
     const nowServer = getSyncedServerTime();
+    const isoTime = new Date(nowServer).toISOString();
+
+    // Trigger local state immediately to avoid realtime delays
+    setSession((prev: any) => ({ ...prev, countdown_started_at: isoTime }));
+    setCountdown(3);
+
     await supabase
       .from("sessions")
       .update({
-        countdown_started_at: new Date(nowServer).toISOString()
+        countdown_started_at: isoTime
       })
       .eq("id", session.id);
   };
