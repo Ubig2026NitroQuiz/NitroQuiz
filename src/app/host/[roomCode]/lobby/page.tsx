@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import {
   Users, Play, LogOut, Copy, Check, Maximize2, Minimize2,
-  Volume2, VolumeX, X, UserPlus, Users2, Bot
+  Volume2, VolumeX, X, UserPlus, Users2, Bot, Search
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseCentral } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "react-qr-code";
@@ -51,6 +52,7 @@ export default function HostLobby() {
   const router = useRouter();
   const params = useParams();
   const { t } = useTranslation();
+  const { profile } = useAuth();
   const roomCode = params.roomCode as string;
 
   const [participants, setParticipants] = useState<any[]>([]);
@@ -66,6 +68,193 @@ export default function HostLobby() {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [kickDialogOpen, setKickDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const [searchGroupQuery, setSearchGroupQuery] = useState("");
+  const [invitedGroups, setInvitedGroups] = useState<string[]>([]);
+  const [inviteToastVisible, setInviteToastVisible] = useState(false);
+  const [searchFriendQuery, setSearchFriendQuery] = useState("");
+  const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
+  const [mutualFriends, setMutualFriends] = useState<any[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+
+  // Fetch mutual friends (saling follow — kedua arah harus ada) when dialog opens
+  useEffect(() => {
+    if (!inviteFriendOpen || !profile?.id) return;
+    const fetchMutualFriends = async () => {
+      setLoadingFriends(true);
+      try {
+        // Get users that I follow (I am the requester)
+        const { data: iFollow, error: e1 } = await supabaseCentral
+          .from('friendships')
+          .select('addressee_id')
+          .eq('requester_id', profile.id)
+          .eq('status', 'accepted');
+
+        // Get users that follow me (I am the addressee)
+        const { data: followMe, error: e2 } = await supabaseCentral
+          .from('friendships')
+          .select('requester_id')
+          .eq('addressee_id', profile.id)
+          .eq('status', 'accepted');
+
+        if (e1 || e2) {
+          console.error('Error fetching friendships:', e1 || e2);
+          setLoadingFriends(false);
+          return;
+        }
+
+        // Mutual = intersection (users I follow AND who follow me back)
+        const iFollowIds = new Set((iFollow || []).map(f => f.addressee_id));
+        const followMeIds = new Set((followMe || []).map(f => f.requester_id));
+        const mutualIds = [...iFollowIds].filter(id => followMeIds.has(id));
+
+        if (mutualIds.length === 0) {
+          setMutualFriends([]);
+          setLoadingFriends(false);
+          return;
+        }
+
+        // Fetch profiles for mutual friend IDs
+        const { data: profiles, error: profileError } = await supabaseCentral
+          .from('profiles')
+          .select('id, username, nickname, fullname, avatar_url')
+          .in('id', mutualIds);
+
+        if (profileError) {
+          console.error('Error fetching friend profiles:', profileError);
+          setLoadingFriends(false);
+          return;
+        }
+
+        setMutualFriends(profiles || []);
+      } catch (e) {
+        console.error('Failed to fetch mutual friends:', e);
+      } finally {
+        setLoadingFriends(false);
+      }
+    };
+    fetchMutualFriends();
+  }, [inviteFriendOpen, profile?.id]);
+
+  const filteredFriends = mutualFriends.filter(f => {
+    const q = searchFriendQuery.toLowerCase();
+    return (f.username || '').toLowerCase().includes(q) ||
+      (f.nickname || '').toLowerCase().includes(q) ||
+      (f.fullname || '').toLowerCase().includes(q);
+  });
+
+  const handleInviteFriend = async (friendId: string) => {
+    setInvitedFriends(prev => [...prev, friendId]);
+    setInviteToastVisible(true);
+    setTimeout(() => {
+      setInviteToastVisible(false);
+    }, 3000);
+
+    // Insert notification for the invited friend
+    if (profile?.id && sessionId) {
+      try {
+        await supabaseCentral.from('notifications').insert({
+          user_id: friendId,        // yang diundang
+          actor_id: profile.id,     // pengundang
+          type: 'sessionFriend',
+          entity_type: 'session',
+          entity_id: sessionId,
+        });
+      } catch (e) {
+        console.error('Failed to send invite notification:', e);
+      }
+    }
+  };
+
+  const [userGroups, setUserGroups] = useState<any[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  // Fetch groups where user is a member when dialog opens
+  useEffect(() => {
+    if (!inviteGroupOpen || !profile?.id) return;
+    const fetchGroups = async () => {
+      setLoadingGroups(true);
+      try {
+        const { data, error } = await supabaseCentral
+          .from('groups')
+          .select('id, name, members, creator_id')
+          .is('deleted_at', null);
+
+        if (error) {
+          console.error('Error fetching groups:', error);
+          setLoadingGroups(false);
+          return;
+        }
+
+        // Filter groups where the user is a member and determine their role
+        const myGroups = (data || []).reduce((acc: any[], group: any) => {
+          const members = Array.isArray(group.members) ? group.members : [];
+          const member = members.find(
+            (m: any) => (m.user_id === profile.id || m.id === profile.id)
+          );
+          if (member) {
+            // Determine role: creator is always owner
+            let role = member.role || 'member';
+            if (group.creator_id === profile.id) role = 'owner';
+            acc.push({
+              id: group.id,
+              name: group.name,
+              membersCount: members.length,
+              members,
+              role,
+            });
+          }
+          return acc;
+        }, []);
+
+        setUserGroups(myGroups);
+      } catch (e) {
+        console.error('Failed to fetch groups:', e);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+    fetchGroups();
+  }, [inviteGroupOpen, profile?.id]);
+
+  const filteredGroups = userGroups.filter(g => g.name.toLowerCase().includes(searchGroupQuery.toLowerCase()));
+
+  const handleInviteGroup = async (groupId: string) => {
+    // Find group data from state
+    const group = userGroups.find(g => g.id === groupId);
+    if (!group) return;
+
+    // Filter members: exclude the inviter
+    const members = Array.isArray(group.members) ? group.members : [];
+    const recipientIds = members
+      .map((m: any) => m.user_id || m.id)
+      .filter((id: string) => id && id !== profile?.id);
+
+    // Build notification rows (content left as DB default)
+    const notifications = recipientIds.map((userId: string) => ({
+      user_id: userId,
+      actor_id: profile?.id,
+      type: 'sessionGroup',
+      entity_type: 'session',
+      entity_id: sessionId,
+      from_group_id: groupId,
+    }));
+
+    // Insert to central DB
+    if (notifications.length > 0) {
+      const { error } = await supabaseCentral
+        .from('notifications')
+        .insert(notifications);
+
+      if (error) {
+        console.error('Failed to send group notifications:', error);
+      }
+    }
+
+    // Update UI
+    setInvitedGroups(prev => [...prev, groupId]);
+    setInviteToastVisible(true);
+    setTimeout(() => setInviteToastVisible(false), 3000);
+  };
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -572,6 +761,27 @@ export default function HostLobby() {
         </div>
       </div>
 
+      {/* ═══ CUSTOM TOAST NOTIFICATION ═══ */}
+      <AnimatePresence>
+        {inviteToastVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            className="fixed top-8 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
+          >
+            <div className="flex items-center gap-4 bg-[#0a0f16] border border-[#00ff9d]/40 rounded-2xl px-6 py-4 shadow-[0_0_50px_rgba(0,255,157,0.15)] min-w-[280px]">
+              <div className="w-8 h-8 rounded-full border border-[#00ff9d] flex items-center justify-center bg-[#00ff9d]/10 shrink-0">
+                <Check size={16} className="text-[#00ff9d]" />
+              </div>
+              <span className="font-display font-bold uppercase tracking-[0.2em] text-white text-sm mt-0.5">
+                Invited
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══ KICK DIALOG ═══ */}
       <Dialog open={kickDialogOpen} onOpenChange={setKickDialogOpen}>
         <DialogOverlay className="bg-black/90 backdrop-blur-md" />
@@ -636,48 +846,179 @@ export default function HostLobby() {
 
       {/* ═══ INVITE FRIENDS DIALOG ═══ */}
       <Dialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen}>
-        <DialogOverlay className="bg-black/80 backdrop-blur-md" />
-        <DialogContent className="bg-[#0f1220] border border-[#2d6af2]/30 text-white p-8 max-w-md rounded-[2rem] shadow-[0_0_80px_rgba(45,106,242,0.2)]">
-          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-2 text-white">
+        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
+        <DialogContent className="bg-[#06080d] border border-[#2d6af2]/30 text-white p-6 max-w-[500px] rounded-[1.5rem] shadow-[0_0_50px_rgba(45,106,242,0.15)] overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-[60%] bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent shadow-[0_0_15px_#2d6af2]"></div>
+          
+          <button 
+            onClick={() => setInviteFriendOpen(false)} 
+            className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+          
+          <DialogTitle className="sr-only">
             {t('host_lobby.invite_friends') ?? 'Invite Friends'}
           </DialogTitle>
-          <p className="text-white/40 text-[10px] text-center font-body tracking-[0.2em] uppercase mb-6">{t('host_lobby.share_link') ?? 'Share Link'}</p>
-          <div className="flex gap-3">
+          
+          <div className="flex items-center gap-3 mb-5 mt-2">
+            <UserPlus className="text-[#2d6af2] w-6 h-6" />
+            <h2 className="text-xl font-display font-bold uppercase tracking-[0.10em] text-[#2d6af2]">
+              Invite Friends
+            </h2>
+          </div>
+
+          {/* Search */}
+          <div className="relative mb-5">
             <input
-              readOnly
-              value={joinLink}
-              className="flex-1 bg-white/5 border border-white/10 p-3 rounded-xl font-mono text-xs outline-none focus:border-[#2d6af2] text-white/70"
+              type="text"
+              placeholder="Find a friend..."
+              value={searchFriendQuery}
+              onChange={(e) => setSearchFriendQuery(e.target.value)}
+              className="w-full bg-transparent border border-white/20 rounded-xl py-3 px-4 text-sm font-display outline-none focus:border-[#2d6af2]/80 text-white placeholder:text-white/40 transition-all"
             />
-            <Button
-              onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-              className="bg-[#2d6af2] hover:bg-[#2d6af2]/80 px-5 rounded-xl font-body font-bold uppercase text-xs tracking-widest"
-            >
-              {copiedJoin ? <Check size={16} /> : <Copy size={16} />}
-            </Button>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
+               <Search size={18} />
+            </div>
+          </div>
+
+          {/* Friends List */}
+          <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto custom-scrollbar pr-2">
+            {loadingFriends ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-8 h-8 border-2 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mb-4"></div>
+                <p className="text-white/40 text-xs font-display tracking-widest uppercase">Loading friends...</p>
+              </div>
+            ) : filteredFriends.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <UserPlus size={40} className="text-white/10 mb-4" />
+                <p className="text-white/30 text-xs font-display tracking-widest uppercase">
+                  {searchFriendQuery ? 'No friends found' : 'No mutual friends yet'}
+                </p>
+              </div>
+            ) : (
+              filteredFriends.map(friend => {
+                const displayName = friend.nickname || friend.fullname || friend.username || '?';
+                return (
+                  <div key={friend.id} className="flex items-center justify-between bg-[#11131a] border border-white/5 rounded-xl p-4">
+                     <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div className="w-10 h-10 rounded-full border border-[#2d6af2]/30 bg-black/40 overflow-hidden flex items-center justify-center shrink-0">
+                          {friend.avatar_url ? (
+                            <img src={friend.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <InitialsAvatar name={displayName} size="sm" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-display font-bold text-[14px] text-white tracking-wide">{displayName}</h3>
+                          <p className="text-white/40 text-[11px] font-mono">@{friend.username}</p>
+                        </div>
+                     </div>
+                     <Button 
+                       onClick={() => !invitedFriends.includes(friend.id) && handleInviteFriend(friend.id)}
+                       disabled={invitedFriends.includes(friend.id)}
+                       className={`font-display font-bold uppercase text-xs tracking-widest px-5 h-9 rounded-lg shadow-none transition-all disabled:opacity-100 ${
+                         invitedFriends.includes(friend.id) 
+                           ? 'bg-[#1a2240] text-[#4f6190]' 
+                           : 'bg-[#2d6af2] hover:bg-[#2555cc] text-white'
+                       }`}
+                     >
+                       {invitedFriends.includes(friend.id) ? 'Invited' : 'Invite'}
+                     </Button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ═══ INVITE GROUPS DIALOG ═══ */}
       <Dialog open={inviteGroupOpen} onOpenChange={setInviteGroupOpen}>
-        <DialogOverlay className="bg-black/80 backdrop-blur-md" />
-        <DialogContent className="bg-[#0f1220] border border-purple-500/30 text-white p-8 max-w-md rounded-[2rem] shadow-[0_0_80px_rgba(168,85,247,0.2)]">
-          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-2 text-white">
+        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
+        <DialogContent className="bg-[#06080d] border border-[#00e5ff]/30 text-white p-6 max-w-[500px] rounded-[1.5rem] shadow-[0_0_50px_rgba(0,229,255,0.15)] overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-[60%] bg-gradient-to-r from-transparent via-[#00e5ff] to-transparent shadow-[0_0_15px_#00e5ff]"></div>
+          
+          <button 
+            onClick={() => setInviteGroupOpen(false)} 
+            className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+          
+          <DialogTitle className="sr-only">
             {t('host_lobby.invite_groups') ?? 'Invite Groups'}
           </DialogTitle>
-          <p className="text-white/40 text-[10px] text-center font-body tracking-[0.2em] uppercase mb-6">{t('host_lobby.share_link') ?? 'Share Link'}</p>
-          <div className="flex gap-3">
+          
+          <div className="flex items-center gap-3 mb-5 mt-2">
+            <Users2 className="text-[#00e5ff] w-6 h-6" />
+            <h2 className="text-xl font-display font-bold uppercase tracking-[0.10em] text-[#00e5ff]">
+              Invite Group
+            </h2>
+          </div>
+
+          <div className="relative mb-5">
             <input
-              readOnly
-              value={joinLink}
-              className="flex-1 bg-white/5 border border-white/10 p-3 rounded-xl font-mono text-xs outline-none focus:border-purple-400 text-white/70"
+              type="text"
+              placeholder="Find a group..."
+              value={searchGroupQuery}
+              onChange={(e) => setSearchGroupQuery(e.target.value)}
+              className="w-full bg-transparent border border-white/20 rounded-xl py-3 px-4 text-sm font-display outline-none focus:border-[#00e5ff]/80 text-white placeholder:text-white/40 transition-all"
             />
-            <Button
-              onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-              className="bg-purple-600 hover:bg-purple-700 px-5 rounded-xl font-body font-bold uppercase text-xs tracking-widest"
-            >
-              {copiedJoin ? <Check size={16} /> : <Copy size={16} />}
-            </Button>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
+               <Search size={18} />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto custom-scrollbar pr-2">
+            {loadingGroups ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-8 h-8 border-2 border-[#00e5ff]/30 border-t-[#00e5ff] rounded-full animate-spin mb-4"></div>
+                <p className="text-white/40 text-xs font-display tracking-widest uppercase">Loading groups...</p>
+              </div>
+            ) : filteredGroups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Users2 size={40} className="text-white/10 mb-4" />
+                <p className="text-white/30 text-xs font-display tracking-widest uppercase">
+                  {searchGroupQuery ? 'No groups found' : 'No groups joined yet'}
+                </p>
+              </div>
+            ) : (
+              filteredGroups.map(group => (
+                <div key={group.id} className="flex items-center justify-between bg-[#11131a] border border-white/5 rounded-xl p-4">
+                   <div>
+                      <h3 className="font-display font-bold text-[15px] text-white mb-2 tracking-wide">{group.name}</h3>
+                      <div className="flex items-center gap-4">
+                         <div className="flex items-center gap-1.5 text-[#00e5ff] text-xs">
+                            <Users size={15} />
+                            <span className="font-mono text-white/80 font-semibold">{group.membersCount}</span>
+                         </div>
+                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border tracking-wide uppercase ${
+                            group.role.toLowerCase() === 'owner' ? 'border-yellow-500/80 text-yellow-500' :
+                            group.role.toLowerCase() === 'admin' ? 'border-[#00e5ff]/80 text-[#00e5ff]' :
+                            'border-white/20 text-white/50'
+                         }`}>
+                           {group.role}
+                         </span>
+                      </div>
+                   </div>
+                   {(group.role.toLowerCase() === 'owner' || group.role.toLowerCase() === 'admin') && (
+                      <Button 
+                        onClick={() => !invitedGroups.includes(group.id) && handleInviteGroup(group.id)}
+                        disabled={invitedGroups.includes(group.id)}
+                        className={`font-display font-bold uppercase text-xs tracking-widest px-5 h-9 rounded-lg shadow-none transition-all disabled:opacity-100 ${
+                          invitedGroups.includes(group.id) 
+                            ? 'bg-[#1b323c] text-[#4f8190]' 
+                            : 'bg-[#00d0ff] hover:bg-[#00b8e6] text-white'
+                        }`}
+                      >
+                        {invitedGroups.includes(group.id) ? 'Invited' : 'Invite'}
+                      </Button>
+                   )}
+                </div>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>
