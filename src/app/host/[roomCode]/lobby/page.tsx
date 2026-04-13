@@ -1,53 +1,71 @@
 "use client";
 
+/**
+ * page.tsx — Halaman Lobby Host
+ * ═════════════════════════════
+ *
+ * Halaman ini adalah ruang tunggu host sebelum permainan dimulai.
+ * Pemain bergabung melalui kode room atau QR code, dan host
+ * menunggu sampai cukup peserta sebelum memulai.
+ *
+ * Fitur utama:
+ * 1. Kode room & QR Code (klik untuk copy / fullscreen)
+ * 2. Daftar pemain real-time (Supabase Realtime)
+ * 3. Undang teman mutual
+ * 4. Undang anggota grup
+ * 5. Tambah bot ke lobby
+ * 6. Kick pemain
+ * 7. Countdown 3-2-1 sebelum mulai (traffic light)
+ * 8. Toggle fullscreen & suara
+ *
+ * Struktur komponen:
+ * ├── BackgroundEffects      → Efek visual latar belakang
+ * ├── RoomInfoCard           → Kode room, QR, link, tombol aksi
+ * ├── PlayersCard            → Grid pemain & tombol invite/bot
+ * ├── InviteFriendDialog     → Dialog undang teman
+ * ├── InviteGroupDialog      → Dialog undang grup
+ * ├── KickDialog             → Dialog konfirmasi kick
+ * ├── ExitDialog             → Dialog konfirmasi keluar
+ * ├── QrFullscreen           → QR Code fullscreen
+ * ├── InviteToast            → Notifikasi toast undangan
+ * ├── CountdownOverlay       → Overlay hitung mundur
+ * └── FullscreenButton       → Tombol toggle fullscreen
+ *
+ * Alur real-time:
+ * 1. Load session & peserta dari database
+ * 2. Subscribe Supabase channel untuk update real-time
+ * 3. Saat host klik Start, countdown_started_at ditulis ke DB
+ * 4. Semua client menghitung mundur berdasarkan server time
+ * 5. Saat countdown habis, status berubah ke "active"
+ * 6. Redirect ke halaman monitor (/host/{roomCode}/monitor)
+ */
+
 import { useState, useEffect } from "react";
-import {
-  Users, Play, LogOut, Copy, Check, Maximize2, Minimize2,
-  Volume2, VolumeX, X, UserPlus, Users2, Bot, Search
-} from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase, supabaseCentral } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
-import QRCode from "react-qr-code";
-import { Button } from "@/components/ui/button";
 import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
+
+// ── Komponen lobby ──
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogOverlay,
-} from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+  BackgroundEffects,
+  LobbyLoading,
+  RoomInfoCard,
+  PlayersCard,
+  InviteFriendDialog,
+  InviteGroupDialog,
+  KickDialog,
+  ExitDialog,
+  QrFullscreen,
+  InviteToast,
+  CountdownOverlay,
+  FullscreenButton,
+} from "@/components/lobby";
 
-// Helper: Generate initials from a name
-const getInitials = (name: string): string => {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-};
-
-const AVATAR_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#f97316'];
-const getAvatarColor = (name: string): string => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
-
-const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) => {
-  const fontSize = size === 'lg' ? 'text-[20px]' : size === 'md' ? 'text-[16px]' : 'text-[10px]';
-  return (
-    <div
-      className="w-full h-full rounded-full flex items-center justify-center font-black text-white"
-      style={{ backgroundColor: getAvatarColor(name), fontSize }}
-    >
-      {getInitials(name)}
-    </div>
-  );
-};
-
+// ════════════════════════════════════════════════════════════════
+// Komponen Utama: HostLobby
+// ════════════════════════════════════════════════════════════════
 export default function HostLobby() {
   const router = useRouter();
   const params = useParams();
@@ -55,241 +73,148 @@ export default function HostLobby() {
   const { profile } = useAuth();
   const roomCode = params.roomCode as string;
 
-  const [participants, setParticipants] = useState<any[]>([]);
-  const [session, setSession] = useState<any>(null);
-  const [joinLink, setJoinLink] = useState("");
+  // ── State data utama ──
+  const [participants, setParticipants] = useState<any[]>([]);    // Daftar peserta
+  const [session, setSession] = useState<any>(null);              // Data session
+  const [sessionId, setSessionId] = useState<string | null>(null); // ID session
+  const [joinLink, setJoinLink] = useState("");                   // URL link join
+
+  // ── State UI: copy clipboard ──
   const [copiedRoom, setCopiedRoom] = useState(false);
   const [copiedJoin, setCopiedJoin] = useState(false);
-  const [qrOpen, setQrOpen] = useState(false);
-  const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
-  const [inviteGroupOpen, setInviteGroupOpen] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
-  const [kickDialogOpen, setKickDialogOpen] = useState(false);
-  const [exitDialogOpen, setExitDialogOpen] = useState(false);
-  const [searchGroupQuery, setSearchGroupQuery] = useState("");
-  const [invitedGroups, setInvitedGroups] = useState<string[]>([]);
-  const [inviteToastVisible, setInviteToastVisible] = useState(false);
+
+  // ── State UI: dialog & overlay ──
+  const [qrOpen, setQrOpen] = useState(false);                    // QR fullscreen
+  const [inviteFriendOpen, setInviteFriendOpen] = useState(false); // Dialog undang teman
+  const [inviteGroupOpen, setInviteGroupOpen] = useState(false);  // Dialog undang grup
+  const [kickDialogOpen, setKickDialogOpen] = useState(false);    // Dialog kick
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);    // Dialog exit
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null); // Pemain yang dipilih untuk kick
+
+  // ── State UI: countdown & misc ──
+  const [countdown, setCountdown] = useState<number | null>(null); // Nilai countdown
+  const [isMuted, setIsMuted] = useState(false);                  // Status mute
+  const [isFullscreen, setIsFullscreen] = useState(false);        // Status fullscreen
+  const [inviteToastVisible, setInviteToastVisible] = useState(false); // Toast visible
+
+  // ── State: undang teman ──
   const [searchFriendQuery, setSearchFriendQuery] = useState("");
   const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
   const [mutualFriends, setMutualFriends] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
 
-  // Fetch mutual friends (saling follow — kedua arah harus ada) when dialog opens
+  // ── State: undang grup ──
+  const [searchGroupQuery, setSearchGroupQuery] = useState("");
+  const [invitedGroups, setInvitedGroups] = useState<string[]>([]);
+  const [userGroups, setUserGroups] = useState<any[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  // ════════════════════════════════════════════════════════════════
+  // HOOKS: DATA FETCHING
+  // ════════════════════════════════════════════════════════════════
+
+  /**
+   * Hook: Mengambil daftar teman mutual saat dialog undang teman dibuka.
+   * Mutual = kedua arah pertemanan (I follow them AND they follow me).
+   */
   useEffect(() => {
     if (!inviteFriendOpen || !profile?.id) return;
     const fetchMutualFriends = async () => {
       setLoadingFriends(true);
       try {
-        // Get users that I follow (I am the requester)
+        // Ambil user yang saya follow
         const { data: iFollow, error: e1 } = await supabaseCentral
-          .from('friendships')
-          .select('addressee_id')
-          .eq('requester_id', profile.id)
-          .eq('status', 'accepted');
+          .from('friendships').select('addressee_id')
+          .eq('requester_id', profile.id).eq('status', 'accepted');
 
-        // Get users that follow me (I am the addressee)
+        // Ambil user yang follow saya
         const { data: followMe, error: e2 } = await supabaseCentral
-          .from('friendships')
-          .select('requester_id')
-          .eq('addressee_id', profile.id)
-          .eq('status', 'accepted');
+          .from('friendships').select('requester_id')
+          .eq('addressee_id', profile.id).eq('status', 'accepted');
 
-        if (e1 || e2) {
-          console.error('Error fetching friendships:', e1 || e2);
-          setLoadingFriends(false);
-          return;
-        }
+        if (e1 || e2) { console.error('Error fetching friendships:', e1 || e2); setLoadingFriends(false); return; }
 
-        // Mutual = intersection (users I follow AND who follow me back)
+        // Interseksi = mutual friends
         const iFollowIds = new Set((iFollow || []).map(f => f.addressee_id));
         const followMeIds = new Set((followMe || []).map(f => f.requester_id));
         const mutualIds = [...iFollowIds].filter(id => followMeIds.has(id));
 
-        if (mutualIds.length === 0) {
-          setMutualFriends([]);
-          setLoadingFriends(false);
-          return;
-        }
+        if (mutualIds.length === 0) { setMutualFriends([]); setLoadingFriends(false); return; }
 
-        // Fetch profiles for mutual friend IDs
+        // Ambil profil teman mutual
         const { data: profiles, error: profileError } = await supabaseCentral
-          .from('profiles')
-          .select('id, username, nickname, fullname, avatar_url')
+          .from('profiles').select('id, username, nickname, fullname, avatar_url')
           .in('id', mutualIds);
 
-        if (profileError) {
-          console.error('Error fetching friend profiles:', profileError);
-          setLoadingFriends(false);
-          return;
-        }
-
+        if (profileError) { console.error('Error fetching friend profiles:', profileError); setLoadingFriends(false); return; }
         setMutualFriends(profiles || []);
-      } catch (e) {
-        console.error('Failed to fetch mutual friends:', e);
-      } finally {
-        setLoadingFriends(false);
-      }
+      } catch (e) { console.error('Failed to fetch mutual friends:', e); }
+      finally { setLoadingFriends(false); }
     };
     fetchMutualFriends();
   }, [inviteFriendOpen, profile?.id]);
 
-  const filteredFriends = mutualFriends.filter(f => {
-    const q = searchFriendQuery.toLowerCase();
-    return (f.username || '').toLowerCase().includes(q) ||
-      (f.nickname || '').toLowerCase().includes(q) ||
-      (f.fullname || '').toLowerCase().includes(q);
-  });
-
-  const handleInviteFriend = async (friendId: string) => {
-    setInvitedFriends(prev => [...prev, friendId]);
-    setInviteToastVisible(true);
-    setTimeout(() => {
-      setInviteToastVisible(false);
-    }, 3000);
-
-    // Insert notification for the invited friend
-    if (profile?.id && sessionId) {
-      try {
-        await supabaseCentral.from('notifications').insert({
-          user_id: friendId,        // yang diundang
-          actor_id: profile.id,     // pengundang
-          type: 'sessionFriend',
-          entity_type: 'session',
-          entity_id: sessionId,
-        });
-      } catch (e) {
-        console.error('Failed to send invite notification:', e);
-      }
-    }
-  };
-
-  const [userGroups, setUserGroups] = useState<any[]>([]);
-  const [loadingGroups, setLoadingGroups] = useState(false);
-
-  // Fetch groups where user is a member when dialog opens
+  /**
+   * Hook: Mengambil daftar grup pengguna saat dialog undang grup dibuka.
+   */
   useEffect(() => {
     if (!inviteGroupOpen || !profile?.id) return;
     const fetchGroups = async () => {
       setLoadingGroups(true);
       try {
         const { data, error } = await supabaseCentral
-          .from('groups')
-          .select('id, name, members, creator_id')
+          .from('groups').select('id, name, members, creator_id')
           .is('deleted_at', null);
 
-        if (error) {
-          console.error('Error fetching groups:', error);
-          setLoadingGroups(false);
-          return;
-        }
+        if (error) { console.error('Error fetching groups:', error); setLoadingGroups(false); return; }
 
-        // Filter groups where the user is a member and determine their role
+        // Filter grup di mana user adalah anggota, tentukan role
         const myGroups = (data || []).reduce((acc: any[], group: any) => {
           const members = Array.isArray(group.members) ? group.members : [];
-          const member = members.find(
-            (m: any) => (m.user_id === profile.id || m.id === profile.id)
-          );
+          const member = members.find((m: any) => (m.user_id === profile.id || m.id === profile.id));
           if (member) {
-            // Determine role: creator is always owner
             let role = member.role || 'member';
             if (group.creator_id === profile.id) role = 'owner';
-            acc.push({
-              id: group.id,
-              name: group.name,
-              membersCount: members.length,
-              members,
-              role,
-            });
+            acc.push({ id: group.id, name: group.name, membersCount: members.length, members, role });
           }
           return acc;
         }, []);
-
         setUserGroups(myGroups);
-      } catch (e) {
-        console.error('Failed to fetch groups:', e);
-      } finally {
-        setLoadingGroups(false);
-      }
+      } catch (e) { console.error('Failed to fetch groups:', e); }
+      finally { setLoadingGroups(false); }
     };
     fetchGroups();
   }, [inviteGroupOpen, profile?.id]);
 
-  const filteredGroups = userGroups.filter(g => g.name.toLowerCase().includes(searchGroupQuery.toLowerCase()));
+  // ════════════════════════════════════════════════════════════════
+  // HOOKS: SESSION & REALTIME
+  // ════════════════════════════════════════════════════════════════
 
-  const handleInviteGroup = async (groupId: string) => {
-    // Find group data from state
-    const group = userGroups.find(g => g.id === groupId);
-    if (!group) return;
-
-    // Filter members: exclude the inviter
-    const members = Array.isArray(group.members) ? group.members : [];
-    const recipientIds = members
-      .map((m: any) => m.user_id || m.id)
-      .filter((id: string) => id && id !== profile?.id);
-
-    // Build notification rows (content left as DB default)
-    const notifications = recipientIds.map((userId: string) => ({
-      user_id: userId,
-      actor_id: profile?.id,
-      type: 'sessionGroup',
-      entity_type: 'session',
-      entity_id: sessionId,
-      from_group_id: groupId,
-    }));
-
-    // Insert to central DB
-    if (notifications.length > 0) {
-      const { error } = await supabaseCentral
-        .from('notifications')
-        .insert(notifications);
-
-      if (error) {
-        console.error('Failed to send group notifications:', error);
-      }
-    }
-
-    // Update UI
-    setInvitedGroups(prev => [...prev, groupId]);
-    setInviteToastVisible(true);
-    setTimeout(() => setInviteToastVisible(false), 3000);
-  };
-
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
+  /** Hook: Listener fullscreen change */
   useEffect(() => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFsChange);
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  };
-
+  /**
+   * Hook: Load session awal dan peserta.
+   * Juga menangani resume countdown jika host me-refresh halaman.
+   */
   useEffect(() => {
     if (typeof window !== "undefined") {
       setJoinLink(`${window.location.origin}/join/${roomCode}`);
     }
 
     const loadSession = async () => {
-      await syncServerTime(); // Ensure offset is ready before logic
+      await syncServerTime();
       const { data, error } = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("game_pin", roomCode)
-        .single();
+        .from("sessions").select("*").eq("game_pin", roomCode).single();
       if (error || !data) return;
       setSession(data);
       setSessionId(data.id);
 
-      // Resume countdown if it started but not finished
+      // Resume countdown jika sudah dimulai tapi belum active
       if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
         const now = getSyncedServerTime();
         const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
@@ -297,31 +222,27 @@ export default function HostLobby() {
         if (remaining > 0) {
           setCountdown(remaining);
         } else if (remaining <= 0) {
-          const startSessionFallback = async () => {
-            await supabase
-              .from("sessions")
-              .update({
-                status: "active",
-                started_at: new Date(getSyncedServerTime()).toISOString(),
-                countdown_started_at: null
-              })
-              .eq("id", data.id);
-            router.push(`/host/${roomCode}/monitor`);
-          };
-          startSessionFallback();
+          // Countdown sudah habis saat offline, langsung start
+          await supabase.from("sessions").update({
+            status: "active",
+            started_at: new Date(getSyncedServerTime()).toISOString(),
+            countdown_started_at: null
+          }).eq("id", data.id);
+          router.push(`/host/${roomCode}/monitor`);
         }
       }
 
+      // Ambil peserta
       const { data: pData } = await supabase
-        .from("participants")
-        .select("*")
-        .eq("session_id", data.id);
+        .from("participants").select("*").eq("session_id", data.id);
       if (pData) setParticipants(pData);
     };
-
     loadSession();
-  }, [roomCode, router]); // separated from channel so it doesn't loop
+  }, [roomCode, router]);
 
+  /**
+   * Hook: Subscribe ke Supabase Realtime untuk update peserta & session.
+   */
   useEffect(() => {
     if (!sessionId) return;
 
@@ -332,65 +253,33 @@ export default function HostLobby() {
 
     const channel = supabase
       .channel(`lobby-${roomCode}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
+      .on("postgres_changes", { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
         (payload: any) => {
           if (payload.eventType === "INSERT") {
-            setParticipants(prev => {
-              if (prev.some(p => p.id === payload.new.id)) return prev;
-              return [...prev, payload.new];
-            });
+            setParticipants(prev => { if (prev.some(p => p.id === payload.new.id)) return prev; return [...prev, payload.new]; });
           } else if (payload.eventType === "UPDATE") {
             setParticipants(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
           } else if (payload.eventType === "DELETE") {
             setParticipants(prev => prev.filter(p => p.id !== payload.old.id));
           }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
+        })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         (payload: any) => {
           setSession(payload.new);
-          // Trigger countdown when server confirms it started
           if (payload.new.countdown_started_at && !payload.new.started_at) {
             setCountdown(prev => prev === null ? 3 : prev);
           }
           handleStartedOrFinished(payload.new.status);
-        }
-      )
+        })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [sessionId, roomCode, router]);
 
-  const copyToClipboard = (text: string, setCopied: any) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const startGame = async () => {
-    if (!session || participants.length === 0) return;
-    await syncServerTime(); // Ensure offset is ready before logic
-    const nowServer = getSyncedServerTime();
-    const isoTime = new Date(nowServer).toISOString();
-
-    // Trigger local state immediately to avoid realtime delays
-    setSession((prev: any) => ({ ...prev, countdown_started_at: isoTime }));
-    setCountdown(3);
-
-    await supabase
-      .from("sessions")
-      .update({
-        countdown_started_at: isoTime
-      })
-      .eq("id", session.id);
-  };
-
+  /**
+   * Hook: Countdown timer berbasis server time.
+   * Menggunakan RAF + interval sebagai fallback untuk akurasi.
+   */
   useEffect(() => {
     if (countdown === null) return;
     const startTimeStr = session?.countdown_started_at;
@@ -405,80 +294,70 @@ export default function HostLobby() {
       const totalCountdown = 3000;
       const remaining = Math.max(0, Math.min(totalCountdown, totalCountdown - elapsed));
       const displayVal = Math.ceil(remaining / 1000);
-
       setCountdown((prev) => (prev !== displayVal ? displayVal : prev));
 
       if (remaining <= 0 && active) {
-        active = false; // Prevent multiple triggers
-
-        // Trigger start immediately
+        active = false;
         const startSession = async () => {
-          // 1. Update session to active
-          await supabase
-            .from("sessions")
-            .update({
-              status: "active",
-              started_at: new Date(getSyncedServerTime()).toISOString(),
-              countdown_started_at: null
-            })
-            .eq("id", session.id);
-
+          await supabase.from("sessions").update({
+            status: "active",
+            started_at: new Date(getSyncedServerTime()).toISOString(),
+            countdown_started_at: null
+          }).eq("id", session.id);
           router.push(`/host/${roomCode}/monitor`);
         };
         startSession();
-        return true; // Finished
+        return true;
       }
-      return false; // Ongoing
+      return false;
     };
 
-    const syncLoop = () => {
-      if (!active) return;
-      const finished = checkCountdown();
-      if (!finished) requestAnimationFrame(syncLoop);
-    };
-
-    // Secondary interval for background safety (browsers throttle RAF more aggressively than Interval)
-    const backgroundInterval = setInterval(() => {
-      if (active) checkCountdown();
-    }, 1000);
-
-    // Visibility listener to snap back immediately
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible" && active) {
-        checkCountdown();
-      }
-    };
+    const syncLoop = () => { if (!active) return; const finished = checkCountdown(); if (!finished) requestAnimationFrame(syncLoop); };
+    const backgroundInterval = setInterval(() => { if (active) checkCountdown(); }, 1000);
+    const handleVisibility = () => { if (document.visibilityState === "visible" && active) checkCountdown(); };
 
     requestAnimationFrame(syncLoop);
     document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      active = false;
-      clearInterval(backgroundInterval);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
+    return () => { active = false; clearInterval(backgroundInterval); document.removeEventListener("visibilitychange", handleVisibility); };
   }, [session?.countdown_started_at, roomCode]);
 
+  // ════════════════════════════════════════════════════════════════
+  // EVENT HANDLERS
+  // ════════════════════════════════════════════════════════════════
+
+  /** Copy teks ke clipboard dengan feedback visual */
+  const copyToClipboard = (text: string, setCopied: any) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  /** Mulai game — tulis countdown_started_at ke database */
+  const startGame = async () => {
+    if (!session || participants.length === 0) return;
+    await syncServerTime();
+    const nowServer = getSyncedServerTime();
+    const isoTime = new Date(nowServer).toISOString();
+
+    setSession((prev: any) => ({ ...prev, countdown_started_at: isoTime }));
+    setCountdown(3);
+
+    await supabase.from("sessions").update({ countdown_started_at: isoTime }).eq("id", session.id);
+  };
+
+  /** Tambah bot ke lobby */
   const handleAddBot = async () => {
     if (!session) return;
     const botCount = participants.filter((p) => p.car_character?.endsWith("-bot")).length;
     const botNickname = `CPU_${botCount + 1}`;
     const botCharacters = ['rico-bot', 'roadhog-bot', 'gecho-bot'];
     const selectedChar = botCharacters[Math.floor(Math.random() * botCharacters.length)];
-
     try {
-      await supabase.from("participants").insert({
-        session_id: session.id,
-        nickname: botNickname,
-        car_character: selectedChar,
-        score: 0,
-        current_question: 0
-      });
-    } catch (e) {
-      console.error("Failed to add bot", e);
-    }
+      await supabase.from("participants").insert({ session_id: session.id, nickname: botNickname, car_character: selectedChar, score: 0, current_question: 0 });
+    } catch (e) { console.error("Failed to add bot", e); }
   };
 
+  /** Konfirmasi kick pemain */
   const confirmKick = async () => {
     if (selectedPlayer) {
       await supabase.from("participants").delete().eq("id", selectedPlayer.id);
@@ -486,647 +365,147 @@ export default function HostLobby() {
     setKickDialogOpen(false);
   };
 
-  if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f] text-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#2d6af2]/30 rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="text-[#2d6af2] text-xl tracking-widest uppercase animate-pulse">{t('host_lobby.loading')}</p>
-        </div>
-      </div>
-    );
-  }
+  /** Undang teman — kirim notifikasi ke database */
+  const handleInviteFriend = async (friendId: string) => {
+    setInvitedFriends(prev => [...prev, friendId]);
+    setInviteToastVisible(true);
+    setTimeout(() => setInviteToastVisible(false), 3000);
+    if (profile?.id && sessionId) {
+      try {
+        await supabaseCentral.from('notifications').insert({ user_id: friendId, actor_id: profile.id, type: 'sessionFriend', entity_type: 'session', entity_id: sessionId });
+      } catch (e) { console.error('Failed to send invite notification:', e); }
+    }
+  };
+
+  /** Undang grup — kirim notifikasi ke semua anggota */
+  const handleInviteGroup = async (groupId: string) => {
+    const group = userGroups.find(g => g.id === groupId);
+    if (!group) return;
+    const members = Array.isArray(group.members) ? group.members : [];
+    const recipientIds = members.map((m: any) => m.user_id || m.id).filter((id: string) => id && id !== profile?.id);
+    const notifications = recipientIds.map((userId: string) => ({
+      user_id: userId, actor_id: profile?.id, type: 'sessionGroup', entity_type: 'session', entity_id: sessionId, from_group_id: groupId,
+    }));
+    if (notifications.length > 0) {
+      const { error } = await supabaseCentral.from('notifications').insert(notifications);
+      if (error) console.error('Failed to send group notifications:', error);
+    }
+    setInvitedGroups(prev => [...prev, groupId]);
+    setInviteToastVisible(true);
+    setTimeout(() => setInviteToastVisible(false), 3000);
+  };
+
+  /** Toggle fullscreen */
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else if (document.exitFullscreen) document.exitFullscreen();
+  };
+
+  // ════════════════════════════════════════════════════════════════
+  // KONDISI LOADING
+  // ════════════════════════════════════════════════════════════════
+
+  if (!session) return <LobbyLoading />;
+
+  // ════════════════════════════════════════════════════════════════
+  // RENDER UTAMA
+  // ════════════════════════════════════════════════════════════════
 
   return (
     <div className="min-h-screen bg-[#06080d] relative font-body text-white flex flex-col">
-      {/* Background Layers */}
-      <div className="fixed inset-0 z-0 city-silhouette pointer-events-none opacity-40"></div>
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-blue-900/10 via-transparent to-black pointer-events-none"></div>
-      <div className="fixed bottom-0 w-full h-[60%] bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.1)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.1)_1px,transparent_1px)] bg-[length:60px_60px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom z-0 pointer-events-none opacity-20"></div>
+      {/* ── Efek visual latar belakang ── */}
+      <BackgroundEffects />
 
-      {/* Main Content */}
+      {/* ── Konten utama ── */}
       <div className="relative z-10 flex flex-col flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-6 md:px-8 pt-3 sm:pt-4 pb-4 sm:pb-6 gap-3 sm:gap-4">
-
-        {/* Header */}
+        {/* ── Header: logo ── */}
         <div className="flex items-center justify-between shrink-0">
           <img src="/assets/logo/logo1.png" alt="Logo" className="h-8 sm:h-10 object-contain" />
           <img src="/assets/logo/logo2.png" alt="NitroQuiz" className="h-7 sm:h-9 object-contain brightness-125" />
         </div>
 
-        {/* Main Layout */}
+        {/* ── Layout utama: Room Info (kiri) & Players (kanan) ── */}
         <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 flex-1">
-
-          {/* ═══ LEFT CARD: Room Info ═══ */}
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="w-full lg:w-[340px] xl:w-[390px] shrink-0 flex flex-col bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(45,106,242,0.15)] overflow-hidden relative"
-          >
-            <div className="absolute top-0 end-0 w-48 h-48 bg-gradient-to-bl from-[#2d6af2]/10 to-transparent rounded-bl-full pointer-events-none z-0"></div>
-
-            {/* ═══ MOBILE / TABLET CONTENT (Below lg) ═══ */}
-            <div className="lg:hidden flex flex-col overflow-hidden">
-              {/* TOP ROW: Split Info & QR */}
-              <div className="flex border-b border-white/5">
-                {/* Left Side: Info (Code & Link) */}
-                <div className="flex-1 flex flex-col p-4 md:p-8 gap-3 md:gap-6 border-r border-white/5">
-                  <div 
-                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-3 md:py-8 px-4 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
-                    onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
-                    <h1 className="font-display text-2xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
-                      {roomCode}
-                    </h1>
-                    <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-5 opacity-40 group-hover:opacity-100 transition-opacity">
-                      {copiedRoom ? <Check size={16} className="md:size-5 text-[#00ff9d]" /> : <Copy size={16} className="md:size-5 text-white/20 group-hover/code:text-[#2d6af2]" />}
-                    </div>
-                  </div>
-
-                  <div 
-                    className="flex items-center justify-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 bg-white/5 rounded-lg md:rounded-xl border border-white/5 cursor-pointer group/link hover:border-[#2d6af2]/30 transition-all relative"
-                    onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-                  >
-                    <p className="text-white/50 text-[9px] md:text-xs font-mono truncate tracking-wide text-center max-w-[85%]">{joinLink}</p>
-                    <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-4">
-                      {copiedJoin ? <Check size={12} className="md:size-3.5 text-[#00ff9d] shrink-0" /> : <Copy size={12} className="md:size-3.5 text-white/20 group-hover/link:text-[#2d6af2] shrink-0" />}
-                    </div>
-                  </div>
-
-                  {/* TABLET ONLY BUTTONS: Inside left column on md screens */}
-                  <div className="hidden md:flex gap-3 mt-auto">
-                    <Button
-                      onClick={() => setExitDialogOpen(true)}
-                      className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-14 xl:h-16 px-6 font-display text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0"
-                    >
-                      <LogOut size={22} className="rtl:rotate-180" />
-                    </Button>
-                    <Button
-                      onClick={startGame}
-                      disabled={participants.length === 0 || countdown !== null}
-                      className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-14 xl:h-16 rounded-xl shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-lg transition-all disabled:opacity-50 active:scale-[0.98]"
-                    >
-                      <div className="flex items-center justify-center gap-3">
-                        <Play className="fill-current w-6 h-6" />
-                        <span>{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
-                      </div>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Right Side: QR Code Area */}
-                <div 
-                  className="w-[100px] sm:w-[140px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-3 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
-                  onClick={() => setQrOpen(true)}
-                >
-                  <div className="bg-white p-2 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                    <div className="w-[70px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
-                      <QRCode value={joinLink} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* MOBILE ONLY BUTTONS: Full width row ONLY for phones (< md) */}
-              <div className="md:hidden p-4 flex gap-3">
-                <Button
-                  onClick={() => setExitDialogOpen(true)}
-                  className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-12 md:h-16 px-4 md:px-6 font-display text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0"
-                >
-                  <LogOut size={20} className="md:size-6 rtl:rotate-180" />
-                </Button>
-                <Button
-                  onClick={startGame}
-                  disabled={participants.length === 0 || countdown !== null}
-                  className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-12 md:h-16 rounded-xl shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-sm md:text-lg transition-all disabled:opacity-50 active:scale-[0.98]"
-                >
-                  <div className="flex items-center justify-center gap-2 md:gap-3">
-                    <Play className="fill-current w-5 h-5 md:w-6 md:h-6" />
-                    <span>{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
-                  </div>
-                </Button>
-              </div>
-            </div>
-
-            {/* Hidden Space placeholder for mobile list padding */}
-            <div className="lg:hidden h-2 shrink-0" />
-
-            {/* DESKTOP: full vertical layout */}
-            <div className="hidden lg:flex flex-col gap-4 p-5 flex-1 relative z-10">
-              {/* Room Code */}
-              <div
-                className="group/code cursor-pointer bg-white/5 rounded-xl py-5 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
-                onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
-                <h1 className="font-display text-5xl lg:text-6xl font-black text-white text-center drop-shadow-[0_0_15px_rgba(45,106,242,0.5)] tracking-widest">
-                  {roomCode}
-                </h1>
-                <div className="absolute top-1/2 -translate-y-1/2 end-5">
-                  {copiedRoom ? <Check size={20} className="text-[#00ff9d]" /> : <Copy size={20} className="text-white/20 group-hover/code:text-[#2d6af2]" />}
-                </div>
-              </div>
-
-              {/* QR Code — full width */}
-              <div
-                className="group/qr cursor-pointer bg-white rounded-2xl p-2 shadow-[0_0_40px_rgba(255,255,255,0.08)] transition-all hover:shadow-[0_0_60px_rgba(255,255,255,0.15)] relative overflow-hidden flex items-center justify-center"
-                onClick={() => setQrOpen(true)}
-              >
-                <QRCode value={joinLink} style={{ width: '100%', height: 'auto', maxWidth: 320 }} />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                  <Maximize2 size={36} className="text-white" />
-                </div>
-              </div>
-
-              {/* Join Link */}
-              <div
-                className="bg-white/5 rounded-xl py-3 px-4 border border-white/10 hover:border-[#2d6af2]/30 transition-all cursor-pointer group/link flex items-center gap-2"
-                onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
-              >
-                <p className="flex-1 text-white/70 text-xs font-mono tracking-wide truncate">{joinLink}</p>
-                <div className="shrink-0">
-                  {copiedJoin ? <Check size={14} className="text-[#00ff9d]" /> : <Copy size={14} className="text-white/20 group-hover/link:text-[#2d6af2]" />}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="shrink-0 border-white/5 bg-gradient-to-t from-black/40 to-transparent relative z-10">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setExitDialogOpen(true)}
-                    className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-12 px-3 sm:px-4 font-display text-sm font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0"
-                  >
-                    <LogOut size={16} className="rtl:rotate-180" />
-                    <span className="hidden sm:inline text-[11px]">{t('host_lobby.exit')}</span>
-                  </Button>
-
-                  <Button
-                    onClick={startGame}
-                    disabled={participants.length === 0 || countdown !== null}
-                    className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#00ff9d] hover:brightness-110 text-black font-display font-black h-12 rounded-xl shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.15em] uppercase text-sm transition-all disabled:opacity-50"
-                  >
-                    <Play className="fill-current w-4 h-4 me-2" />
-                    {countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-
-          </motion.div>
-
-          {/* ═══ RIGHT CARD: Players List ═══ */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex-1 flex flex-col bg-black/60 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden min-h-[300px] lg:min-h-0 relative"
-          >
-            <div className="absolute top-0 end-0 w-80 h-80 bg-gradient-to-bl from-[#00ff9d]/5 to-transparent rounded-bl-full pointer-events-none z-0"></div>
-
-            {/* Players Header */}
-            <div className="px-4 sm:px-5 py-4 flex items-center justify-between border-b border-white/5 shrink-0 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[#00ff9d]/10 rounded-xl">
-                  <Users size={20} className="text-[#00ff9d]" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl sm:text-3xl font-bold text-white">{participants.length}</h2>
-                  <p className="text-[#00ff9d] text-[9px] uppercase font-display tracking-[0.3em] opacity-80">{t('host_lobby.players')}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Invite Friends */}
-                <button
-                  onClick={() => setInviteFriendOpen(true)}
-                  className="flex items-center gap-1.5 h-9 px-3 rounded-xl border bg-[#2d6af2]/10 border-[#2d6af2]/30 text-[#2d6af2] hover:bg-[#2d6af2]/20 transition-all font-display text-[10px] uppercase tracking-wider"
-                >
-                  <UserPlus size={14} />
-                  <span className="hidden sm:inline">{t('host_lobby.invite_friends') ?? 'Invite Friends'}</span>
-                </button>
-
-                {/* Invite Groups */}
-                <button
-                  onClick={() => setInviteGroupOpen(true)}
-                  className="flex items-center gap-1.5 h-9 px-3 rounded-xl border bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-all font-display text-[10px] uppercase tracking-wider"
-                >
-                  <Users2 size={14} />
-                  <span className="hidden sm:inline">{t('host_lobby.invite_groups') ?? 'Invite Groups'}</span>
-                </button>
-
-                {/* Add Bot */}
-                <button
-                  onClick={handleAddBot}
-                  className="flex items-center gap-1.5 h-9 px-3 rounded-xl border bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-all font-display text-[10px] uppercase tracking-wider"
-                >
-                  <Bot size={14} />
-                  <span className="hidden sm:inline">Add Bot</span>
-                </button>
-
-                {/* Sound */}
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isMuted ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10"}`}
-                >
-                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Players Grid */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-5 relative z-10">
-              {participants.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center opacity-30 py-10">
-                  <Users size={80} className="text-white mb-6 animate-pulse" />
-                  <p className="font-display tracking-[0.4em] text-sm uppercase text-white">{t('host_lobby.waiting')}</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                  <AnimatePresence>
-                    {participants.map((player) => (
-                      <motion.div
-                        key={player.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="group relative bg-[#11111a] border border-white/10 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center transition-all hover:border-[#2d6af2]/50 hover:bg-[#1a1c2e] hover:shadow-[0_10px_30px_rgba(45,106,242,0.15)] hover:-translate-y-1 overflow-hidden"
-                      >
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-[#2d6af2]/30 bg-black/40 overflow-hidden mb-3 flex items-center justify-center shadow-inner relative group/avatar">
-                          {player.avatar_url ? (
-                            <img src={player.avatar_url} alt="Ava" className="w-full h-full object-cover" />
-                          ) : (
-                            <InitialsAvatar name={player.nickname} size="md" />
-                          )}
-                        </div>
-                        <div className="bg-white/5 rounded-lg px-2 py-1 w-full text-center">
-                          <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest">{player.nickname}</p>
-                        </div>
-
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedPlayer(player); setKickDialogOpen(true); }}
-                          className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/20 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white"
-                        >
-                          <X size={14} />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* ═══ CUSTOM TOAST NOTIFICATION ═══ */}
-      <AnimatePresence>
-        {inviteToastVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: -40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -40 }}
-            className="fixed top-8 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
-          >
-            <div className="flex items-center gap-4 bg-[#0a0f16] border border-[#00ff9d]/40 rounded-2xl px-6 py-4 shadow-[0_0_50px_rgba(0,255,157,0.15)] min-w-[280px]">
-              <div className="w-8 h-8 rounded-full border border-[#00ff9d] flex items-center justify-center bg-[#00ff9d]/10 shrink-0">
-                <Check size={16} className="text-[#00ff9d]" />
-              </div>
-              <span className="font-display font-bold uppercase tracking-[0.2em] text-white text-sm mt-0.5">
-                Invited
-              </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ═══ KICK DIALOG ═══ */}
-      <Dialog open={kickDialogOpen} onOpenChange={setKickDialogOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
-          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-6">
-            {t('host_lobby.kick')} {selectedPlayer?.nickname}?
-          </DialogTitle>
-          <div className="flex gap-4">
-            <Button onClick={() => setKickDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400">
-              {t('host_lobby.cancel') ?? 'Cancel'}
-            </Button>
-            <Button onClick={confirmKick} className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest">
-              KICK
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══ EXIT CONFIRMATION DIALOG ═══ */}
-      <Dialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-              <LogOut size={32} className="text-red-500" />
-            </div>
-            <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.15em] text-center mb-2">
-              {t('host_lobby.exit_dialog_title')}
-            </DialogTitle>
-            <p className="text-white/60 text-sm text-center font-body tracking-wider mb-8 uppercase">
-              {t('host_lobby.exit_dialog_desc')}
-            </p>
-            <div className="flex gap-4 w-full">
-              <Button onClick={() => setExitDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
-                {t('host_lobby.cancel')}
-              </Button>
-              <Button
-                onClick={() => router.push("/host/select-quiz")}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
-              >
-                {t('host_lobby.confirm_exit')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══ QR FULLSCREEN — klik luar untuk tutup ═══ */}
-      {qrOpen && (
-        <div
-          className="fixed inset-0 z-[200] bg-black flex items-center justify-center cursor-pointer"
-          onClick={() => setQrOpen(false)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 shadow-[0_0_80px_rgba(255,255,255,0.15)] cursor-default"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <QRCode value={joinLink} style={{ width: 'min(80vw, 80vh)', height: 'auto', maxWidth: 500 }} />
-          </div>
-        </div>
-      )}
-
-      {/* ═══ INVITE FRIENDS DIALOG ═══ */}
-      <Dialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#06080d] border border-[#2d6af2]/30 text-white p-6 max-w-[500px] rounded-[1.5rem] shadow-[0_0_50px_rgba(45,106,242,0.15)] overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-[60%] bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent shadow-[0_0_15px_#2d6af2]"></div>
-          
-          <button 
-            onClick={() => setInviteFriendOpen(false)} 
-            className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
-          >
-            <X size={20} />
-          </button>
-          
-          <DialogTitle className="sr-only">
-            {t('host_lobby.invite_friends') ?? 'Invite Friends'}
-          </DialogTitle>
-          
-          <div className="flex items-center gap-3 mb-5 mt-2">
-            <UserPlus className="text-[#2d6af2] w-6 h-6" />
-            <h2 className="text-xl font-display font-bold uppercase tracking-[0.10em] text-[#2d6af2]">
-              Invite Friends
-            </h2>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-5">
-            <input
-              type="text"
-              placeholder="Find a friend..."
-              value={searchFriendQuery}
-              onChange={(e) => setSearchFriendQuery(e.target.value)}
-              className="w-full bg-transparent border border-white/20 rounded-xl py-3 px-4 text-sm font-display outline-none focus:border-[#2d6af2]/80 text-white placeholder:text-white/40 transition-all"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
-               <Search size={18} />
-            </div>
-          </div>
-
-          {/* Friends List */}
-          <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto custom-scrollbar pr-2">
-            {loadingFriends ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="w-8 h-8 border-2 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mb-4"></div>
-                <p className="text-white/40 text-xs font-display tracking-widest uppercase">Loading friends...</p>
-              </div>
-            ) : filteredFriends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <UserPlus size={40} className="text-white/10 mb-4" />
-                <p className="text-white/30 text-xs font-display tracking-widest uppercase">
-                  {searchFriendQuery ? 'No friends found' : 'No mutual friends yet'}
-                </p>
-              </div>
-            ) : (
-              filteredFriends.map(friend => {
-                const displayName = friend.nickname || friend.fullname || friend.username || '?';
-                return (
-                  <div key={friend.id} className="flex items-center justify-between bg-[#11131a] border border-white/5 rounded-xl p-4">
-                     <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        <div className="w-10 h-10 rounded-full border border-[#2d6af2]/30 bg-black/40 overflow-hidden flex items-center justify-center shrink-0">
-                          {friend.avatar_url ? (
-                            <img src={friend.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                          ) : (
-                            <InitialsAvatar name={displayName} size="sm" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-display font-bold text-[14px] text-white tracking-wide">{displayName}</h3>
-                          <p className="text-white/40 text-[11px] font-mono">@{friend.username}</p>
-                        </div>
-                     </div>
-                     <Button 
-                       onClick={() => !invitedFriends.includes(friend.id) && handleInviteFriend(friend.id)}
-                       disabled={invitedFriends.includes(friend.id)}
-                       className={`font-display font-bold uppercase text-xs tracking-widest px-5 h-9 rounded-lg shadow-none transition-all disabled:opacity-100 ${
-                         invitedFriends.includes(friend.id) 
-                           ? 'bg-[#1a2240] text-[#4f6190]' 
-                           : 'bg-[#2d6af2] hover:bg-[#2555cc] text-white'
-                       }`}
-                     >
-                       {invitedFriends.includes(friend.id) ? 'Invited' : 'Invite'}
-                     </Button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══ INVITE GROUPS DIALOG ═══ */}
-      <Dialog open={inviteGroupOpen} onOpenChange={setInviteGroupOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#06080d] border border-[#00e5ff]/30 text-white p-6 max-w-[500px] rounded-[1.5rem] shadow-[0_0_50px_rgba(0,229,255,0.15)] overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-[60%] bg-gradient-to-r from-transparent via-[#00e5ff] to-transparent shadow-[0_0_15px_#00e5ff]"></div>
-          
-          <button 
-            onClick={() => setInviteGroupOpen(false)} 
-            className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
-          >
-            <X size={20} />
-          </button>
-          
-          <DialogTitle className="sr-only">
-            {t('host_lobby.invite_groups') ?? 'Invite Groups'}
-          </DialogTitle>
-          
-          <div className="flex items-center gap-3 mb-5 mt-2">
-            <Users2 className="text-[#00e5ff] w-6 h-6" />
-            <h2 className="text-xl font-display font-bold uppercase tracking-[0.10em] text-[#00e5ff]">
-              Invite Group
-            </h2>
-          </div>
-
-          <div className="relative mb-5">
-            <input
-              type="text"
-              placeholder="Find a group..."
-              value={searchGroupQuery}
-              onChange={(e) => setSearchGroupQuery(e.target.value)}
-              className="w-full bg-transparent border border-white/20 rounded-xl py-3 px-4 text-sm font-display outline-none focus:border-[#00e5ff]/80 text-white placeholder:text-white/40 transition-all"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
-               <Search size={18} />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto custom-scrollbar pr-2">
-            {loadingGroups ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="w-8 h-8 border-2 border-[#00e5ff]/30 border-t-[#00e5ff] rounded-full animate-spin mb-4"></div>
-                <p className="text-white/40 text-xs font-display tracking-widest uppercase">Loading groups...</p>
-              </div>
-            ) : filteredGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Users2 size={40} className="text-white/10 mb-4" />
-                <p className="text-white/30 text-xs font-display tracking-widest uppercase">
-                  {searchGroupQuery ? 'No groups found' : 'No groups joined yet'}
-                </p>
-              </div>
-            ) : (
-              filteredGroups.map(group => (
-                <div key={group.id} className="flex items-center justify-between bg-[#11131a] border border-white/5 rounded-xl p-4">
-                   <div>
-                      <h3 className="font-display font-bold text-[15px] text-white mb-2 tracking-wide">{group.name}</h3>
-                      <div className="flex items-center gap-4">
-                         <div className="flex items-center gap-1.5 text-[#00e5ff] text-xs">
-                            <Users size={15} />
-                            <span className="font-mono text-white/80 font-semibold">{group.membersCount}</span>
-                         </div>
-                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border tracking-wide uppercase ${
-                            group.role.toLowerCase() === 'owner' ? 'border-yellow-500/80 text-yellow-500' :
-                            group.role.toLowerCase() === 'admin' ? 'border-[#00e5ff]/80 text-[#00e5ff]' :
-                            'border-white/20 text-white/50'
-                         }`}>
-                           {group.role}
-                         </span>
-                      </div>
-                   </div>
-                   {(group.role.toLowerCase() === 'owner' || group.role.toLowerCase() === 'admin') && (
-                      <Button 
-                        onClick={() => !invitedGroups.includes(group.id) && handleInviteGroup(group.id)}
-                        disabled={invitedGroups.includes(group.id)}
-                        className={`font-display font-bold uppercase text-xs tracking-widest px-5 h-9 rounded-lg shadow-none transition-all disabled:opacity-100 ${
-                          invitedGroups.includes(group.id) 
-                            ? 'bg-[#1b323c] text-[#4f8190]' 
-                            : 'bg-[#00d0ff] hover:bg-[#00b8e6] text-white'
-                        }`}
-                      >
-                        {invitedGroups.includes(group.id) ? 'Invited' : 'Invite'}
-                      </Button>
-                   )}
-                </div>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══ COUNTDOWN OVERLAY ═══ */}
-      {countdown !== null && (
-        <div
-          className="fixed inset-0 z-[300] bg-black flex flex-col items-center justify-center"
-          style={{ animation: 'fadeIn 0.3s ease-out' }}
-        >
-          {/* Traffic Lights */}
-          <div className="flex gap-4 mb-8">
-            {[
-              { color: "#ef4444", activeAt: 3 },
-              { color: "#facc15", activeAt: 2 },
-              { color: "#00ff9d", activeAt: 1 },
-            ].map((light, i) => {
-              const isGo = countdown <= 0;
-              const isLit = isGo || countdown <= light.activeAt;
-              const displayColor = isGo ? "#00ff9d" : light.color;
-              return (
-                <div key={i} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2" style={{
-                  borderColor: isLit ? displayColor : '#374151',
-                  backgroundColor: isLit ? displayColor : 'rgba(55,65,81,0.3)',
-                  boxShadow: isLit ? `0 0 30px ${displayColor}, 0 0 60px ${displayColor}55` : 'none',
-                  transform: isLit ? 'scale(1.15)' : 'scale(1)',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                }} />
-              );
-            })}
-          </div>
-
-          {/* Number */}
-          <span
-            key={countdown}
-            className={`font-display font-black py-2 drop-shadow-[0_0_40px_currentColor] ${countdown === 3 ? 'text-red-500' :
-              countdown === 2 ? 'text-yellow-400' :
-                'text-[#00ff9d]'
-              }`}
-            style={{
-              fontSize: 'clamp(120px, 22vw, 220px)',
-              lineHeight: '1.1',
-              display: 'block',
-              animation: 'countdown-pop 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
-            }}
-          >
-            {countdown > 0 ? countdown : t('host_lobby.go') ?? 'GO!'}
-          </span>
-
-          {/* Label */}
-          <p
-            className="font-display text-xl text-gray-400 mt-4 tracking-[0.3em] uppercase"
-            style={{ animation: 'fadeInUp 0.3s ease-out' }}
-          >
-            {countdown === 3
-              ? (t('player_waiting.ready') ?? 'READY')
-              : countdown === 2
-                ? (t('player_waiting.steady') ?? 'STEADY')
-                : (t('player_waiting.go_race') ?? 'GO RACE!')}
-          </p>
-
-          {/* Pulse ring */}
-          <div
-            className="absolute w-72 h-72 rounded-full border border-[#2d6af2]/30"
-            style={{ animation: 'pulseRing 2s ease-in-out infinite' }}
+          {/* Kartu info room */}
+          <RoomInfoCard
+            roomCode={roomCode}
+            joinLink={joinLink}
+            copiedRoom={copiedRoom}
+            copiedJoin={copiedJoin}
+            countdown={countdown}
+            participantCount={participants.length}
+            onCopyRoom={() => copyToClipboard(roomCode, setCopiedRoom)}
+            onCopyJoin={() => copyToClipboard(joinLink, setCopiedJoin)}
+            onQrOpen={() => setQrOpen(true)}
+            onExit={() => setExitDialogOpen(true)}
+            onStart={startGame}
           />
 
-          <style>{`
-            @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-            @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
-            @keyframes countdown-pop { 0% { transform: scale(1.6) translateY(-20px); opacity: 0 } 60% { transform: scale(0.95) translateY(4px); opacity: 1 } 100% { transform: scale(1) translateY(0); opacity: 1 } }
-            @keyframes pulseRing { 0% { transform: scale(1); opacity: 0.3 } 50% { transform: scale(1.8); opacity: 0 } 100% { transform: scale(1); opacity: 0.3 } }
-          `}</style>
+          {/* Kartu daftar pemain */}
+          <PlayersCard
+            participants={participants}
+            isMuted={isMuted}
+            onMuteToggle={() => setIsMuted(!isMuted)}
+            onInviteFriend={() => setInviteFriendOpen(true)}
+            onInviteGroup={() => setInviteGroupOpen(true)}
+            onAddBot={handleAddBot}
+            onKickPlayer={(player) => { setSelectedPlayer(player); setKickDialogOpen(true); }}
+          />
         </div>
-      )}
-
-      {/* ═══ FLOATING FULLSCREEN BUTTON ═══ */}
-      <div className="fixed bottom-6 end-6 z-[250] flex">
-        <Button
-          onClick={toggleFullscreen}
-          variant="outline"
-          className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-black/60 backdrop-blur-xl border-white/10 hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10 text-white/50 hover:text-white transition-all shadow-2xl group flex items-center justify-center p-0"
-        >
-          {isFullscreen ? (
-            <Minimize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-          ) : (
-            <Maximize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-          )}
-        </Button>
       </div>
 
+      {/* ── Toast notifikasi undangan ── */}
+      <InviteToast isVisible={inviteToastVisible} />
+
+      {/* ── Dialog kick pemain ── */}
+      <KickDialog
+        isOpen={kickDialogOpen}
+        onClose={() => setKickDialogOpen(false)}
+        onConfirm={confirmKick}
+        playerName={selectedPlayer?.nickname || ''}
+      />
+
+      {/* ── Dialog konfirmasi keluar ── */}
+      <ExitDialog
+        isOpen={exitDialogOpen}
+        onClose={() => setExitDialogOpen(false)}
+        onConfirm={() => router.push("/host/select-quiz")}
+      />
+
+      {/* ── QR Code fullscreen ── */}
+      <QrFullscreen isOpen={qrOpen} onClose={() => setQrOpen(false)} joinLink={joinLink} />
+
+      {/* ── Dialog undang teman ── */}
+      <InviteFriendDialog
+        isOpen={inviteFriendOpen}
+        onClose={() => setInviteFriendOpen(false)}
+        friends={mutualFriends}
+        isLoading={loadingFriends}
+        searchQuery={searchFriendQuery}
+        onSearchChange={setSearchFriendQuery}
+        invitedFriends={invitedFriends}
+        onInvite={handleInviteFriend}
+      />
+
+      {/* ── Dialog undang grup ── */}
+      <InviteGroupDialog
+        isOpen={inviteGroupOpen}
+        onClose={() => setInviteGroupOpen(false)}
+        groups={userGroups}
+        isLoading={loadingGroups}
+        searchQuery={searchGroupQuery}
+        onSearchChange={setSearchGroupQuery}
+        invitedGroups={invitedGroups}
+        onInvite={handleInviteGroup}
+      />
+
+      {/* ── Overlay countdown ── */}
+      <CountdownOverlay countdown={countdown} />
+
+      {/* ── Tombol fullscreen melayang ── */}
+      <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
+
+      {/* ── CSS kustom untuk siluet kota dan scrollbar ── */}
       <style jsx>{`
         .city-silhouette {
           background: url('/assets/bg/city_silhouette.png') bottom center no-repeat;
