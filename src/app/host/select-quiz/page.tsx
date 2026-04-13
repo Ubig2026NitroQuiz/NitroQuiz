@@ -5,6 +5,7 @@ import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ArrowLeft, HelpCircle, Heart, User, Play, FileText, RefreshCw } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { Globe, Users, Clock, Languages, Layers, Star } from "lucide-react";
+import { Globe, Users, Clock, Languages, Layers, Star, Target } from "lucide-react";
 
 interface QuizView {
     id: string;
@@ -108,6 +109,7 @@ export default function SelectQuizPage() {
     const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'myquiz'>('all');
     const [isFetching, setIsFetching] = useState(true);
     const [isReturning, setIsReturning] = useState(false);
+    const [hoveredTooltipId, setHoveredTooltipId] = useState<string | null>(null);
 
     // Detail Dialog State
     const [selectedQuizDetail, setSelectedQuizDetail] = useState<any>(null);
@@ -353,12 +355,24 @@ export default function SelectQuizPage() {
     };
 
     return (
-        <div className="h-screen bg-[#04060f] relative overflow-hidden font-body text-white selection:bg-[#2d6af2] selection:text-white flex flex-col">
-            <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(0,255,157,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.022)_1px,transparent_1px)] bg-[length:80px_80px]" />
-            <div className="fixed bottom-0 left-0 right-0 h-52 z-0 bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px)] bg-[length:80px_40px] [transform:perspective(400px)_rotateX(60deg)] origin-bottom pointer-events-none opacity-60" />
-            <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(45,106,242,0.07),transparent)] pointer-events-none" />
-            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/50 to-[#2d6af2]/10 pointer-events-none" />
-            <div className="scanlines" />
+        <div className="h-screen bg-[#04060f] relative overflow-hidden font-body text-white selection:bg-[#7C3AED]/30 selection:text-white flex flex-col">
+            {/* Racing Stripe at top */}
+            <div className="racing-stripe z-0 pointer-events-none"></div>
+
+            {/* Background Image matching HomePage */}
+            <div
+                className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+                style={{
+                    backgroundImage: 'url("/assets/backgorund/homepage_bg.png")',
+                    backgroundAttachment: 'fixed'
+                }}
+            ></div>
+
+            {/* Overlays for readability mimicking HomePage */}
+            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/80 to-[#7C3AED]/20 pointer-events-none"></div>
+            
+            {/* Very subtle scanlines */}
+            <div className="scanlines"></div>
 
             <div className="relative z-10 flex-1 flex flex-col h-full overflow-hidden">
                 {/* Top Bar */}
@@ -373,65 +387,100 @@ export default function SelectQuizPage() {
                 <div className="flex-1 overflow-y-auto relative w-full pt-0.5">
                     <div className="container mx-auto px-6 pb-8 max-w-6xl">
                         {/* Search & Filter Bar */}
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-                            className="max-w-4xl mx-auto w-full bg-[#080d1a]/80 border border-[#2d6af2]/30 rounded-2xl overflow-hidden mb-3 backdrop-blur-2xl shadow-[0_0_50px_rgba(45,106,242,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] flex-shrink-0">
-                            {/* ── Cyan accent bar ── */}
-                            <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg,#1a45c4,#2d6af2,#00ff9d,#2d6af2,#1a45c4)' }} />
-                            <div className="p-2 sm:p-3">
-                                <div className="flex flex-col sm:flex-row gap-3 mb-3 relative">
-                                    <div className="flex-1">
-                                        <div className="relative group/search">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4 group-focus-within/search:text-[#00ff9d] transition-colors" />
-                                            <Input type="text" placeholder={t('select_quiz.search_placeholder')} value={searchInput}
-                                                onChange={(e) => { setSearchInput(e.target.value); setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                                className="w-full bg-white/[0.03] border border-white/[0.07] pl-9 h-10 sm:h-9 text-white font-display text-left text-[9px] sm:text-[10px] uppercase tracking-widest placeholder:text-[8px] sm:placeholder:text-gray-600 rounded-lg focus-visible:ring-1 focus-visible:ring-[#00ff9d]/50 focus-visible:border-[#00ff9d]/50 focus-visible:bg-white/[0.05] transition-all !py-0 leading-normal" />
-                                        </div>
-                                    </div>
-                                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                        <SelectTrigger className="w-full sm:w-52 h-10 bg-white/[0.03] border border-white/[0.07] text-white focus:border-[#00ff9d]/50 focus:ring-1 focus:ring-[#00ff9d]/50 rounded-xl font-display text-xs tracking-wider uppercase">
-                                            <SelectValue placeholder={t('select_quiz.category_placeholder')} />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#04060f] border border-[#2d6af2]/30 text-white font-display text-[10px] uppercase tracking-wider backdrop-blur-3xl">
-                                            {categories.map((cat) => (
-                                                <SelectItem key={cat} value={cat} className="focus:bg-[#4a3d8f]/20 focus:text-white cursor-pointer py-1.5">
-                                                    {getCategoryDisplayName(cat)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                        {/* Search & Filter Bar (Single Line) */}
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+                            className="w-full bg-[#0c1020]/80 border border-white/[0.08] rounded-xl overflow-hidden mb-6 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex-shrink-0">
+                            {/* Purple Accent Glow Bar */}
+                            <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg,transparent,#7C3AED,transparent)' }} />
+                            
+                            <div className="p-3 sm:p-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 w-full">
+                                {/* Search Section */}
+                                <div className="flex-1 w-full md:w-auto relative group/search min-w-[200px]">
+                                    <Input type="text" placeholder={t('select_quiz.search_placeholder')} value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        onKeyDown={(e) => { 
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                setSearchQuery(searchInput);
+                                                setCurrentPage(1);
+                                            }
+                                        }}
+                                        className="w-full bg-white/[0.03] border border-white/10 pl-4 pr-14 h-10 text-white font-display text-[10px] uppercase tracking-widest placeholder:text-white/30 rounded-lg focus-visible:ring-1 focus-visible:ring-[#7C3AED]/50 focus-visible:border-[#7C3AED] transition-all hover:bg-white/[0.06]" />
+                                    
+                                    <button 
+                                        onClick={() => { setSearchQuery(searchInput); setCurrentPage(1); }}
+                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 bg-[#7C3AED]/30 text-[#a78bfa] hover:bg-[#7C3AED] hover:text-white border border-[#7C3AED]/50 rounded-md transition-all active:scale-95 z-10 flex items-center justify-center"
+                                        title="Search"
+                                    >
+                                        <Search className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
-                                <div className="flex items-center sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 w-full relative">
+
+                                {/* Divider */}
+                                <div className="w-[1px] h-8 bg-white/10 hidden md:block" />
+
+                                {/* Navigation Tabs Section */}
+                                <div className="flex items-center justify-center sm:justify-start flex-wrap gap-1.5 p-1 bg-black/50 border border-white/5 rounded-lg flex-shrink-0 w-full md:w-auto">
                                     <button onClick={() => setActiveTab('all')}
-                                        className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'all' ? 'bg-[#2d6af2] text-white' : 'bg-white/[0.03] border border-white/[0.07] text-gray-400 hover:text-white hover:border-[#00ff9d]/50'}`}>
-                                        <Search size={12} className="sm:w-3.5 sm:h-3.5" />{t('select_quiz.tabs.quizzes')}
+                                        className={`flex items-center justify-center min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-display text-[9px] sm:text-[10px] tracking-wider uppercase transition-all duration-300 ${activeTab === 'all' ? 'bg-[#2d6af2] text-white shadow-[0_0_15px_rgba(45,106,242,0.5)]' : 'bg-transparent text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                        <Search size={12} className="w-3.5 h-3.5" />{t('select_quiz.tabs.quizzes')}
                                     </button>
                                     <button onClick={() => setActiveTab('favorites')}
-                                        className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'favorites' ? 'bg-gradient-to-r from-pink-600 to-red-500 text-white' : 'bg-black/40 border border-pink-500/20 text-gray-400 hover:text-pink-400 hover:border-pink-500/50'}`}>
-                                        <Heart size={12} className={`sm:w-3.5 sm:h-3.5 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
+                                        className={`flex items-center justify-center min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-display text-[9px] sm:text-[10px] tracking-wider uppercase transition-all duration-300 ${activeTab === 'favorites' ? 'bg-gradient-to-r from-[#ec4899] to-[#ef4444] text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]' : 'bg-transparent text-gray-400 hover:text-pink-400 hover:bg-pink-500/10'}`}>
+                                        <Heart size={12} className={`w-3.5 h-3.5 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
                                         {t('select_quiz.tabs.favorites')}
                                     </button>
                                     <button onClick={() => setActiveTab('myquiz')}
-                                        className={`flex items-center justify-center flex-1 sm:flex-none min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-display text-[8px] sm:text-xs tracking-wider uppercase transition-all duration-200 ${activeTab === 'myquiz' ? 'bg-[#00ff9d] text-[#04060f] font-bold' : 'bg-white/[0.03] border border-white/[0.07] text-gray-400 hover:text-[#00ff9d] hover:border-[#00ff9d]/50'}`}>
-                                        <FileText size={12} className="sm:w-3.5 sm:h-3.5" />{t('select_quiz.tabs.my_quiz')}
+                                        className={`flex items-center justify-center min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-display text-[9px] sm:text-[10px] tracking-wider uppercase transition-all duration-300 ${activeTab === 'myquiz' ? 'bg-[#7c3aed] text-white shadow-[0_0_15px_rgba(124,58,237,0.5)]' : 'bg-transparent text-gray-400 hover:text-[#a78bfa] hover:bg-[#7c3aed]/10'}`}>
+                                        <FileText size={12} className="w-3.5 h-3.5" />{t('select_quiz.tabs.my_quiz')}
                                     </button>
                                 </div>
+
+                                {/* Category Dropdown Section */}
+                                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                    <SelectTrigger className="w-full md:w-56 h-10 bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.06] focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED]/50 rounded-lg font-display text-[10px] tracking-widest uppercase transition-all flex-shrink-0">
+                                        <SelectValue placeholder={t('select_quiz.category_placeholder')} />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#0c1020]/95 border border-white/[0.08] shadow-[0_20px_60px_rgba(0,0,0,0.5)] text-white font-display text-[10px] uppercase tracking-wide backdrop-blur-2xl">
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat} value={cat} className="focus:bg-[#2d6af2]/30 focus:text-white cursor-pointer py-2">
+                                                {getCategoryDisplayName(cat)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </motion.div>
 
                         {/* Grid */}
-                        <AnimatePresence mode="wait">
-                            {(isFetching || isReturning || creating) ? (
+                        <TooltipProvider delayDuration={100}>
+                            <AnimatePresence mode="wait">
+                                {(isFetching || isReturning || creating) ? (
                                 <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                     {Array.from({ length: 8 }).map((_, i) => (
-                                        <div key={i} className="bg-[#080d1a]/80 border border-[#2d6af2]/15 rounded-xl overflow-hidden animate-pulse">
-                                            <div className="h-1 w-full bg-[#2d6af2]/10" />
-                                            <div className="w-full h-24 bg-gradient-to-br from-[#2d6af2]/10 to-[#04060f]" />
-                                            <div className="p-2 space-y-1.5">
-                                                <div className="h-3 bg-white/5 rounded w-3/4" />
-                                                <div className="h-2 bg-white/5 rounded w-1/2" />
-                                            </div>
-                                        </div>
+                                        <Card key={i} className="flex flex-col bg-[#161c33]/50 border-t border-t-white/10 border border-white/5 rounded-xl pb-0 shadow-lg animate-pulse overflow-hidden">
+                                            <CardHeader className="p-3 pb-1 flex flex-col">
+                                                {/* Category badge skeleton */}
+                                                <div className="w-24 h-[11px] bg-white/10 rounded-sm transform -skew-x-[15deg] mb-1.5"></div>
+                                                
+                                                {/* Title skeleton */}
+                                                <div className="space-y-2 mt-1 mb-2">
+                                                    <div className="w-[85%] h-3 bg-white/20 rounded-sm"></div>
+                                                    <div className="w-[50%] h-3 bg-white/10 rounded-sm"></div>
+                                                </div>
+                                            </CardHeader>
+                                            
+                                            <CardFooter className="p-3 border-t border-white/5 flex justify-between items-end mt-auto bg-gradient-to-t from-[#0c1020]/50 to-transparent">
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="w-14 h-2 bg-white/10 rounded-sm"></div>
+                                                    <div className="w-8 h-3 bg-white/20 rounded-sm"></div>
+                                                </div>
+                                                
+                                                {/* Button skeleton */}
+                                                <div className="w-16 h-8 bg-white/10 rounded-sm transform -skew-x-[15deg]"></div>
+                                            </CardFooter>
+                                        </Card>
                                     ))}
                                 </motion.div>
                             ) : quizzes.length > 0 ? (
@@ -444,86 +493,113 @@ export default function SelectQuizPage() {
                                         return (
                                             <motion.div key={quiz.id}
                                                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                                                transition={{ duration: 0.2 }} whileHover={{ scale: 1.01 }}
-                                                className="cursor-pointer"
+                                                transition={{ duration: 0.2 }} whileHover={{ scale: 1.02 }}
+                                                className="cursor-pointer relative group"
                                                 onClick={() => handleOpenQuizDetail(quiz.id)}
                                                 style={{ willChange: "transform, opacity" }}>
-                                                <Card className="h-full flex flex-col bg-black/40 border transition-all duration-200 relative overflow-hidden group rounded-xl pb-0"
-                                                    style={{
-                                                        borderColor: 'rgba(74,61,143,0.3)',
-                                                    }}
-                                                    onMouseEnter={e => (e.currentTarget.style.borderColor = colors.hoverBorder)}
-                                                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(74,61,143,0.3)')}
-                                                >
-                                                    {/* ── Opsi A: color bar 5px top ── */}
-                                                    <div className="absolute top-0 inset-x-0 h-[4px] z-20 pointer-events-none"
-                                                        style={{ background: colors.bar }} />
+                                                
+                                                {/* Outer Glow Wrapper */}
+                                                <div className="absolute -inset-[1px] bg-gradient-to-br from-white/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                
+                                                <Card className="flex flex-col bg-[#161c33]/85 backdrop-blur-xl border-t border-t-white/20 border border-white/10 transition-all duration-300 relative overflow-hidden group rounded-xl pb-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.3)]">
+                                                    
+                                                    {/* Animated Cyber Texture */}
+                                                    <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.06] pointer-events-none transition-opacity"
+                                                        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }} />
 
-                                                    {/* bottom glow line */}
-                                                    <div className="absolute inset-x-0 bottom-0 h-px pointer-events-none z-10 transition-opacity opacity-0 group-hover:opacity-100"
-                                                        style={{ background: `linear-gradient(to right, transparent, ${colors.bar}, transparent)` }} />
+                                                    {/* Laser Edge Left */}
+                                                    <div className="absolute left-0 top-0 bottom-0 w-[4px] opacity-80"
+                                                        style={{ background: `linear-gradient(to bottom, ${colors.bar}, transparent)` }} />
 
-                                                    {/* hover gradient overlay */}
-                                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
-                                                        style={{ background: `linear-gradient(135deg, ${colors.badge} 0%, transparent 60%)` }} />
+                                                    {/* Checkered flag corners top right */}
+                                                    <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none overflow-hidden rounded-tr-xl">
+                                                        <div className="absolute w-24 h-3 bg-white/[0.03] rotate-45 transform origin-bottom-left translate-x-8 translate-y-[-10px]" />
+                                                        <div className="absolute w-24 h-1.5 bg-white/[0.05] rotate-45 transform origin-bottom-left translate-x-6 translate-y-[-16px]" />
+                                                    </div>
 
-                                                    {/* Quiz background image */}
+                                                    {/* Quiz background image styled as HUD monitor view */}
                                                     <div className="absolute inset-0 z-0 pointer-events-none">
                                                         {quiz.imageUrl && (
-                                                            <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity"
-                                                                style={{ backgroundImage: `url(${quiz.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                                                            <div className="absolute top-0 right-0 w-2/3 h-full opacity-[0.25] group-hover:opacity-[0.45] transition-all duration-700"
+                                                                style={{ backgroundImage: `url(${quiz.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', maskImage: 'linear-gradient(to right, transparent, black)' }} />
                                                         )}
-                                                        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-black/80" />
+                                                        <div className="absolute inset-0 bg-gradient-to-r from-[#161c33] via-[#161c33]/90 to-transparent" />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-[#161c33] via-transparent to-[#161c33]/50" />
                                                     </div>
 
                                                     {/* Favorite button */}
                                                     <button onClick={(e) => toggleFavorite(quiz.id, e)}
-                                                        className={`absolute top-4 right-3 z-30 p-2 rounded-full transition-all duration-200 backdrop-blur-sm ${isFavorited ? 'bg-pink-500/30 border border-pink-500/50 text-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.4)] hover:bg-pink-500/50' : 'bg-black/50 border border-white/10 text-gray-500 hover:text-pink-400 hover:border-pink-500/30 hover:bg-pink-500/10'}`}>
-                                                        <Heart size={14} className={isFavorited ? 'fill-pink-400' : ''} />
+                                                        className={`absolute top-2.5 right-2.5 z-30 p-1.5 rounded-full transition-all duration-200 backdrop-blur-sm ${isFavorited ? 'bg-pink-500/20 text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:bg-pink-500/40' : 'bg-black/30 border border-white/5 text-gray-500 hover:text-pink-400 hover:border-pink-500/30 hover:bg-pink-500/10'}`}>
+                                                        <Heart size={12} className={isFavorited ? 'fill-pink-400' : ''} />
                                                     </button>
 
-                                                    <CardHeader className="pb-1.5 relative z-20 flex-1 flex flex-col pt-2">
-                                                        {/* ── Category badge with category color ── */}
-                                                        <div className="flex items-start mb-1 pr-10">
-                                                            <div className="px-1.5 py-[1px] rounded text-[7px] font-display font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm"
+                                                    <CardHeader className="p-3 pb-1 relative z-20 flex flex-col">
+                                                        {/* ── Slanted Category badge ── */}
+                                                        <div className="flex items-start mb-1.5">
+                                                            <div className="px-2 py-[2px] rounded-sm text-[7px] font-display font-black uppercase tracking-[0.2em] transform -skew-x-[15deg] group-hover:skew-x-0 transition-all duration-300"
                                                                 style={{
-                                                                    background: colors.badge,
-                                                                    border: `1px solid ${colors.badgeBorder}`,
-                                                                    color: colors.badgeText,
+                                                                    background: `linear-gradient(90deg, ${colors.badgeBorder}60, transparent)`,
+                                                                    borderLeft: `2.5px solid ${colors.bar}`,
+                                                                    boxShadow: `0 0 10px ${colors.badgeBorder}50, inset 2px 0 6px ${colors.badgeBorder}60`,
+                                                                    color: '#fff',
+                                                                    textShadow: `0 0 5px ${colors.bar}`
                                                                 }}>
-                                                                {getCategoryDisplayName(quiz.category)}
+                                                                <div className="transform skew-x-[15deg] group-hover:skew-x-0 transition-transform">
+                                                                    {getCategoryDisplayName(quiz.category)}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <CardTitle className="text-xs text-white font-display uppercase tracking-wide leading-tight transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] line-clamp-1"
-                                                            style={{ color: '#fff' }}
-                                                            onMouseEnter={e => (e.currentTarget.style.color = colors.badgeText)}
-                                                            onMouseLeave={e => (e.currentTarget.style.color = '#fff')}
-                                                            title={quiz.title}>
-                                                            {quiz.title}
-                                                        </CardTitle>
-                                                        {/* <div className="text-[9px] text-gray-400 font-body line-clamp-1 mt-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] flex-1" title={quiz.description}>
-                                                            {quiz.description}
-                                                        </div> */}
+                                                        
+                                                        {/* Title */}
+                                                        <Tooltip open={hoveredTooltipId === quiz.id}>
+                                                            <TooltipTrigger asChild>
+                                                                <CardTitle className="text-[12px] text-white font-black italic uppercase tracking-wider leading-snug transition-all drop-shadow-md line-clamp-2 pr-6"
+                                                                    style={{ textShadow: `0 0 10px ${colors.badgeBorder}00` }}
+                                                                    onMouseEnter={e => {
+                                                                        e.currentTarget.style.textShadow = `0 0 15px ${colors.badgeBorder}80`;
+                                                                        if (e.currentTarget.scrollHeight > e.currentTarget.clientHeight) {
+                                                                            setHoveredTooltipId(quiz.id);
+                                                                        }
+                                                                    }}
+                                                                    onMouseLeave={e => {
+                                                                        e.currentTarget.style.textShadow = `0 0 10px ${colors.badgeBorder}00`;
+                                                                        setHoveredTooltipId(null);
+                                                                    }}>
+                                                                    {quiz.title}
+                                                                </CardTitle>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" sideOffset={8} className="bg-[#0c1020]/95 backdrop-blur-xl border border-[#7C3AED]/60 text-white font-display text-[10px] uppercase font-bold tracking-widest shadow-[0_0_25px_rgba(124,58,237,0.5)] z-[100] max-w-[280px]">
+                                                                {quiz.title}
+                                                            </TooltipContent>
+                                                        </Tooltip>
                                                     </CardHeader>
-                                                    <CardFooter className="mt-auto !pt-2 !pb-2 px-3 border-t border-white/5 flex justify-between items-center text-[8px] text-gray-400 font-display tracking-wider relative z-20 bg-black/40 backdrop-blur-sm">
-                                                        <div className="flex items-center gap-4 drop-shadow-md">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <HelpCircle size={14} style={{ color: colors.bar }} />
-                                                                {quiz.questionCount} Qs
+                                                    
+                                                    {/* Footer Hud */}
+                                                    <CardFooter className="p-3 border-t border-white/10 flex justify-between items-end relative z-20 bg-gradient-to-t from-[#0c1020]/95 to-transparent">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[8px] text-white/80 font-display uppercase tracking-[0.25em] mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-bold">QUESTIONS</span>
+                                                            <div className="flex items-center gap-1.5 font-bold text-white text-xs font-display">
+                                                                <HelpCircle size={12} style={{ color: colors.bar }} />
+                                                                {quiz.questionCount}
                                                             </div>
                                                         </div>
+                                                        
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleSelectQuiz(quiz.id); }}
                                                             disabled={creating}
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-white font-display text-[9px] tracking-widest uppercase rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            style={{
-                                                                background: `linear-gradient(135deg, ${colors.bar}, ${colors.badgeText})`,
-                                                                boxShadow: `0 0 12px ${colors.badge}`,
-                                                            }}
-                                                            onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 22px ${colors.badgeBorder}`)}
-                                                            onMouseLeave={e => (e.currentTarget.style.boxShadow = `0 0 12px ${colors.badge}`)}>
-                                                            <Play size={12} className="fill-white" />
-                                                            {t('select_quiz.start_button')}
+                                                            className="group/btn flex items-center h-8 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed transform -skew-x-[15deg] hover:skew-x-0 transition-transform duration-300 rounded-sm"
+                                                            style={{ background: `linear-gradient(135deg, ${colors.bar}, ${colors.badgeBorder})` }}
+                                                        >
+                                                            {/* Slanted Button Border */}
+                                                            <div className="absolute inset-0 border border-white/20 pointer-events-none" />
+                                                            
+                                                            {/* Inner Hover Glow */}
+                                                            <div className="absolute top-0 right-0 bottom-0 w-1/2 bg-white/20 transform -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-out" />
+                                                                
+                                                            <div className="relative z-10 flex items-center gap-2 px-4 transform skew-x-[15deg] group-hover/btn:skew-x-0 transition-transform duration-300">
+                                                                <span className="text-white font-black text-[9px] tracking-[0.2em] uppercase">{t('select_quiz.start_button')}</span>
+                                                                <Play size={10} className="fill-white" />
+                                                            </div>
                                                         </button>
                                                     </CardFooter>
                                                 </Card>
@@ -562,17 +638,18 @@ export default function SelectQuizPage() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                        </TooltipProvider>
 
                         {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="flex justify-center mt-6 mb-2 gap-2 flex-shrink-0">
                                 <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1 || isFetching || creating || isReturning}
-                                    className="h-8 px-3 bg-white/[0.03] border border-[#2d6af2]/30 text-white font-display text-[9px] disabled:opacity-30 hover:bg-[#2d6af2]/20 hover:border-[#00ff9d] transition-all uppercase tracking-wider">{t('select_quiz.pagination.prev')}</Button>
-                                <div className="flex items-center px-4 bg-[#2d6af2]/15 border border-[#2d6af2]/30 rounded-md text-[#00ff9d] font-display text-[9px]">{t('select_quiz.pagination.page')} {currentPage} / {totalPages}</div>
+                                    className="h-9 px-5 bg-[#2d6af2]/10 border border-[#2d6af2]/50 text-[#93c5fd] hover:bg-[#2d6af2] hover:text-white transition-all font-display text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:border-white/5 shadow-[0_0_15px_rgba(45,106,242,0.4)] hover:shadow-[0_0_25px_rgba(45,106,242,0.7)]">{t('select_quiz.pagination.prev')}</Button>
+                                <div className="flex items-center px-6 bg-[#7C3AED]/20 border border-[#7C3AED]/40 rounded-md text-white font-display font-black text-[11px] tracking-[0.2em] shadow-[0_0_15px_rgba(124,58,237,0.3)]">{t('select_quiz.pagination.page')} {currentPage} / {totalPages}</div>
                                 <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages || isFetching || creating || isReturning}
-                                    className="h-8 px-3 bg-white/[0.03] border border-[#2d6af2]/30 text-white font-display text-[9px] disabled:opacity-30 hover:bg-[#2d6af2]/20 hover:border-[#00ff9d] transition-all uppercase tracking-wider">{t('select_quiz.pagination.next')}</Button>
+                                    className="h-9 px-5 bg-[#2d6af2]/10 border border-[#2d6af2]/50 text-[#93c5fd] hover:bg-[#2d6af2] hover:text-white transition-all font-display text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:border-white/5 shadow-[0_0_15px_rgba(45,106,242,0.4)] hover:shadow-[0_0_25px_rgba(45,106,242,0.7)]">{t('select_quiz.pagination.next')}</Button>
                             </div>
                         )}
                     </div>
@@ -580,112 +657,150 @@ export default function SelectQuizPage() {
             </div>
 
             {/* Quiz Detail Dialog */}
-            <Dialog open={!!selectedQuizDetail || isDetailLoading} onOpenChange={(open) => { if (!open) setSelectedQuizDetail(null); }}>
-                <DialogContent className="bg-[#080d1a] border border-[#2d6af2]/30 text-white backdrop-blur-xl p-0 overflow-hidden max-w-lg shadow-2xl rounded-xl">
-                    {isDetailLoading ? (
-                        <div className="flex flex-col items-center justify-center p-12 space-y-4">
-                            <div className="w-10 h-10 border-2 border-[#2d6af2]/30 border-t-[#00ff9d] rounded-full animate-spin" />
-                            <p className="font-display text-[10px] uppercase tracking-widest text-gray-500">Loading...</p>
-                        </div>
-                    ) : selectedQuizDetail && (
-                        <div className="flex flex-col">
-                            {/* Larger Header */}
-                            <div className="p-6 pb-4 border-b border-white/5">
-                                <span className="text-[9px] font-display font-bold uppercase tracking-[0.2em] text-[#00ff9d] mb-2 block">
-                                    {getCategoryDisplayName(selectedQuizDetail.category)}
-                                </span>
-                                <DialogTitle className="text-xl font-display font-bold uppercase tracking-wide text-white leading-tight">
-                                    {selectedQuizDetail.title}
-                                </DialogTitle>
+            {(() => {
+                const colors = selectedQuizDetail ? getCategoryColor(selectedQuizDetail.category) : null;
+                const dynamicBorderColor = colors ? colors.bar : '#2d6af2';
+                const dynamicShadow = colors ? `0 0 60px rgba(0,0,0,0.8), 0 0 40px ${colors.badgeBorder}` : '0 0 60px rgba(0,0,0,0.8), 0 0 40px rgba(45,106,242,0.15)';
 
-                                <div className="mt-3">
-                                    <p className={`text-gray-400 text-xs font-body leading-relaxed transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-1'}`}>
-                                        {selectedQuizDetail.description || t('select_quiz.detail.no_description')}
-                                    </p>
-                                    {(selectedQuizDetail.description && selectedQuizDetail.description.length > 80) && (
+                return (
+                    <Dialog open={!!selectedQuizDetail || isDetailLoading} onOpenChange={(open) => { if (!open) setSelectedQuizDetail(null); }}>
+                        <DialogContent 
+                            className="bg-[#080d1a]/95 border border-white/[0.05] border-t-4 text-white backdrop-blur-3xl p-0 overflow-hidden max-w-lg rounded-sm transition-all duration-300"
+                            style={{ borderTopColor: dynamicBorderColor, boxShadow: dynamicShadow }}>
+                            {isDetailLoading ? (
+                                <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                                    <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin" 
+                                         style={{ borderColor: `${dynamicBorderColor}50`, borderTopColor: '#00ff9d' }} />
+                                    <p className="font-display text-[10px] uppercase tracking-widest text-gray-500">Loading...</p>
+                                </div>
+                            ) : selectedQuizDetail && colors && (
+                                <div className="flex flex-col">
+                                    {/* Telemetry Header */}
+                                    <div className="p-6 pb-5 border-b border-white/5 bg-gradient-to-br from-[#0c1226] to-[#060914] relative overflow-hidden">
+                                        {/* Ambient Glow */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 blur-[40px] rounded-full pointer-events-none transition-colors duration-500" 
+                                             style={{ backgroundColor: colors.badgeBorder, opacity: 0.15 }} />
+                                        
+                                        <div className="flex items-start mb-3 relative z-10 w-fit">
+                                            <div className="px-3 py-1 text-[8px] font-display font-black uppercase tracking-[0.2em] transform -skew-x-[15deg] border border-l-2 shadow-[0_0_15px_rgba(0,0,0,0.2)]"
+                                                 style={{ 
+                                                     background: `linear-gradient(90deg, ${colors.badgeBorder}40, transparent)`, 
+                                                     borderColor: `${colors.badgeBorder}30`,
+                                                     borderLeftColor: colors.bar,
+                                                     color: colors.badgeText,
+                                                     textShadow: `0 0 5px ${colors.bar}`
+                                                 }}>
+                                                <div className="transform skew-x-[15deg]">
+                                                    {getCategoryDisplayName(selectedQuizDetail.category)}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <DialogTitle className="text-[22px] font-display font-black italic uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 leading-tight drop-shadow-md relative z-10 pr-4">
+                                            {selectedQuizDetail.title}
+                                        </DialogTitle>
+
+                                        <div className="mt-4 relative z-10">
+                                            <p className={`text-gray-400 text-[11px] font-display tracking-widest uppercase leading-snug transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-2'}`}>
+                                                {selectedQuizDetail.description || t('select_quiz.detail.no_description')}
+                                            </p>
+                                            {(selectedQuizDetail.description && selectedQuizDetail.description.length > 80) && (
+                                                <button
+                                                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                                    className="text-[9px] font-display font-bold uppercase tracking-[0.2em] mt-2 hover:text-white transition-colors focus:outline-none flex items-center gap-1"
+                                                    style={{ color: colors.badgeText }}>
+                                                    {isDescriptionExpanded ? t('select_quiz.detail.show_less') : t('select_quiz.detail.show_more')}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Data Grid */}
+                                    <div className="px-6 py-5 grid grid-cols-2 gap-3 bg-[#060914]">
+                                        <div className="flex items-center gap-3 bg-[#0f142b] border border-white/5 p-3 px-4 rounded-sm shadow-inner transition-colors group"
+                                             style={{ ...( { '--hover-border': colors.bar } as any ) }}>
+                                            <HelpCircle size={16} className="transition-transform group-hover:scale-110" style={{ color: colors.bar }} />
+                                            <div className="flex flex-col">
+                                                <span className="text-[8px] text-white/40 uppercase tracking-widest font-display font-bold">{t('select_quiz.detail.questions')}</span>
+                                                <span className="text-[14px] font-display font-black text-white tracking-widest">
+                                                    {typeof selectedQuizDetail.questions === 'string'
+                                                        ? JSON.parse(selectedQuizDetail.questions).length
+                                                        : (Array.isArray(selectedQuizDetail.questions) ? selectedQuizDetail.questions.length : 0)} <span className="text-[9px] text-white/50">{t('select_quiz.detail.qs_suffix')}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-[#0f142b] border border-white/5 p-3 px-4 rounded-sm shadow-inner transition-colors group">
+                                            <Play size={16} className="text-[#00ff9d] group-hover:scale-110 transition-transform" />
+                                            <div className="flex flex-col">
+                                                <span className="text-[8px] text-white/40 uppercase tracking-widest font-display font-bold">{t('select_quiz.detail.played')}</span>
+                                                <span className="text-[14px] font-display font-black text-white tracking-widest">
+                                                    {selectedQuizDetail.played || 0} <span className="text-[9px] text-white/50">{t('select_quiz.detail.play_suffix')}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-[#0f142b] border border-white/5 p-3 px-4 rounded-sm shadow-inner transition-colors group">
+                                            <Heart size={16} className="text-pink-500 group-hover:scale-110 transition-transform" />
+                                            <div className="flex flex-col">
+                                                <span className="text-[8px] text-white/40 uppercase tracking-widest font-display font-bold">{t('select_quiz.detail.favorites')}</span>
+                                                <span className="text-[14px] font-display font-black text-white tracking-widest">
+                                                    {(() => {
+                                                        try {
+                                                            const favs = typeof selectedQuizDetail.favorite === 'string'
+                                                                ? JSON.parse(selectedQuizDetail.favorite)
+                                                                : selectedQuizDetail.favorite;
+                                                            return Array.isArray(favs) ? favs.length : 0;
+                                                        } catch { return 0; }
+                                                    })()} <span className="text-[9px] text-white/50">{t('select_quiz.detail.fav_suffix')}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-[#0f142b] border border-white/5 p-3 px-4 rounded-sm shadow-inner transition-colors group">
+                                            <Languages size={16} className="text-[#7c3aed] group-hover:scale-110 transition-transform" />
+                                            <div className="flex flex-col">
+                                                <span className="text-[8px] text-white/40 uppercase tracking-widest font-display font-bold">{t('select_quiz.detail.language')}</span>
+                                                <span className="text-[14px] font-display font-black text-white uppercase tracking-widest">
+                                                    {selectedQuizDetail.language || 'ID'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Bay */}
+                                    <div className="p-6 pt-0 pb-6 flex items-center justify-between gap-4 bg-[#060914]">
                                         <button
-                                            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                            className="text-[#00ff9d] text-[10px] font-display uppercase tracking-widest mt-2 hover:underline focus:outline-none">
-                                            {isDescriptionExpanded ? t('select_quiz.detail.show_less') : t('select_quiz.detail.show_more')}
+                                            onClick={() => setSelectedQuizDetail(null)}
+                                            className="px-6 h-10 font-display text-[10px] font-bold tracking-[0.2em] uppercase text-white/50 hover:text-white transition-all bg-white/5 border border-white/10 hover:border-white/30 transform -skew-x-[15deg] hover:bg-white/10">
+                                            <div className="transform skew-x-[15deg]">{t('select_quiz.detail.cancel')}</div>
                                         </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Balanced Stats Grid */}
-                            <div className="px-6 py-4 grid grid-cols-2 gap-4">
-                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
-                                    <HelpCircle size={14} className="text-[#2d6af2]" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.questions')}</span>
-                                        <span className="text-[12px] font-display font-bold text-white">
-                                            {typeof selectedQuizDetail.questions === 'string'
-                                                ? JSON.parse(selectedQuizDetail.questions).length
-                                                : (Array.isArray(selectedQuizDetail.questions) ? selectedQuizDetail.questions.length : 0)} {t('select_quiz.detail.qs_suffix')}
-                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                const qid = selectedQuizDetail.id;
+                                                setSelectedQuizDetail(null);
+                                                handleSelectQuiz(qid);
+                                            }}
+                                            disabled={creating}
+                                            className="flex-1 max-w-[200px] h-11 group/btnstart overflow-hidden text-white font-display text-[12px] font-black tracking-[0.3em] uppercase transition-all duration-300 relative transform -skew-x-[15deg] disabled:opacity-50 border"
+                                            style={{ 
+                                                background: `linear-gradient(135deg, ${colors.bar}, ${colors.badgeBorder})`,
+                                                borderColor: `${colors.badgeBorder}80`,
+                                                boxShadow: `0 0 25px ${colors.badgeBorder}60` 
+                                            }}>
+                                            <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover/btnstart:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                                            <div className="absolute inset-0 border border-white/20" />
+                                            <div className="transform skew-x-[15deg] absolute inset-0 flex items-center justify-center gap-2">
+                                                {t('select_quiz.detail.start')} <Play size={10} className="fill-white" />
+                                            </div>
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
-                                    <Play size={14} className="text-[#00ff9d]" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.played')}</span>
-                                        <span className="text-[12px] font-display font-bold text-white">
-                                            {selectedQuizDetail.played || 0} {t('select_quiz.detail.play_suffix')}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
-                                    <Heart size={14} className="text-pink-500" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.favorites')}</span>
-                                        <span className="text-[12px] font-display font-bold text-white">
-                                            {(() => {
-                                                try {
-                                                    const favs = typeof selectedQuizDetail.favorite === 'string'
-                                                        ? JSON.parse(selectedQuizDetail.favorite)
-                                                        : selectedQuizDetail.favorite;
-                                                    return Array.isArray(favs) ? favs.length : 0;
-                                                } catch { return 0; }
-                                            })()} {t('select_quiz.detail.fav_suffix')}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3 rounded-xl hover:bg-white/[0.05] transition-all">
-                                    <Languages size={14} className="text-purple-500" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] text-gray-500 uppercase tracking-widest font-display">{t('select_quiz.detail.language')}</span>
-                                        <span className="text-[12px] font-display font-bold text-white uppercase">
-                                            {selectedQuizDetail.language || 'ID'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Premium Footer */}
-                            <div className="p-6 pt-2 flex items-center justify-between gap-4">
-                                <button
-                                    onClick={() => setSelectedQuizDetail(null)}
-                                    className="px-6 py-3 font-display text-[10px] tracking-widest uppercase text-gray-500 hover:text-white transition-all bg-white/5 rounded-xl border border-white/10">
-                                    {t('select_quiz.detail.cancel')}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        const qid = selectedQuizDetail.id;
-                                        setSelectedQuizDetail(null);
-                                        handleSelectQuiz(qid);
-                                    }}
-                                    disabled={creating}
-                                    className="px-12 py-3 text-[#04060f] font-display text-[11px] font-bold tracking-widest uppercase rounded-xl transition-all duration-300 bg-[#00ff9d] hover:shadow-[0_0_20px_rgba(0,255,157,0.4)] disabled:opacity-50">
-                                    {t('select_quiz.detail.start')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                );
+            })()}
         </div>
     );
 }
