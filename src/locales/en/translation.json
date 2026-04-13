@@ -57,7 +57,7 @@
     "or": "OR",
     "form": {
       "identifier_label": "Username or Email",
-      "identifier_placeholder": "Your racer ID...",
+      "identifier_placeholder": "email@gmail.com",
       "identifier_error_min": "At least 3 characters",
       "password_label": "Password",
       "password_placeholder": "••••••••",

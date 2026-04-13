@@ -57,7 +57,7 @@
     "or": "ATAU",
     "form": {
       "identifier_label": "Username atau Email",
-      "identifier_placeholder": "Username/Email...",
+      "identifier_placeholder": "email@gmail.com",
       "identifier_error_min": "Minimal 3 karakter",
       "password_label": "Kata Sandi",
       "password_placeholder": "••••••••",

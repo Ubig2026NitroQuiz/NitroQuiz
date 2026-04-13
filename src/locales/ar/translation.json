@@ -57,7 +57,7 @@
     "or": "أو",
     "form": {
       "identifier_label": "اسم المستخدم أو البريد الإلكتروني",
-      "identifier_placeholder": "اسم المستخدم أو البريد...",
+      "identifier_placeholder": "email@gmail.com",
       "identifier_error_min": "على الأقل 3 أحرف",
       "password_label": "كلمة المرور",
       "password_placeholder": "••••••••",
