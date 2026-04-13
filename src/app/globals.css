@@ -1,9 +1,4 @@
 @import "tailwindcss";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
   :root {
     --background: 222.2 84% 4.9%;
@@ -250,6 +245,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .line-clamp-3 {
@@ -257,6 +253,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 
   /* Hide scrollbar but keep functionality */
