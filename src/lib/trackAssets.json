@@ -667,12 +667,12 @@
     {
         "z": 1203,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1baliho.webp"
+        "src": "/assets/material/kiri_jalan/allobank-kiri.webp"
     },
     {
         "z": 1277,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1bsi.webp"
+        "src": "/assets/material/kanan_jalan/allobank-kanan.webp"
     },
     {
         "z": 1221,
@@ -692,12 +692,12 @@
     {
         "z": 1313,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1burgerking.webp"
+        "src": "/assets/material/kanan_jalan/amanda_kanan.png"
     },
     {
         "z": 1257,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1basmallah.webp"
+        "src": "/assets/material/kiri_jalan/bankjatim-kiri.webp"
     },
     {
         "z": 1331,
@@ -712,12 +712,12 @@
     {
         "z": 1349,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1cgv.webp"
+        "src": "/assets/material/kanan_jalan/bankjatim-kanan.webp"
     },
     {
         "z": 1293,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1gacoan.webp"
+        "src": "/assets/material/kiri_jalan/bca-kiri.webp"
     },
     {
         "z": 1367,
@@ -732,12 +732,12 @@
     {
         "z": 1385,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1indosat.png"
+        "src": "/assets/material/kanan_jalan/bca-kanan.webp"
     },
     {
         "z": 1329,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1gameforsmart.webp"
+        "src": "/assets/material/kiri_jalan/biznet-kiri.webp"
     },
     {
         "z": 1403,
@@ -752,7 +752,7 @@
     {
         "z": 1421,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1kemendikbud.webp"
+        "src": "/assets/material/kanan_jalan/biznet-kanan.webp"
     },
     {
         "z": 1365,
@@ -767,7 +767,7 @@
     {
         "z": 1383,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1ganesha.webp"
+        "src": "/assets/material/kiri_jalan/bni-kiri.webp"
     },
     {
         "z": 1457,
@@ -782,12 +782,12 @@
     {
         "z": 1475,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1lawson.webp"
+        "src": "/assets/material/kanan_jalan/bni-kanan.webp"
     },
     {
         "z": 1419,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1mcc.webp"
+        "src": "/assets/material/kiri_jalan/bri-kiri.webp"
     },
     {
         "z": 1493,
@@ -802,12 +802,12 @@
     {
         "z": 1511,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1matos.webp"
+        "src": "/assets/material/kanan_jalan/bri-kanan.webp"
     },
     {
         "z": 1455,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1ruangguru.webp"
+        "src": "/assets/material/kiri_jalan/bsn-kiri.webp"
     },
     {
         "z": 1529,
@@ -822,12 +822,12 @@
     {
         "z": 1547,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1pocari.webp"
+        "src": "/assets/material/kanan_jalan/bsn-kanan.webp"
     },
     {
         "z": 1491,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/1ubig.webp"
+        "src": "/assets/material/kiri_jalan/btn-kiri.webp"
     },
     {
         "z": 1565,
@@ -842,12 +842,12 @@
     {
         "z": 1583,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1shell.webp"
+        "src": "/assets/material/kanan_jalan/btn-kanan.webp"
     },
     {
         "z": 1527,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2cgv.webp"
+        "src": "/assets/material/kiri_jalan/firstmedia-kiri.webp"
     },
     {
         "z": 1601,
@@ -867,12 +867,12 @@
     {
         "z": 1563,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2indosat.png"
+        "src": "/assets/material/kiri_jalan/hifi-kiri.webp"
     },
     {
         "z": 1637,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2baliho.webp"
+        "src": "/assets/material/kanan_jalan/firstmedia-kanan.webp"
     },
     {
         "z": 1581,
@@ -887,12 +887,12 @@
     {
         "z": 1599,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2kemendikbud.webp"
+        "src": "/assets/material/kiri_jalan/k24-kiri.webp"
     },
     {
         "z": 1673,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2basmallah.webp"
+        "src": "/assets/material/kanan_jalan/hifi-kanan.webp"
     },
     {
         "z": 1617,
@@ -907,12 +907,12 @@
     {
         "z": 1635,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2lawson.webp"
+        "src": "/assets/material/kiri_jalan/kimiafarma-kiri.webp"
     },
     {
         "z": 1709,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2burgerking.webp"
+        "src": "/assets/material/kanan_jalan/k24-kanan.webp"
     },
     {
         "z": 1653,
@@ -927,7 +927,7 @@
     {
         "z": 1671,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2matos.webp"
+        "src": "/assets/material/kiri_jalan/mandiri-kiri.png"
     },
     {
         "z": 1745,
@@ -942,12 +942,12 @@
     {
         "z": 1763,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2gacoan.webp"
+        "src": "/assets/material/kanan_jalan/kimiafarma-kanan.webp"
     },
     {
         "z": 1707,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2pocari.webp"
+        "src": "/assets/material/kiri_jalan/mandiri-kiri.webp"
     },
     {
         "z": 1781,
@@ -962,12 +962,12 @@
     {
         "z": 1799,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2gramedia.webp"
+        "src": "/assets/material/kanan_jalan/mandiri-kanan.png"
     },
     {
         "z": 1743,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/2shell.webp"
+        "src": "/assets/material/kiri_jalan/megavision-kiri.webp"
     },
     {
         "z": 1817,
@@ -987,12 +987,12 @@
     {
         "z": 1779,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/3bsi.webp"
+        "src": "/assets/material/kiri_jalan/myrepublic-kiri.webp"
     },
     {
         "z": 1853,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2mcc.webp"
+        "src": "/assets/material/kanan_jalan/mandiri-kanan.webp"
     },
     {
         "z": 1797,
@@ -1007,12 +1007,12 @@
     {
         "z": 1815,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/3mcc.webp"
+        "src": "/assets/material/kiri_jalan/oxygen.id-kiri.webp"
     },
     {
         "z": 1889,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2ruangguru.webp"
+        "src": "/assets/material/kanan_jalan/megavision-kanan.webp"
     },
     {
         "z": 1833,
@@ -1027,12 +1027,12 @@
     {
         "z": 1851,
         "side": "left",
-        "src": "/assets/material/kiri_jalan/alfamart_kiri.png"
+        "src": "/assets/material/kiri_jalan/tomoro-kiri.png"
     },
     {
         "z": 1925,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/2ubig.webp"
+        "src": "/assets/material/kanan_jalan/myrepublic-kanan.webp"
     },
     {
         "z": 1869,
@@ -1092,7 +1092,7 @@
     {
         "z": 1979,
         "side": "right",
-        "src": "/assets/material/kanan_jalan/1bsi.webp"
+        "src": "/assets/material/kanan_jalan/oxygen.id-kanan.webp"
     },
     {
         "z": 2031,
