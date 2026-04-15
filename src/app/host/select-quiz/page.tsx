@@ -459,7 +459,7 @@ export default function SelectQuizPage() {
                                 <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                     {Array.from({ length: 8 }).map((_, i) => (
-                                        <Card key={i} className="flex flex-col bg-[#161c33]/50 border-t border-t-white/10 border border-white/5 rounded-xl pb-0 shadow-lg animate-pulse overflow-hidden">
+                                        <Card key={i} className="h-full flex flex-col bg-[#161c33]/50 border-t border-t-white/10 border border-white/5 rounded-xl pb-0 shadow-lg animate-pulse overflow-hidden">
                                             <CardHeader className="p-3 pb-1 flex flex-col">
                                                 {/* Category badge skeleton */}
                                                 <div className="w-24 h-[11px] bg-white/10 rounded-sm transform -skew-x-[15deg] mb-1.5"></div>
@@ -494,14 +494,14 @@ export default function SelectQuizPage() {
                                             <motion.div key={quiz.id}
                                                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ duration: 0.2 }} whileHover={{ scale: 1.02 }}
-                                                className="cursor-pointer relative group"
+                                                className="cursor-pointer relative group h-full flex flex-col"
                                                 onClick={() => handleOpenQuizDetail(quiz.id)}
                                                 style={{ willChange: "transform, opacity" }}>
                                                 
                                                 {/* Outer Glow Wrapper */}
                                                 <div className="absolute -inset-[1px] bg-gradient-to-br from-white/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 
-                                                <Card className="flex flex-col bg-[#161c33]/85 backdrop-blur-xl border-t border-t-white/20 border border-white/10 transition-all duration-300 relative overflow-hidden group rounded-xl pb-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.3)]">
+                                                <Card className="h-full flex flex-col bg-[#161c33]/85 backdrop-blur-xl border-t border-t-white/20 border border-white/10 transition-all duration-300 relative overflow-hidden group rounded-xl pb-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.3)]">
                                                     
                                                     {/* Animated Cyber Texture */}
                                                     <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.06] pointer-events-none transition-opacity"
