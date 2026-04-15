@@ -2,6 +2,10 @@ stages:
   - test
   - deploy
 
+cache:
+  paths:
+    - node_modules/
+
 check_code:
   stage: test
   tags:
@@ -18,12 +22,13 @@ deploy_to_aapanel:
   tags:
     - nodejs
   script:
-    - echo "Kodingan aman! Mengirim langsung ke aaPanel tanpa Git Pull..."
-    - rsync -avz --delete --exclude '.git' --exclude 'node_modules' ./ root@192.168.1.157:/www/wwwroot/NitroQuiz/
     - ssh -o StrictHostKeyChecking=no root@192.168.1.157 "
         cd /www/wwwroot/NitroQuiz && 
         npm install && 
-        pm2 startOrReload ecosystem.config.js && echo 'Aplikasi berhasil di-update dan di-reload!'
+        npm run build && 
+        pm2 startOrReload ecosystem.config.js --update-env && 
+        pm2 flush Nitro Quiz &&
+        echo 'Aplikasi berhasil di-build dan di-reload!'
       "
   only:
     - main
