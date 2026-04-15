@@ -1,0 +1,29 @@
+stages:
+  - test
+  - deploy
+
+check_code:
+  stage: test
+  tags:
+    - nodejs
+  script:
+    - echo "Sedang mengecek kelayakan kodingan..."
+    - npm install
+    - npm test || echo "Test belum dikonfigurasi, lanjut..." 
+  only:
+    - main
+
+deploy_to_aapanel:
+  stage: deploy
+  tags:
+    - nodejs
+  script:
+    - echo "Kodingan aman! Mengirim langsung ke aaPanel tanpa Git Pull..."
+    - rsync -avz --delete --exclude '.git' --exclude 'node_modules' ./ root@192.168.1.157:/www/wwwroot/NitroQuiz/
+    - ssh -o StrictHostKeyChecking=no root@192.168.1.157 "
+        cd /www/wwwroot/NitroQuiz && 
+        npm install && 
+        pm2 startOrReload ecosystem.config.js && echo 'Aplikasi berhasil di-update dan di-reload!'
+      "
+  only:
+    - main

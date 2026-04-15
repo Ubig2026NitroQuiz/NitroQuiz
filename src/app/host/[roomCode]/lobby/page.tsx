@@ -20,6 +20,7 @@ import {
   DialogOverlay,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useBgm } from "@/contexts/BgmContext";
 
 // Helper: Generate initials from a name
 const getInitials = (name: string): string => {
@@ -53,6 +54,7 @@ export default function HostLobby() {
   const params = useParams();
   const { t } = useTranslation();
   const { profile } = useAuth();
+  const { isMuted, toggleMute } = useBgm();
   const roomCode = params.roomCode as string;
 
   const [participants, setParticipants] = useState<any[]>([]);
@@ -64,7 +66,6 @@ export default function HostLobby() {
   const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
   const [inviteGroupOpen, setInviteGroupOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [kickDialogOpen, setKickDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
@@ -725,7 +726,7 @@ export default function HostLobby() {
 
                 {/* Sound */}
                 <button
-                  onClick={() => setIsMuted(!isMuted)}
+                  onClick={toggleMute}
                   className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isMuted ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10"}`}
                 >
                   {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
