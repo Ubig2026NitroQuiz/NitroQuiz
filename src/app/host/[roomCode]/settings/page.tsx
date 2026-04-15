@@ -17,6 +17,45 @@ import { Question } from "@/types"
 import { Logo } from "@/components/ui/logo"
 import { useTranslation } from "react-i18next"
 
+// ── Category color map (Copied from select-quiz) ──
+const categoryColorMap: Record<string, {
+    bar: string;        // top bar bg color
+    badge: string;      // badge bg
+    badgeBorder: string;
+    badgeText: string;
+    hoverBorder: string;
+}> = {
+    general: { bar: '#1a5f5f', badge: 'rgba(26,95,95,0.22)', badgeBorder: 'rgba(38,166,154,0.4)', badgeText: '#4db6ac', hoverBorder: 'rgba(26,95,95,0.7)' },
+    math: { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
+    history: { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
+    science: { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
+    geography: { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
+    language: { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
+    sport: { bar: '#ef4444', badge: 'rgba(239,68,68,0.15)', badgeBorder: 'rgba(252,165,165,0.35)', badgeText: '#fca5a5', hoverBorder: 'rgba(239,68,68,0.6)' },
+    technology: { bar: '#2d6af2', badge: 'rgba(45,106,242,0.18)', badgeBorder: 'rgba(100,181,246,0.35)', badgeText: '#64b5f6', hoverBorder: 'rgba(45,106,242,0.6)' },
+    art: { bar: '#d946ef', badge: 'rgba(217,70,239,0.15)', badgeBorder: 'rgba(240,171,252,0.35)', badgeText: '#f0abfc', hoverBorder: 'rgba(217,70,239,0.6)' },
+    music: { bar: '#ec4899', badge: 'rgba(236,72,153,0.15)', badgeBorder: 'rgba(249,168,212,0.35)', badgeText: '#f9a8d4', hoverBorder: 'rgba(236,72,153,0.6)' },
+    matematika: { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
+    sejarah: { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
+    sains: { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
+    geografi: { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
+    bahasa: { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
+    olahraga: { bar: '#ef4444', badge: 'rgba(239,68,68,0.15)', badgeBorder: 'rgba(252,165,165,0.35)', badgeText: '#fca5a5', hoverBorder: 'rgba(239,68,68,0.6)' },
+    teknologi: { bar: '#2d6af2', badge: 'rgba(45,106,242,0.18)', badgeBorder: 'rgba(100,181,246,0.35)', badgeText: '#64b5f6', hoverBorder: 'rgba(45,106,242,0.6)' },
+    seni: { bar: '#d946ef', badge: 'rgba(217,70,239,0.15)', badgeBorder: 'rgba(240,171,252,0.35)', badgeText: '#f0abfc', hoverBorder: 'rgba(217,70,239,0.6)' },
+    musik: { bar: '#ec4899', badge: 'rgba(236,72,153,0.15)', badgeBorder: 'rgba(249,168,212,0.35)', badgeText: '#f9a8d4', hoverBorder: 'rgba(236,72,153,0.6)' }
+};
+
+const getCategoryColor = (category?: string) => {
+    if (!category) return categoryColorMap.general;
+    const catLower = category.toLowerCase();
+    const mapped = categoryColorMap[catLower];
+    if (mapped) return mapped;
+    const foundKey = Object.keys(categoryColorMap).find(key => catLower.includes(key));
+    if (foundKey) return categoryColorMap[foundKey];
+    return categoryColorMap.general;
+};
+
 const backgroundGif = "/assets/background/2_v2.webp"
 
 export default function SettingsPage() {
@@ -37,6 +76,7 @@ export default function SettingsPage() {
         description: string;
         totalQuestions: number;
         questions: any[];
+        category?: string;
     } | null>(null)
 
     const [saving, setSaving] = useState(false)
@@ -65,7 +105,7 @@ export default function SettingsPage() {
                 if (data) {
                     let qs = data.questions || [];
                     if (typeof qs === 'string') { try { qs = JSON.parse(qs); } catch (e) { } }
-                    setQuizDetail({ title: data.title || "Untitled Quiz", description: data.description || "No description provided.", totalQuestions: qs.length, questions: qs });
+                    setQuizDetail({ title: data.title || "Untitled Quiz", description: data.description || "No description provided.", totalQuestions: qs.length, questions: qs, category: data.category });
                 }
             } catch (err) { console.error("Error fetching quiz from central:", err); }
         };
@@ -164,13 +204,43 @@ export default function SettingsPage() {
                 supabase.from('sessions').delete().eq('game_pin', roomCode)
             ]);
             localStorage.removeItem(`session_${roomCode}`);
+            // Remove the popstate listener before navigating to avoid the dialog showing up again
+            window.onpopstate = null;
             router.push('/host/select-quiz');
         }
         catch (err) {
             console.error("Error deleting session:", err);
+            window.onpopstate = null;
             router.push('/host/select-quiz');
         }
     };
+
+    // ── Navigation Protection (Browser Back / Gestures) ──
+    useEffect(() => {
+        // Handle Browser Back Button and Gestures
+        const blockNavigation = () => {
+            setShowCancelDialog(true);
+            // Push state back to prevent navigation
+            window.history.pushState(null, "", window.location.pathname);
+        };
+
+        // Initialize history state
+        window.history.pushState(null, "", window.location.pathname);
+        window.onpopstate = blockNavigation;
+
+        // Handle Close Tab / Refresh
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = ""; // Standard way to show exit confirmation
+            return "";
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            window.onpopstate = null;
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []);
 
     if (!quizDetail) {
         return (
@@ -182,6 +252,8 @@ export default function SettingsPage() {
             </div>
         );
     }
+
+    const theme = getCategoryColor(quizDetail.category);
 
     return (
         <div className="h-screen bg-[#04060f] relative overflow-hidden font-body selection:bg-[#2d6af2] selection:text-white">
@@ -197,49 +269,51 @@ export default function SettingsPage() {
                 <div className="w-full px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <motion.button
-                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} whileHover={{ scale: 1.05 }}
-                            className="p-3 bg-[#080d1a]/60 border border-[#2d6af2]/50 hover:bg-[#2d6af2]/20 hover:border-[#00ff9d] text-[#2d6af2] rounded-xl transition-all shadow-[0_0_15px_rgba(45,106,242,0.3)] flex items-center justify-center group"
-                            aria-label="Back to Host"
+                            initial={{ opacity: 0, x: -20 }} 
+                            animate={{ opacity: 1, x: 0 }} 
+                            whileHover={{ scale: 1.05, filter: "brightness(1.2) drop-shadow(0 0 8px rgba(45,106,242,0.5))" }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => setShowCancelDialog(true)}
+                            className="cursor-pointer transition-all focus:outline-none w-32 md:w-40"
                         >
-                            <ArrowLeft size={20} className="group-hover:text-white transition-colors" />
+                            <Logo withText={false} animated={false} />
                         </motion.button>
-                        <Logo width={140} height={40} withText={false} animated={false} />
                     </div>
-                    <Image src="/assets/logo/logo2.png" alt="GameForSmart.com" width={240} height={60}
-                        className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(169,141,197,0.4)]" />
+                    <div className="relative w-32 md:w-60 h-10 md:h-14">
+                        <Image src="/assets/logo/logo2.png" alt="GameForSmart.com" fill
+                            className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(169,141,197,0.4)]" />
+                    </div>
                 </div>
 
                 <div className="relative container mx-auto px-4 sm:px-6 pb-6 max-w-3xl flex-1 flex flex-col justify-center py-4">
                     <motion.div initial={{ opacity: 0, scale: 0.95, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 100, damping: 12 }}>
-                        <Card className="bg-[#080d1a]/80 border border-[#2d6af2]/40 backdrop-blur-2xl shadow-[0_0_30px_rgba(45,106,242,0.15),inset_0_1px_0_rgba(255,255,255,0.06)] rounded-[2rem] relative overflow-hidden p-0">
-                            {/* Aurora accent bar */}
-                            <div className="h-[4px] w-full" style={{ background: 'linear-gradient(90deg,#1a45c4,#2d6af2,#00ff9d,#2d6af2,#1a45c4)' }} />
-
-                            <div className="p-6 sm:p-8 flex flex-col gap-7 relative z-10">
-                                {/* Ambient glow */}
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-[#2d6af2]/10 blur-[60px] pointer-events-none" />
-
+                        <Card className="bg-[#0c1328]/85 border backdrop-blur-xl rounded-md relative overflow-hidden p-0 transition-colors"
+                              style={{ borderTop: `4px solid ${theme.bar}`, borderColor: theme.badgeBorder, boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 40px ${theme.badge}` }}>
+                            <div className="p-6 sm:p-8 flex flex-col gap-8 relative z-10">
                                 {/* Quiz Title */}
-                                <div className="p-4 bg-white/[0.03] border border-[#2d6af2]/30 rounded-xl">
-                                    <h2 className="text-lg sm:text-xl text-white font-display font-bold uppercase tracking-widest text-center drop-shadow-[0_0_10px_rgba(45,106,242,0.5)]">
+                                <div className="py-5 bg-gradient-to-r from-[#17254d] to-transparent border-l-2 pl-6 relative -mx-6 sm:-mx-8 shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)] transition-colors"
+                                     style={{ borderLeftColor: theme.bar }}>
+                                    <h2 className="text-xl sm:text-2xl pr-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 font-display font-black italic uppercase tracking-wider drop-shadow-md">
                                         {quizDetail.title}
                                     </h2>
                                 </div>
 
                                 {/* ── Row 1: Duration + Questions + Sound ── */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">                                    {/* Duration */}
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-display uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5" style={{ color: '#2d6af2' }}>
-                                            <Clock className="h-3 w-3" /><span>{t('room_settings.duration')}</span>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    {/* Duration */}
+                                    <div className="space-y-1.5 group/dur">
+                                        <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-2 transition-colors group-hover/dur:text-white">
+                                            <Clock className="h-3 w-3" style={{ color: theme.bar }} /><span>{t('room_settings.duration')}</span>
                                         </Label>
                                         <Select value={duration} onValueChange={setDuration}>
-                                            <SelectTrigger className="h-10 bg-white/[0.03] border border-[#2d6af2]/30 text-white font-display text-xs uppercase tracking-wider focus:border-[#00ff9d] focus:ring-1 focus:ring-[#00ff9d]/50 rounded-xl transition-all">
+                                            <SelectTrigger className="h-11 bg-[#0f142b] border border-white/5 border-l-2 text-white shadow-inner font-display font-bold text-[12px] uppercase tracking-widest focus:ring-0 rounded-sm transition-all"
+                                                           style={{ borderLeftColor: theme.bar }}>
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="bg-[#04060f] border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider">
+                                            <SelectContent className="bg-[#0a0f20] border text-white font-display uppercase tracking-wider rounded-sm"
+                                                           style={{ borderColor: theme.badgeBorder, boxShadow: `0 0 20px ${theme.badge}` }}>
                                                 {Array.from({ length: 6 }, (_, i) => (i + 1) * 5).map((min) => (
-                                                    <SelectItem key={min} value={(min * 60).toString()} className="focus:bg-[#2d6af2]/20 focus:text-white cursor-pointer">
+                                                    <SelectItem key={min} value={(min * 60).toString()} className="focus:bg-white/10 focus:text-white cursor-pointer hover:pl-4 transition-all">
                                                         {min} {t('room_settings.min')}
                                                     </SelectItem>
                                                 ))}
@@ -248,17 +322,19 @@ export default function SettingsPage() {
                                     </div>
 
                                     {/* Questions */}
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-display uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5" style={{ color: '#2d6af2' }}>
-                                            <ListOrdered className="h-3 w-3" /><span>{t('room_settings.questions')}</span>
+                                    <div className="space-y-1.5 group/qst">
+                                        <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-2 transition-colors group-hover/qst:text-white">
+                                            <ListOrdered className="h-3 w-3" style={{ color: theme.bar }} /><span>{t('room_settings.questions')}</span>
                                         </Label>
                                         <Select value={questionCount} onValueChange={setQuestionCount}>
-                                            <SelectTrigger className="h-10 bg-white/[0.03] border border-[#2d6af2]/30 text-white font-display text-xs uppercase tracking-wider focus:border-[#00ff9d] focus:ring-1 focus:ring-[#00ff9d]/50 rounded-xl transition-all">
+                                            <SelectTrigger className="h-11 bg-[#0f142b] border border-white/5 border-l-2 text-white shadow-inner font-display font-bold text-[12px] uppercase tracking-widest focus:ring-0 rounded-sm transition-all"
+                                                           style={{ borderLeftColor: theme.bar }}>
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="bg-[#04060f] border border-[#2d6af2]/30 text-white font-display uppercase tracking-wider">
+                                            <SelectContent className="bg-[#0a0f20] border text-white font-display uppercase tracking-wider rounded-sm"
+                                                           style={{ borderColor: theme.badgeBorder, boxShadow: `0 0 20px ${theme.badge}` }}>
                                                 {questionCountOptions.map((count) => (
-                                                    <SelectItem key={count} value={count.toString()} className="focus:bg-[#2d6af2]/20 focus:text-white cursor-pointer">
+                                                    <SelectItem key={count} value={count.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer hover:pl-4 transition-all">
                                                         {count}
                                                     </SelectItem>
                                                 ))}
@@ -267,96 +343,111 @@ export default function SettingsPage() {
                                     </div>
 
                                     {/* Sound */}
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-display uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5" style={{ color: '#2d6af2' }}>
-                                            {isMuted ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                                    <div className="space-y-1.5 group/snd">
+                                        <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-2 transition-colors group-hover/snd:text-white">
+                                            {isMuted ? <VolumeX className="h-3 w-3 text-red-500" /> : <Volume2 className="h-3 w-3" style={{ color: theme.bar }} />}
                                             <span>{t('room_settings.sound')}</span>
                                         </Label>
-                                        <div className="flex items-center justify-center gap-3 h-10 bg-white/[0.03] border border-[#2d6af2]/30 rounded-xl">
-                                            <VolumeX className={`h-3.5 w-3.5 ${isMuted ? "text-red-500" : "text-gray-600"}`} />
-                                            <Switch
-                                                checked={!isMuted}
-                                                onCheckedChange={(checked: boolean) => setIsMuted(!checked)}
-                                                className="data-[state=checked]:bg-[#00ff9d] data-[state=unchecked]:bg-[#333] border border-white/10"
-                                            />
-                                            <Volume2 className={`h-3.5 w-3.5 ${!isMuted ? "text-[#00ff9d]" : "text-gray-600"}`} />
+                                        <div className="flex items-center justify-center gap-3 h-11 bg-[#0f142b] border border-white/5 border-l-2 shadow-inner rounded-sm font-display font-bold transition-all"
+                                             style={{ borderLeftColor: theme.bar }}>
+                                            <VolumeX className={`h-4 w-4 transition-colors ${isMuted ? "text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" : "text-white/20"}`} />
+                                            <div className="flex scale-90 origin-center justify-center -mx-2">
+                                                <Switch
+                                                    checked={!isMuted}
+                                                    onCheckedChange={(checked: boolean) => setIsMuted(!checked)}
+                                                    className="data-[state=unchecked]:bg-[#333] border border-white/10"
+                                                    style={{ backgroundColor: !isMuted ? theme.bar : undefined, boxShadow: !isMuted ? `0 0 10px ${theme.badge}` : undefined }}
+                                                />
+                                            </div>
+                                            <Volume2 className={`h-4 w-4 transition-colors text-white/20`} style={{ color: !isMuted ? theme.bar : undefined, filter: !isMuted ? `drop-shadow(0 0 5px ${theme.badge})` : undefined }} />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* ── Row 2: Difficulty ── */}
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-display uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5" style={{ color: '#2d6af2' }}>
-                                        <Settings className="h-3 w-3" /><span>{t('room_settings.difficulty.title')}</span>
+                                <div className="space-y-1.5 border-t border-white/5 pt-6 sm:mt-2">
+                                    <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-4 transition-colors">
+                                        <Settings className="h-3 w-3 text-amber-500" /><span>{t('room_settings.difficulty.title')}</span>
                                     </Label>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {(["Easy", "Normal", "Hard"] as const).map((diff) => (
-                                            <button
-                                                key={diff}
-                                                onClick={() => setSelectedDifficulty(diff.toLowerCase())}
-                                                className={`h-11 text-xs font-display uppercase tracking-wider transition-all duration-200 rounded-xl border ${selectedDifficulty === diff.toLowerCase()
-                                                        ? diff === "Easy"
-                                                            ? "bg-emerald-500/20 text-[#00ff9d] border-[#00ff9d] shadow-[0_0_14px_rgba(0,255,157,0.5)]"
-                                                            : diff === "Normal"
-                                                                ? "bg-amber-500/20 text-amber-400 border-amber-500/60 shadow-[0_0_14px_rgba(245,158,11,0.3)]"
-                                                                : "bg-red-500/20 text-red-400 border-red-500/60 shadow-[0_0_14px_rgba(239,68,68,0.3)]"
-                                                        : diff === "Easy"
-                                                            ? "bg-white/[0.03] border-emerald-500/20 text-emerald-500/50 hover:border-[#00ff9d]/60 hover:text-[#00ff9d]"
-                                                            : diff === "Normal"
-                                                                ? "bg-white/[0.03] border-amber-500/20 text-amber-500/50 hover:border-amber-500/50 hover:text-amber-400"
-                                                                : "bg-white/[0.03] border-red-500/20 text-red-500/50 hover:border-red-500/50 hover:text-red-400"
+                                    <div className="grid grid-cols-3 gap-3 sm:gap-4 px-2">
+                                        {(["Easy", "Normal", "Hard"] as const).map((diff) => {
+                                            const isActive = selectedDifficulty === diff.toLowerCase();
+                                            const colors = {
+                                                Easy: { main: '#00ff9d', bg: 'bg-[#00ff9d]/20', border: 'border-[#00ff9d]', glow: 'shadow-[0_0_15px_rgba(0,255,157,0.4)]' },
+                                                Normal: { main: '#f59e0b', bg: 'bg-amber-500/20', border: 'border-amber-500', glow: 'shadow-[0_0_15px_rgba(245,158,11,0.4)]' },
+                                                Hard: { main: '#ef4444', bg: 'bg-red-500/20', border: 'border-red-500', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.4)]' }
+                                            }[diff];
+
+                                            return (
+                                                <button
+                                                    key={diff}
+                                                    onClick={() => setSelectedDifficulty(diff.toLowerCase())}
+                                                    className={`h-11 sm:h-12 text-[10px] sm:text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-300 transform -skew-x-[15deg] border ${
+                                                        isActive 
+                                                        ? `${colors.bg} ${colors.border} text-[${colors.main}] ${colors.glow}`
+                                                        : `bg-[#0f142b] border-white/5 text-white/40 hover:bg-white/10 hover:border-white/20 hover:text-white`
                                                     }`}
-                                            >
-                                                {t(`room_settings.difficulty.${diff.toLowerCase()}`)}
-                                            </button>
-                                        ))}
+                                                >
+                                                    <div className="transform skew-x-[15deg]">
+                                                        {t(`room_settings.difficulty.${diff.toLowerCase()}`)}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
                                 {/* ── Continue button with glow ── */}
-                                <Button
-                                    onClick={handleCreateRoom}
-                                    disabled={saving}
-                                    className="w-full text-sm py-6 font-display uppercase tracking-widest disabled:cursor-not-allowed cursor-pointer transition-all rounded-xl border-none"
-                                    style={{
-                                        background: saving ? 'rgba(30,40,60,0.8)' : 'linear-gradient(135deg,#1a45c4,#2d6af2,#1a45c4)',
-                                        boxShadow: saving ? 'none' : '0 0 28px rgba(45,106,242,0.4), 0 0 10px rgba(0,255,157,0.35)',
-                                    }}
-                                >
-                                    {saving ? (
-                                        <span className="flex items-center gap-2 text-gray-500">
-                                            <div className="h-4 w-4 border-2 border-gray-600 border-t-gray-400 rounded-full animate-spin" />
-                                            {t('room_settings.button.loading')}
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-2 text-white font-bold">
-                                            <Play className="fill-white h-4 w-4" />
-                                            {t('room_settings.button.continue')}
-                                        </span>
-                                    )}
-                                </Button>
+                                <div className="mt-4 pb-2">
+                                    <button
+                                        onClick={handleCreateRoom}
+                                        disabled={saving}
+                                        className="w-full h-14 group/btnstart overflow-hidden text-white font-display text-[14px] font-black tracking-[0.3em] uppercase transition-all duration-300 relative transform -skew-x-[15deg] disabled:opacity-50 border"
+                                        style={{ 
+                                            borderColor: theme.badgeBorder,
+                                            boxShadow: saving ? 'none' : `0 0 30px ${theme.badge}`,
+                                            background: saving ? '#1e293b' : `linear-gradient(135deg, ${theme.bar}, ${theme.badgeBorder}, ${theme.bar})` 
+                                        }}
+                                    >
+                                        <div className="absolute inset-0 bg-white/20 transform -translate-x-[150%] group-hover/btnstart:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+                                        <div className="absolute inset-0 border border-white/20 pointer-events-none" />
+                                        <div className="transform skew-x-[15deg] absolute inset-0 flex items-center justify-center gap-3">
+                                            {saving ? (
+                                                <>
+                                                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    {t('room_settings.button.loading')}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {t('room_settings.button.continue')} <Play size={14} className="fill-white" />
+                                                </>
+                                            )}
+                                        </div>
+                                    </button>
+                                </div>
                             </div>
                         </Card>
                     </motion.div>
 
                     <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
                         <DialogOverlay className="bg-black/80 backdrop-blur-sm fixed inset-0 z-50" />
-                        <DialogContent className="bg-[#04060f] border border-[#2d6af2]/50 p-0 overflow-hidden rounded-2xl max-w-sm shadow-[0_0_30px_rgba(45,106,242,0.2)]">
-                            <div className="h-1.5 bg-gradient-to-r from-[#1a45c4] to-[#00ff9d] w-full" />
-                            <div className="p-6">
+                        <DialogContent className="bg-[#0b0811]/95 border border-red-500/20 border-t-4 border-t-red-600 p-0 overflow-hidden rounded-sm max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_40px_rgba(220,38,38,0.2)] backdrop-blur-2xl">
+                            <div className="p-8">
                                 <DialogHeader>
-                                    <DialogTitle className="text-xl text-white font-display uppercase tracking-widest text-center drop-shadow-[0_0_10px_rgba(45,106,242,0.5)]">{t('room_settings.delete_dialog.title')}</DialogTitle>
-                                    <DialogDescription className="text-center text-gray-400 font-display text-xs tracking-wider mt-4 uppercase">{t('room_settings.delete_dialog.description')}</DialogDescription>
+                                    <DialogTitle className="text-xl text-transparent bg-clip-text bg-gradient-to-r from-white to-red-200 font-display font-black italic uppercase tracking-wider text-center drop-shadow-[0_0_10px_rgba(220,38,38,0.6)]">{t('room_settings.delete_dialog.title')}</DialogTitle>
+                                    <DialogDescription className="text-center text-red-500/70 font-display font-bold text-[10px] tracking-[0.2em] mt-5 uppercase border border-red-500/20 bg-[#1a0a10] p-4 rounded-sm shadow-inner">
+                                        {t('room_settings.delete_dialog.description')}
+                                    </DialogDescription>
                                 </DialogHeader>
-                                <DialogFooter className="flex gap-3 mt-8">
-                                    <Button variant="outline" onClick={() => setShowCancelDialog(false)} disabled={isDeleting}
-                                        className="flex-1 bg-transparent border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white font-display text-xs uppercase tracking-wider h-12 rounded-xl transition-all">
-                                        {t('room_settings.delete_dialog.cancel')}
-                                    </Button>
-                                    <Button onClick={handleCancelSession} disabled={isDeleting}
-                                        className="flex-1 bg-gradient-to-r from-red-600 to-red-400 hover:from-red-700 hover:to-red-500 text-white border-none font-display text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(239,68,68,0.4)] h-12 rounded-xl transition-all">
-                                        {isDeleting ? t('room_settings.delete_dialog.deleting') : t('room_settings.delete_dialog.delete')}
-                                    </Button>
+                                <DialogFooter className="flex gap-4 mt-8">
+                                    <button onClick={() => setShowCancelDialog(false)} disabled={isDeleting}
+                                        className="flex-1 bg-[#0f142b] border border-white/5 text-white/40 hover:bg-white/10 hover:border-white/20 hover:text-white font-display font-black text-[11px] uppercase tracking-widest h-12 transform -skew-x-[15deg] transition-all">
+                                        <div className="transform skew-x-[15deg]">{t('room_settings.delete_dialog.cancel')}</div>
+                                    </button>
+                                    <button onClick={handleCancelSession} disabled={isDeleting}
+                                        className="flex-1 bg-red-600/20 border border-red-500 text-red-500 hover:bg-red-600 hover:text-white font-display font-black text-[11px] uppercase tracking-widest h-12 transform -skew-x-[15deg] transition-all shadow-[0_0_15px_rgba(220,38,38,0.4)]">
+                                        <div className="transform skew-x-[15deg]">{isDeleting ? t('room_settings.delete_dialog.deleting') : t('room_settings.delete_dialog.delete')}</div>
+                                    </button>
                                 </DialogFooter>
                             </div>
                         </DialogContent>
