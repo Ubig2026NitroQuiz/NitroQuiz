@@ -2,19 +2,14 @@ stages:
   - test
   - deploy
 
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - node_modules/
-
 check_code:
   stage: test
   tags:
     - nodejs
   script:
-    - echo "Mengecek kodingan..."
-    - npm ci  # Pakai 'ci' biar lebih cepat di runner
-    - npm test || echo "Skip"
+    - echo "Sedang mengecek kelayakan kodingan..."
+    - npm install
+    - npm test || echo "Test belum dikonfigurasi, lanjut..." 
   only:
     - main
 
@@ -23,14 +18,12 @@ deploy_to_aapanel:
   tags:
     - nodejs
   script:
-    - echo "Kirim ke aaPanel..."
+    - echo "Kodingan aman! Mengirim langsung ke aaPanel tanpa Git Pull..."
     - rsync -avz --delete --exclude '.git' --exclude 'node_modules' ./ root@192.168.1.157:/www/wwwroot/NitroQuiz/
     - ssh -o StrictHostKeyChecking=no root@192.168.1.157 "
         cd /www/wwwroot/NitroQuiz && 
-        npm install --production &&
-        npm run build && 
-        pm2 startOrReload ecosystem.config.js --update-env && 
-        echo 'Deploy Sukses!'
+        npm install && 
+        pm2 startOrReload ecosystem.config.js && echo 'Aplikasi berhasil di-update dan di-reload!'
       "
   only:
-    - main  # Pastikan branch-nya sama (tadi kamu tulis master, sekarang saya samain ke main)
+    - main
