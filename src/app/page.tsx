@@ -22,9 +22,12 @@ import {
   DownloadIcon,
   Flag,
   LogIn,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBgm } from "@/contexts/BgmContext";
 import { useTranslation } from "react-i18next";
 import { getI18nInstance } from "@/lib/i18n";
 import { Logo } from "@/components/ui/logo";
@@ -33,6 +36,7 @@ import Image from "next/image";
 export default function Home() {
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
+  const { isMuted, toggleMute } = useBgm();
   const { t } = useTranslation();
   const i18n = getI18nInstance();
   const [roomCode, setRoomCode] = useState("");
@@ -323,6 +327,25 @@ export default function Home() {
                     <span className="text-sm font-medium">
                       {t('homepage.menu.install_app')}
                     </span>
+                  </button>
+
+                  <button
+                    onClick={toggleMute}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-white/50 hover:text-white transition-all group"
+                  >
+                    <div className="p-1.5 rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
+                      {isMuted ? (
+                        <VolumeX className="w-3.5 h-3.5 text-red-400" />
+                      ) : (
+                        <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium flex-1 text-left rtl:text-right">
+                      {t('room_settings.sound')}
+                    </span>
+                    <div className={`text-[10px] font-bold px-2 py-0.5 rounded ${isMuted ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                      {isMuted ? 'OFF' : 'ON'}
+                    </div>
                   </button>
 
                   <div className="relative">

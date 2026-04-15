@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { BgmProvider } from '@/contexts/BgmContext';
 import { useEffect, useState } from "react";
 import AuthGate from '@/components/auth/AuthGate';
 import ClientProviders from './ClientProvider';
@@ -65,9 +66,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <ClientProviders>
       <AuthProvider>
-        <AuthGate>
-          {children}
-        </AuthGate>
+        <BgmProvider>
+          <AuthGate>
+            {children}
+          </AuthGate>
+        </BgmProvider>
       </AuthProvider>
     </ClientProviders>
   );

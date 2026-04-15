@@ -14,7 +14,9 @@ interface QuizQuestion {
 }
 import { supabase } from '@/lib/supabase';
 import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
-import { Clock } from 'lucide-react';
+import { Clock, Volume2, VolumeX } from 'lucide-react';
+import { useBgm } from '@/contexts/BgmContext';
+
 
 const Util = {
     toInt: (obj: any, def: number): number => { if (obj !== null) { const x = parseInt(obj, 10); if (!isNaN(x)) return x; } return Util.toInt(def, 0); },
@@ -153,6 +155,7 @@ export default function GameSpeedPage() {
     const { t } = useTranslation();
     const router = useRouter();
     const params = useParams();
+    const { isMuted, toggleMute } = useBgm();
     const roomCode = (params?.roomCode as string)?.toUpperCase();
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -2566,35 +2569,62 @@ export default function GameSpeedPage() {
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => {
-                                        const next = state.current.viewMode === 'first' ? 'third' : 'first';
-                                        state.current.viewMode = next;
-                                        setViewMode(next);
-                                    }}
-                                    style={{
-                                        pointerEvents: 'auto',
-                                        backgroundColor: 'rgba(59, 130, 246, 0.25)',
-                                        backdropFilter: 'blur(15px)',
-                                        width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
-                                        height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
-                                        borderRadius: usePCLayout ? '1.25rem' : '0.5rem',
-                                        border: '2px solid rgba(59, 130, 246, 0.5)',
-                                        color: 'white',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        transition: 'all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
-                                        gap: '2px'
-                                    }}
-                                >
-                                    <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1rem')), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
-                                        {viewMode === 'first' ? '🎥' : '👤'}
-                                    </span>
-                                </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => {
+                                            const next = state.current.viewMode === 'first' ? 'third' : 'first';
+                                            state.current.viewMode = next;
+                                            setViewMode(next);
+                                        }}
+                                        style={{
+                                            pointerEvents: 'auto',
+                                            backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                                            backdropFilter: 'blur(15px)',
+                                            width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                                            height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                                            borderRadius: usePCLayout ? '1.25rem' : '0.5rem',
+                                            border: '2px solid rgba(59, 130, 246, 0.5)',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                                            gap: '2px'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1rem')), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
+                                            {viewMode === 'first' ? '🎥' : '👤'}
+                                        </span>
+                                    </button>
+
+
+                                    <button
+                                        onClick={toggleMute}
+                                        style={{
+                                            pointerEvents: 'auto',
+                                            backgroundColor: isMuted ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+                                            backdropFilter: 'blur(15px)',
+                                            width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                                            height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                                            borderRadius: usePCLayout ? '1.25rem' : '0.5rem',
+                                            border: isMuted ? '2px solid rgba(239, 68, 68, 0.5)' : '2px solid rgba(16, 185, 129, 0.5)',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1.1rem')) }}>
+                                            {isMuted ? <VolumeX size={isMobile ? 16 : 24} /> : <Volume2 size={isMobile ? 16 : 24} />}
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
+
 
                             <div style={{ display: 'flex', gap: '0.3rem', width: 'auto' }}>
                                 <div style={{
