@@ -5,11 +5,11 @@
     },
     {
         "name": "bg",
-        "src": "/assets/backgorund/citynight.png"
+        "src": "/assets/backgorund/citynight.webp"
     },
     {
         "name": "bg_mobile",
-        "src": "/assets/backgorund/citynight_mobile.png"
+        "src": "/assets/backgorund/citynight_mobile.webp"
     },
     {
         "name": "car_rival",
@@ -390,4 +390,4 @@
     { "name": "nos_81", "___inactive_src___": "/assets/characters/rico/nos/81.png" },
     { "name": "nos_82", "___inactive_src___": "/assets/characters/rico/nos/82.png" },
     { "name": "nos_83", "___inactive_src___": "/assets/characters/rico/nos/83.png" }
-]
+]
