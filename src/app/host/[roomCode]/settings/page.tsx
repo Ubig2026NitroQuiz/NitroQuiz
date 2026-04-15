@@ -16,6 +16,7 @@ import { supabase, supabaseCentral } from "@/lib/supabase"
 import { Question } from "@/types"
 import { Logo } from "@/components/ui/logo"
 import { useTranslation } from "react-i18next"
+import { useBgm } from "@/contexts/BgmContext"
 
 // ── Category color map (Copied from select-quiz) ──
 const categoryColorMap: Record<string, {
@@ -82,8 +83,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false)
     const [showCancelDialog, setShowCancelDialog] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
-    const [isMuted, setIsMuted] = useState(true)
-    const audioRef = useRef<HTMLAudioElement>(null)
+    const { isMuted, setIsMuted } = useBgm()
 
     const shuffleArray = <T,>(array: T[]): T[] => {
         const shuffled = [...array]
@@ -112,12 +112,7 @@ export default function SettingsPage() {
         fetchQuizFromCentral();
     }, [router]);
 
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        audio.volume = 0.5;
-        if (isMuted) { audio.pause(); } else { audio.play().catch(() => console.warn("Audio play blocked")); }
-    }, [isMuted]);
+
 
     const questionCountOptions = useMemo(() => {
         const totalQuestions = quizDetail?.totalQuestions || 0;
@@ -188,7 +183,6 @@ export default function SettingsPage() {
             };
             localStorage.setItem(`session_${roomCode}`, JSON.stringify(settings));
             localStorage.setItem("hostroomCode", roomCode as string);
-            localStorage.setItem("settings_muted", isMuted.toString());
             router.push(`/host/${roomCode}/lobby`);
         } catch (err) {
             console.error("Unexpected error updating session:", err);
@@ -262,7 +256,7 @@ export default function SettingsPage() {
             <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(45,106,242,0.07),transparent)] pointer-events-none" />
             <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/50 to-[#2d6af2]/10 pointer-events-none" />
             <div className="scanlines" />
-            <div className="hidden"><audio ref={audioRef} loop /></div>
+
 
             <div className="absolute inset-0 overflow-y-auto z-10 flex flex-col">
                 {/* Top Bar */}
