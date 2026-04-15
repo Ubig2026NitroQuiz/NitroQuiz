@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Orbitron, Rajdhani, Press_Start_2P } from "next/font/google";
 import localFont from "next/font/local";
 import NextTopLoader from 'nextjs-toploader';
@@ -37,15 +37,69 @@ const lpmq = localFont({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
-  title: "NitroQuiz - Balap Cerdas Adrenalin Tinggi",
-  description: "Game kuis seru berkecepatan tinggi! Jawab pertanyaan, nyalakan nitro, dan jadilah juara di NitroQuiz.",
-  keywords: ["edukasi", "game", "quiz", "balapan", "racing", "belajar", "nitro", "turbo"],
+  title: {
+    default: "NitroQuiz",
+    template: "%s | NitroQuiz"
+  },
+  description: "NitroQuiz is an exciting, high-speed multiplayer quiz game! Answer questions, ignite your nitro, and become the champion on the track of knowledge.",
+  keywords: [
+    "education", "game", "quiz", "racing", "learning", "nitro", "turbo", 
+    "online quiz", "multiplayer quiz", "edtech", "educational racing game"
+  ],
   authors: [{ name: "NitroQuiz Team" }],
+  creator: "NitroQuiz Studio",
+  publisher: "NitroQuiz Studio",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  icons: {
+    icon: "/assets/logo/faviconR.webp",
+    shortcut: "/assets/logo/faviconR.webp",
+    apple: "/assets/logo/faviconR.webp",
+  },
   openGraph: {
-    title: "NitroQuiz - Balap Cerdas Adrenalin Tinggi",
-    description: "Game kuis seru berkecepatan tinggi! Jawab pertanyaan, nyalakan nitro, dan jadilah juara.",
+    title: "NitroQuiz",
+    description: "An exciting high-speed quiz game! Answer questions, ignite your nitro, and become the champion on the track of knowledge.",
+    url: "/",
+    siteName: "NitroQuiz",
+    images: [
+      {
+        url: "/assets/logo/faviconR.web",
+        width: 1200,
+        height: 630,
+        alt: "NitroQuiz Logo",
+      },
+    ],
+    locale: "en_US",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NitroQuiz",
+    description: "Test your knowledge in NitroQuiz! A thrilling and competitive racing-themed multiplayer quiz game.",
+    images: ["/assets/logo/faviconR.webp"],
+    creator: "@nitroquiz",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

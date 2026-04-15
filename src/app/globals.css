@@ -1,9 +1,4 @@
 @import "tailwindcss";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
   :root {
     --background: 222.2 84% 4.9%;
@@ -250,6 +245,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .line-clamp-3 {
@@ -257,6 +253,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 
   /* Hide scrollbar but keep functionality */
@@ -615,6 +612,63 @@ h6 {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.2), transparent);
     animation: speed-line 4s linear infinite;
+  }
+
+  /* ── LOGIN PAGE: Nitro Burst glow pulse ── */
+  @keyframes nitro-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(0, 255, 157, 0.3), 0 0 20px rgba(124, 58, 237, 0.2); }
+    50%       { box-shadow: 0 0 20px rgba(0, 255, 157, 0.7), 0 0 40px rgba(124, 58, 237, 0.5); }
+  }
+
+  /* ── LOGIN PAGE: HUD scan line ── */
+  @keyframes hud-scan {
+    0%   { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  .hud-scan-line {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,255,157,0.15) 50%, transparent 100%);
+    pointer-events: none;
+    animation: hud-scan 6s linear infinite;
+    z-index: 1;
+  }
+
+  /* ── Lap counter digit flash ── */
+  @keyframes digit-flash {
+    0%, 90%  { opacity: 1; }
+    95%      { opacity: 0.4; }
+    100%     { opacity: 1; }
+  }
+
+  .digit-flash {
+    animation: digit-flash 2s ease-in-out infinite;
+  }
+
+  /* ── Racing card border glow ── */
+  .nitro-card-glow {
+    box-shadow:
+      0 0 0 1px rgba(124, 58, 237, 0.25),
+      0 0 30px rgba(124, 58, 237, 0.12),
+      0 24px 48px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .nitro-card-glow:hover {
+    box-shadow:
+      0 0 0 1px rgba(124, 58, 237, 0.45),
+      0 0 50px rgba(124, 58, 237, 0.22),
+      0 24px 48px rgba(0, 0, 0, 0.65),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  /* ── ROAD SCROLL: animates backgroundPosition to simulate driving forward ── */
+  @keyframes road-scroll {
+    0%   { background-position: center 0px; }
+    100% { background-position: center 54px; }
   }
 }
 

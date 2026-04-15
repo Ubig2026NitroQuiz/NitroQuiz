@@ -178,7 +178,7 @@ export default function Home() {
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
         style={{
-          backgroundImage: 'url("/assets/backgorund/homepage_bg.png")',
+          backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")',
           backgroundAttachment: 'fixed'
         }}
       ></div>
