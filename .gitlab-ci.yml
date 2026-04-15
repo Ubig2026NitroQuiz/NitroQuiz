@@ -2,6 +2,10 @@ stages:
   - test
   - deploy
 
+cache:
+  paths:
+    - node_modules/
+
 check_code:
   stage: test
   tags:
