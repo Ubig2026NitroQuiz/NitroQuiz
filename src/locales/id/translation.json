@@ -247,7 +247,7 @@
     "go": "GAS!",
     "launching": "MELUNCURKAN BALAPAN...",
     "exit_title": "Keluar?",
-    "exit_description": "Progres bakal hilang.",
+    "exit_description": "Yakin ingin keluar dari ruangan?",
     "exit_confirm": "KELUAR",
     "exit_cancel": "BATAL"
   },

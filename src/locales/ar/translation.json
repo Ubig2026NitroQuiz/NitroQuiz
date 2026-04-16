@@ -247,7 +247,7 @@
     "go": "انطلق!",
     "launching": "إطلاق السباق...",
     "exit_title": "خروج؟",
-    "exit_description": "سيضيع التقدم.",
+    "exit_description": "هل أنت متأكد من رغبتك في مغادرة الغرفة؟",
     "exit_confirm": "خروج",
     "exit_cancel": "إلغاء"
   },

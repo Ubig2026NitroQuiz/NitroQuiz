@@ -79,7 +79,7 @@ const LogoutConfirmDialog = ({ onConfirm, onCancel, t }: { onConfirm: () => void
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
             <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
-                    <LogOut className="w-8 h-8 text-red-500" />
+                    <LogOut className="w-8 h-8 text-red-500 scale-x-[-1]" />
                 </div>
                 <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">
                     {t("player_waiting.exit_title")}
@@ -129,6 +129,32 @@ export default function PlayerWaitingPage() {
     const [isExiting, setIsExiting] = useState(false);
     const statusRef = useRef(status);
     useEffect(() => { statusRef.current = status; }, [status]);
+
+    const handleConfirmExit = async () => {
+        if (participantId) {
+            try {
+                // 1. Broadcast exit before deletion for instant host update
+                if (channelRef.current) {
+                    channelRef.current.send({
+                        type: "broadcast",
+                        event: "player_left",
+                        payload: { id: participantId }
+                    });
+                }
+                
+                await supabase.from("participants").delete().eq("id", participantId);
+                
+                // Clean up local storage
+                localStorage.removeItem('nitroquiz_game_participantId');
+                localStorage.removeItem('nitroquiz_game_nickname');
+                localStorage.removeItem('nitroquiz_game_roomCode');
+                localStorage.removeItem('nitroquiz_game_carCharacter');
+            } catch (err) {
+                console.error("Error during exit cleanup:", err);
+            }
+        }
+        router.push('/');
+    };
 
     // Sync server time on mount
     useEffect(() => {
@@ -228,14 +254,47 @@ export default function PlayerWaitingPage() {
                             })
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
                             async (payload) => {
-                                const { data: pList, count } = await supabase.from("participants")
-                                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
+                                const { data: pList, count } = await supabase
+                                    .from("participants")
+                                    .select("id, nickname, car_character, avatar_url, user_id", { count: "exact" })
+                                    .eq("session_id", sessionData.id);
+
                                 if (isMounted) {
                                     if (count !== null) setParticipantCount(count);
-                                    if (pList) setAllParticipants(pList);
+                                    if (pList) {
+                                        setAllParticipants(pList);
+
+                                        // ✅ CEK: apakah player ini masih ada di list?
+                                        const storedId = localStorage.getItem('nitroquiz_game_participantId');
+                                        const stillExists = pList.some(p => p.id === storedId);
+                                        if (!stillExists && storedId) {
+                                            // Di-kick! Cleanup dan redirect ke home
+                                            localStorage.removeItem('nitroquiz_game_participantId');
+                                            localStorage.removeItem('nitroquiz_game_nickname');
+                                            localStorage.removeItem('nitroquiz_game_roomCode');
+                                            localStorage.removeItem('nitroquiz_game_carCharacter');
+                                            router.replace('/');
+                                            return;
+                                        }
+                                    }
                                 }
                             })
-                        .subscribe();
+                        .on('broadcast', { event: 'kick_player' }, (payload) => {
+                            const myId = localStorage.getItem('nitroquiz_game_participantId');
+                            if (payload.payload?.id === myId) {
+                                console.log("[NitroQuiz] You have been kicked by the host.");
+                                localStorage.removeItem('nitroquiz_game_participantId');
+                                localStorage.removeItem('nitroquiz_game_nickname');
+                                localStorage.removeItem('nitroquiz_game_roomCode');
+                                localStorage.removeItem('nitroquiz_game_carCharacter');
+                                router.replace('/?kicked=true');
+                            }
+                        })
+                        .subscribe((status) => {
+                            if (status === 'SUBSCRIBED') {
+                                console.log("[NitroQuiz] Player Subscribed to realtime");
+                            }
+                        });
 
                     channelRef.current = channel;
                 }
@@ -257,19 +316,30 @@ export default function PlayerWaitingPage() {
                 setPendingCharacterId(assignedCar);
 
                 const { data: pList, count } = await supabase.from("participants")
-                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
+                    .select("id, nickname, car_character, avatar_url, user_id", { count: "exact" }).eq("session_id", sessionData.id);
 
                 if (isMounted) {
                     if (count !== null) setParticipantCount(count);
                     if (pList) {
                         setAllParticipants(pList);
-                        const me = pList.find(p => p.id === storedParticipantId);
+                        // Find myself by participantId (localStorage) OR user_id (Supabase Auth)
+                        const me = pList.find(p => p.id === storedParticipantId || (profile?.id && p.user_id === profile.id));
                         if (me) {
                             setUsername(me.nickname);
                             setUserAvatar(profile?.avatar_url || me.avatar_url || null);
-                        } else if (profile) {
-                            setUsername(profile.username || "Player");
-                            setUserAvatar(profile.avatar_url || null);
+                            if (me.car_character) {
+                                setAssignedCarId(me.car_character);
+                                setPendingCharacterId(me.car_character);
+                            }
+                        } else {
+                            // ⛔ KICKED: Not in the participant list anymore
+                            console.log("[NitroQuiz] Participant record not found. Redirecting...");
+                            localStorage.removeItem('nitroquiz_game_participantId');
+                            localStorage.removeItem('nitroquiz_game_nickname');
+                            localStorage.removeItem('nitroquiz_game_roomCode');
+                            localStorage.removeItem('nitroquiz_game_carCharacter');
+                            router.replace('/?kicked=true');
+                            return;
                         }
                     }
                 }
@@ -565,8 +635,8 @@ export default function PlayerWaitingPage() {
 
                             {/* Bottom action bar */}
                             <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(14,18,30,0.8)' }}>
-                                <button onClick={() => router.push('/')} className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#1a0a12] border border-red-500/50 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex-shrink-0">
-                                    <LogOut className="w-4 h-4" />
+                                <button onClick={() => setIsExiting(true)} className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#1a0a12] border border-red-500/50 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex-shrink-0">
+                                    <LogOut className="w-4 h-4 scale-x-[-1]" />
                                 </button>
                                 <button onClick={() => setIsSelectingCharacter(true)} className="flex-1 h-11 flex items-center justify-center rounded-xl border border-[#00ff9d]/60 text-[#00ff9d] font-display text-xs uppercase tracking-widest hover:bg-[#00ff9d]/10 active:scale-95 transition-all">
                                     {t("player_waiting.choose_character")}
@@ -829,14 +899,14 @@ export default function PlayerWaitingPage() {
                             <div className="absolute bottom-0 inset-x-0 z-20 flex items-center px-6 py-3"
                                 style={{ background: 'rgba(14,18,30,0.8)', backdropFilter: 'blur(14px)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                 {/* Back — rounded square icon, bottom-left */}
-                                <button onClick={() => router.push('/')}
+                                <button onClick={() => setIsExiting(true)}
                                     className="w-11 h-11 flex items-center justify-center rounded-xl active:scale-95 transition-all flex-shrink-0"
                                     style={{
                                         background: 'rgba(180,30,50,0.15)',
                                         border: '1px solid rgba(200,40,60,0.35)',
                                         color: '#f87171',
                                     }}>
-                                    <LogOut className="w-4 h-4" />
+                                    <LogOut className="w-4 h-4 scale-x-[-1]" />
                                 </button>
                             </div>
                         </motion.div>
@@ -967,6 +1037,16 @@ export default function PlayerWaitingPage() {
                     </motion.div>
                 )}
             </div>
+
+            <AnimatePresence>
+                {isExiting && (
+                    <LogoutConfirmDialog
+                        onConfirm={handleConfirmExit}
+                        onCancel={() => setIsExiting(false)}
+                        t={t}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
