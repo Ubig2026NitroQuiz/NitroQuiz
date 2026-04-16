@@ -626,8 +626,6 @@ export default function Home() {
 
               <div className="mb-4">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                   animate={{ 
                     boxShadow: ["0 0 10px rgba(124,58,237,0.3)", "0 0 25px rgba(124,58,237,0.6)", "0 0 10px rgba(124,58,237,0.3)"],
                   }}
@@ -635,12 +633,14 @@ export default function Home() {
                     boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                   }}
                   onClick={handleHost}
-                  className="px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#5b21b6] border border-[#7C3AED]/50 rounded-xl transition-all duration-300 relative group overflow-hidden"
+                  className="px-8 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#5b21b6] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-                  <span className="text-lg font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-                    {t('homepage.host.button')}
-                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+                  <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
+                    <span className="text-lg font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+                      {t('homepage.host.button')}
+                    </span>
+                  </div>
                 </motion.button>
               </div>
             </div>
@@ -684,8 +684,6 @@ export default function Home() {
                 </div>
 
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                   animate={{ 
                     boxShadow: ["0 0 10px rgba(45,106,242,0.3)", "0 0 25px rgba(45,106,242,0.6)", "0 0 10px rgba(45,106,242,0.3)"],
                   }}
@@ -693,12 +691,14 @@ export default function Home() {
                     boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                   }}
                   onClick={handleJoin}
-                  className="px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-[#2d6af2]/50 rounded-xl transition-all duration-300 relative group overflow-hidden whitespace-nowrap"
+                  className="px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
-                  <span className="text-base font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-                    {t('homepage.join.button')}
-                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+                  <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
+                    <span className="text-base font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+                      {t('homepage.join.button')}
+                    </span>
+                  </div>
                 </motion.button>
               </div>
             </div>
@@ -715,37 +715,48 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              className="bg-[#0c1020] border border-white/[0.08] rounded-2xl p-7 max-w-sm w-full shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden relative"
+              className="bg-[#0a0a0f] border-2 border-red-500/40 p-10 max-w-sm w-full shadow-[0_0_50px_rgba(239,68,68,0.2)] overflow-hidden relative transform -skew-x-[2deg] rounded-none"
             >
-              <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#7C3AED] to-transparent" />
-              <div className="flex flex-col items-center text-center">
-                <div className="w-14 h-14 rounded-xl bg-[#7C3AED]/[0.08] flex items-center justify-center mb-5 border border-[#7C3AED]/15">
-                  <LogOut className="w-6 h-6 text-red-400" />
+              <div className="transform skew-x-[2deg] flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-500/10 rounded-sm flex items-center justify-center mb-6 border border-red-500/20 transform -skew-x-[15deg]">
+                  <div className="transform skew-x-[15deg]">
+                    <LogOut className="w-7 h-7 text-red-500" />
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
-                  {t("homepage.logout_confirm.title")}
+                
+                <h3 className="text-2xl font-display font-black text-white uppercase tracking-[0.1em] mb-3 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                  {t("homepage.logout_confirm.title")}?
                 </h3>
-                <p className="text-white/40 text-sm mb-7 leading-relaxed">
+                
+                <p className="text-white/40 text-xs font-display tracking-widest mb-10 uppercase leading-relaxed">
                   {t("homepage.logout_confirm.description")}
                 </p>
-                <div className="flex gap-3 w-full">
+                
+                <div className="flex gap-4 w-full">
                   <button
                     onClick={() => setIsLogoutDialogOpen(false)}
-                    className="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-white/[0.04] text-white/60 border border-white/[0.08] hover:bg-white/[0.08] hover:text-white transition-all outline-none"
+                    className="group/btn flex-1 flex items-center justify-center border border-white/20 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-white/5"
                   >
-                    {t("homepage.logout_confirm.cancel")}
+                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                    <span className="relative z-10 font-display font-black uppercase text-[10px] tracking-widest text-gray-400 group-hover/btn:text-white transform skew-x-[15deg]">
+                      {t("homepage.logout_confirm.cancel")}
+                    </span>
                   </button>
+                  
                   <button
                     onClick={performLogout}
-                    className="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-[#E10600] text-white hover:bg-red-500 transition-all shadow-[0_0_20px_rgba(225,6,0,0.2)] outline-none"
+                    className="group/btn flex-1 flex items-center justify-center bg-red-600 border border-red-400/50 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                   >
-                    {t("homepage.logout_confirm.confirm")}
-                  </button>
+                    <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                    <span className="relative z-10 font-display font-black uppercase text-[10px] tracking-widest text-white transform skew-x-[15deg]">
+                      {t("homepage.logout_confirm.confirm")}
+                    </span>
+                   </button>
                 </div>
               </div>
             </motion.div>
