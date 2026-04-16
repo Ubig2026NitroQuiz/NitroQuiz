@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Users, Play, LogOut, Copy, Check, Maximize2, Minimize2,
   Volume2, VolumeX, X, UserPlus, Users2, Bot, Search
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useBgm } from "@/contexts/BgmContext";
+import { FloatingHostActions } from "@/components/FloatingHostActions";
 
 // Helper: Generate initials from a name
 const getInitials = (name: string): string => {
@@ -260,70 +261,54 @@ export default function HostLobby() {
   };
 
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  useEffect(() => {
-    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFsChange);
-    return () => document.removeEventListener("fullscreenchange", handleFsChange);
-  }, []);
+  const loadSession = useCallback(async () => {
+    await syncServerTime(); // Ensure offset is ready before logic
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("*")
+      .eq("game_pin", roomCode)
+      .single();
+    if (error || !data) return;
+    setSession(data);
+    setSessionId(data.id);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else if (document.exitFullscreen) {
-      document.exitFullscreen();
+    // Resume countdown if it started but not finished
+    if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
+      const now = getSyncedServerTime();
+      const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
+      const remaining = Math.max(0, Math.min(3, 3 - diff));
+      if (remaining > 0) {
+        setCountdown(remaining);
+      } else if (remaining <= 0) {
+        const startSessionFallback = async () => {
+          await supabase
+            .from("sessions")
+            .update({
+              status: "active",
+              started_at: new Date(getSyncedServerTime()).toISOString(),
+              countdown_started_at: null
+            })
+            .eq("id", data.id);
+          router.push(`/host/${roomCode}/monitor`);
+        };
+        startSessionFallback();
+      }
     }
-  };
+
+    const { data: pData } = await supabase
+      .from("participants")
+      .select("*")
+      .eq("session_id", data.id);
+    if (pData) setParticipants(pData);
+  }, [roomCode, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setJoinLink(`${window.location.origin}/join/${roomCode}`);
     }
-
-    const loadSession = async () => {
-      await syncServerTime(); // Ensure offset is ready before logic
-      const { data, error } = await supabase
-        .from("sessions")
-        .select("*")
-        .eq("game_pin", roomCode)
-        .single();
-      if (error || !data) return;
-      setSession(data);
-      setSessionId(data.id);
-
-      // Resume countdown if it started but not finished
-      if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
-        const now = getSyncedServerTime();
-        const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
-        const remaining = Math.max(0, Math.min(3, 3 - diff));
-        if (remaining > 0) {
-          setCountdown(remaining);
-        } else if (remaining <= 0) {
-          const startSessionFallback = async () => {
-            await supabase
-              .from("sessions")
-              .update({
-                status: "active",
-                started_at: new Date(getSyncedServerTime()).toISOString(),
-                countdown_started_at: null
-              })
-              .eq("id", data.id);
-            router.push(`/host/${roomCode}/monitor`);
-          };
-          startSessionFallback();
-        }
-      }
-
-      const { data: pData } = await supabase
-        .from("participants")
-        .select("*")
-        .eq("session_id", data.id);
-      if (pData) setParticipants(pData);
-    };
-
     loadSession();
-  }, [roomCode, router]); // separated from channel so it doesn't loop
+  }, [roomCode, loadSession]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -501,7 +486,7 @@ export default function HostLobby() {
   }
 
   return (
-    <div className="h-[100dvh] bg-[#04060f] relative overflow-hidden font-body text-white flex flex-col">
+    <div className="min-h-screen bg-[#04060f] relative font-body text-white flex flex-col">
       {/* Racing Stripe at top */}
       <div className="racing-stripe z-0 pointer-events-none"></div>
 
@@ -521,7 +506,7 @@ export default function HostLobby() {
       <div className="scanlines z-0"></div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-6 md:px-8 pt-1 sm:pt-2 pb-2 sm:pb-4 gap-2 sm:gap-3 min-h-0">
+      <div className="relative z-10 flex flex-col w-full max-w-[1400px] mx-auto px-3 sm:px-6 md:px-8 pt-1 sm:pt-2 pb-2 sm:pb-4 gap-2 sm:gap-3">
 
         {/* Header */}
         <div className="w-full flex items-center justify-between shrink-0 z-20 relative pt-1">
@@ -533,7 +518,7 @@ export default function HostLobby() {
         </div>
 
         {/* Main Layout */}
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
 
           {/* ═══ LEFT CARD: Room Info ═══ */}
           <motion.div
@@ -642,10 +627,10 @@ export default function HostLobby() {
             <div className="lg:hidden h-2 shrink-0" />
 
             {/* DESKTOP: full vertical layout */}
-            <div className="hidden lg:flex flex-col gap-3 p-4 flex-1 relative z-10">
+            <div className="hidden lg:flex flex-col gap-3 p-4 relative z-10">
               {/* Room Code */}
               <div
-                className="group/code cursor-pointer bg-white/5 rounded-xl py-4 lg:py-6 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                className="group/code cursor-pointer bg-white/5 rounded-xl py-3 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                 onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
@@ -680,7 +665,7 @@ export default function HostLobby() {
               </div>
 
               {/* Action Buttons */}
-              <div className="shrink-0 border-white/5 bg-gradient-to-t from-black/40 to-transparent relative z-10">
+              <div className="shrink-0 border-white/5 bg-gradient-to-t relative z-10">
                 <div className="flex gap-2">
                   <button
                     onClick={() => setExitDialogOpen(true)}
@@ -715,7 +700,7 @@ export default function HostLobby() {
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex-1 flex flex-col bg-[#111729]/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-[0_15px_40px_rgba(0,0,0,0.6)] overflow-hidden min-h-[300px] lg:min-h-0 relative"
+            className="flex-1 flex flex-col bg-[#111729]/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-[0_15px_40px_rgba(0,0,0,0.6)] relative overflow-hidden"
           >
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }} />
@@ -770,16 +755,7 @@ export default function HostLobby() {
                   </div>
                 </button>
 
-                {/* Sound */}
-                <button
-                  onClick={toggleMute}
-                  className={`group/hs w-9 h-9 flex items-center justify-center rounded-sm border transition-all transform -skew-x-[15deg] overflow-hidden relative ${isMuted ? "bg-red-500/25 border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white" : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/30"}`}
-                >
-                  <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/hs:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
-                  <div className="relative z-10 transform skew-x-[15deg]">
-                    {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                  </div>
-                </button>
+
               </div>
             </div>
 
@@ -863,8 +839,8 @@ export default function HostLobby() {
               {t('host_lobby.kick')} {selectedPlayer?.nickname}?
             </DialogTitle>
             <div className="flex gap-4">
-              <button 
-                onClick={() => setKickDialogOpen(false)} 
+              <button
+                onClick={() => setKickDialogOpen(false)}
                 className="group/btn flex-1 flex items-center justify-center border border-white/20 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-white/5"
               >
                 <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
@@ -872,8 +848,8 @@ export default function HostLobby() {
                   {t('host_lobby.cancel') ?? 'Cancel'}
                 </span>
               </button>
-              <button 
-                onClick={confirmKick} 
+              <button
+                onClick={confirmKick}
                 className="group/btn flex-1 flex items-center justify-center bg-red-600 border border-red-400/50 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
               >
                 <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
@@ -896,18 +872,18 @@ export default function HostLobby() {
                 <LogOut size={32} className="text-red-500" />
               </div>
             </div>
-            
+
             <DialogTitle className="text-2xl font-display font-black uppercase tracking-[0.15em] text-center mb-2 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]">
               {t('host_lobby.exit_dialog_title')}
             </DialogTitle>
-            
+
             <p className="text-white/60 text-xs text-center font-display tracking-widest mb-10 uppercase leading-relaxed">
               {t('host_lobby.exit_dialog_desc')}
             </p>
-            
+
             <div className="flex gap-4 w-full">
-              <button 
-                onClick={() => setExitDialogOpen(false)} 
+              <button
+                onClick={() => setExitDialogOpen(false)}
                 className="group/btn flex-1 flex items-center justify-center border border-white/20 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-white/5"
               >
                 <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
@@ -915,7 +891,7 @@ export default function HostLobby() {
                   {t('host_lobby.cancel')}
                 </span>
               </button>
-              
+
               <button
                 onClick={() => router.push("/host/select-quiz")}
                 className="group/btn flex-1 flex items-center justify-center bg-red-600 border border-red-400/50 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
@@ -933,7 +909,7 @@ export default function HostLobby() {
       {/* ═══ QR FULLSCREEN — klik luar untuk tutup ═══ */}
       {qrOpen && (
         <div
-          className="fixed inset-0 z-[200] bg-black flex items-center justify-center cursor-pointer"
+          className="fixed inset-0 z-[300] bg-black flex items-center justify-center cursor-pointer"
           onClick={() => setQrOpen(false)}
         >
           <div
@@ -1019,13 +995,13 @@ export default function HostLobby() {
                           <p className="text-white/30 text-[11px] font-mono leading-none mt-1">@{friend.username}</p>
                         </div>
                       </div>
-                      
+
                       <button
                         onClick={() => !invitedFriends.includes(friend.id) && handleInviteFriend(friend.id)}
                         disabled={invitedFriends.includes(friend.id)}
                         className={`group/btn flex items-center justify-center h-10 px-8 relative overflow-hidden transform -skew-x-[12deg] transition-all disabled:opacity-100 ${invitedFriends.includes(friend.id)
-                            ? 'bg-white/5 border border-white/10'
-                            : 'bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] border border-[#2d6af2]/40 shadow-[0_5px_15px_rgba(45,106,242,0.3)]'
+                          ? 'bg-white/5 border border-white/10'
+                          : 'bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] border border-[#2d6af2]/40 shadow-[0_5px_15px_rgba(45,106,242,0.3)]'
                           }`}
                       >
                         <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
@@ -1116,8 +1092,8 @@ export default function HostLobby() {
                         onClick={() => !invitedGroups.includes(group.id) && handleInviteGroup(group.id)}
                         disabled={invitedGroups.includes(group.id)}
                         className={`group/btn flex items-center justify-center h-10 px-8 relative overflow-hidden transform -skew-x-[12deg] transition-all disabled:opacity-100 ${invitedGroups.includes(group.id)
-                            ? 'bg-white/5 border border-white/10'
-                            : 'bg-gradient-to-r from-[#00e5ff] to-[#0089ff] hover:from-[#00f2ff] hover:to-[#00e5ff] border border-[#00e5ff]/40 shadow-[0_5px_15px_rgba(0,229,255,0.3)]'
+                          ? 'bg-white/5 border border-white/10'
+                          : 'bg-gradient-to-r from-[#00e5ff] to-[#0089ff] hover:from-[#00f2ff] hover:to-[#00e5ff] border border-[#00e5ff]/40 shadow-[0_5px_15px_rgba(0,229,255,0.3)]'
                           }`}
                       >
                         <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
@@ -1206,20 +1182,7 @@ export default function HostLobby() {
         </div>
       )}
 
-      {/* ═══ FLOATING FULLSCREEN BUTTON ═══ */}
-      <div className="fixed bottom-6 end-6 z-[250] flex">
-        <Button
-          onClick={toggleFullscreen}
-          variant="outline"
-          className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-black/60 backdrop-blur-xl border-white/10 hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10 text-white/50 hover:text-white transition-all shadow-2xl group flex items-center justify-center p-0"
-        >
-          {isFullscreen ? (
-            <Minimize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-          ) : (
-            <Maximize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-          )}
-        </Button>
-      </div>
+      <FloatingHostActions />
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

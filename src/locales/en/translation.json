@@ -146,6 +146,8 @@
     "min": "Min",
     "questions": "Questions",
     "sound": "Sound",
+    "sound_mute": "Mute Sound",
+    "sound_unmute": "Unmute Sound",
     "difficulty": {
       "title": "Difficulty",
       "easy": "Easy",
@@ -196,7 +198,9 @@
     "share_link": "Share Link",
     "exit_dialog_title": "Exit Lobby?",
     "exit_dialog_desc": "Are you sure you want to exit?",
-    "confirm_exit": "EXIT"
+    "confirm_exit": "EXIT",
+    "enter_fullscreen": "Enter Fullscreen",
+    "exit_fullscreen": "Exit Fullscreen"
   },
   "host_monitor": {
     "new": "NEW",

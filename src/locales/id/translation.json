@@ -146,6 +146,8 @@
     "min": "Mnt",
     "questions": "Soal",
     "sound": "Suara",
+    "sound_mute": "Bisukan Suara",
+    "sound_unmute": "Bunyikan Suara",
     "difficulty": {
       "title": "Kesulitan",
       "easy": "Mudah",
@@ -196,7 +198,9 @@
     "share_link": "Bagikan Tautan",
     "exit_dialog_title": "Keluar Lobby?",
     "exit_dialog_desc": "Apakah Anda yakin ingin keluar?",
-    "confirm_exit": "KELUAR"
+    "confirm_exit": "KELUAR",
+    "enter_fullscreen": "Layar Penuh",
+    "exit_fullscreen": "Keluar Layar Penuh"
   },
   "host_monitor": {
     "new": "BARU",

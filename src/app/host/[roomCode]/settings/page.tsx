@@ -17,6 +17,7 @@ import { Question } from "@/types"
 import { Logo } from "@/components/ui/logo"
 import { useTranslation } from "react-i18next"
 import { useBgm } from "@/contexts/BgmContext"
+import { FloatingHostActions } from "@/components/FloatingHostActions"
 
 // ── Category color map (Copied from select-quiz) ──
 const categoryColorMap: Record<string, {
@@ -448,6 +449,7 @@ export default function SettingsPage() {
                     </Dialog>
                 </div>
             </div>
+            <FloatingHostActions />
         </div>
     )
 }

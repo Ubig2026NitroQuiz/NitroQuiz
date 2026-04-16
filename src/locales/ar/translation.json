@@ -146,6 +146,8 @@
     "min": "دقيقة",
     "questions": "الأسئلة",
     "sound": "الصوت",
+    "sound_mute": "كتم الصوت",
+    "sound_unmute": "إلغاء كتم الصوت",
     "difficulty": {
       "title": "الصعوبة",
       "easy": "سهل",
@@ -196,7 +198,9 @@
     "share_link": "مشاركة الرابط",
     "exit_dialog_title": "الخروج من الغرفة؟",
     "exit_dialog_desc": "هل أنت متأكد من الخروج؟",
-    "confirm_exit": "خروج"
+    "confirm_exit": "خروج",
+    "enter_fullscreen": "ملء الشاشة",
+    "exit_fullscreen": "خروج من ملء الشاشة"
   },
   "host_monitor": {
     "new": "جديد",

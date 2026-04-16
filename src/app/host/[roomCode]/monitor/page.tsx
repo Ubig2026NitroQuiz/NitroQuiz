@@ -407,6 +407,8 @@ function PlayerCard({
 }
 
 // ── Main Page ──
+import { FloatingHostActions } from "@/components/FloatingHostActions";
+
 export default function GameMonitorPage() {
   const params = useParams();
   const router = useRouter();
@@ -891,6 +893,7 @@ export default function GameMonitorPage() {
           50% { opacity: 0.4; }
         }
       `}</style>
+      <FloatingHostActions />
     </div>
   );
 }
