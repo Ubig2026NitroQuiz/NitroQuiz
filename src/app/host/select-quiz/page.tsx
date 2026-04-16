@@ -395,7 +395,7 @@ export default function SelectQuizPage() {
                             
                             <div className="p-3 sm:p-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 w-full">
                                 {/* Search Section */}
-                                <div className="flex-1 w-full md:w-auto relative group/search min-w-[200px]">
+                                <div className="flex-1 w-full md:w-auto relative group/search min-w-[200px] transform -skew-x-[8deg]">
                                     <Input type="text" placeholder={t('select_quiz.search_placeholder')} value={searchInput}
                                         onChange={(e) => setSearchInput(e.target.value)}
                                         onKeyDown={(e) => { 
@@ -405,41 +405,52 @@ export default function SelectQuizPage() {
                                                 setCurrentPage(1);
                                             }
                                         }}
-                                        className="w-full bg-white/[0.03] border border-white/10 pl-4 pr-14 h-10 text-white font-display text-[10px] uppercase tracking-widest placeholder:text-white/30 rounded-lg focus-visible:ring-1 focus-visible:ring-[#7C3AED]/50 focus-visible:border-[#7C3AED] transition-all hover:bg-white/[0.06]" />
+                                        className="w-full bg-white/[0.03] border border-white/10 pl-6 pr-14 h-10 text-white font-display text-[10px] uppercase tracking-widest placeholder:text-white/30 rounded-none focus-visible:ring-1 focus-visible:ring-[#7C3AED]/50 focus-visible:border-[#7C3AED] transition-all hover:bg-white/[0.06] transform skew-x-[8deg] !rounded-sm" />
                                     
                                     <button 
                                         onClick={() => { setSearchQuery(searchInput); setCurrentPage(1); }}
-                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 bg-[#7C3AED]/30 text-[#a78bfa] hover:bg-[#7C3AED] hover:text-white border border-[#7C3AED]/50 rounded-md transition-all active:scale-95 z-10 flex items-center justify-center"
+                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 bg-[#7C3AED]/30 text-[#a78bfa] hover:bg-[#7C3AED] hover:text-white border border-[#7C3AED]/50 transition-all z-10 flex items-center justify-center group/btn overflow-hidden transform skew-x-[8deg] -translate-x-1 rounded-sm"
                                         title="Search"
                                     >
+                                        <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
                                         <Search className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
 
-                                {/* Divider */}
-                                <div className="w-[1px] h-8 bg-white/10 hidden md:block" />
-
                                 {/* Navigation Tabs Section */}
-                                <div className="flex items-center justify-center sm:justify-start flex-wrap gap-1.5 p-1 bg-black/50 border border-white/5 rounded-lg flex-shrink-0 w-full md:w-auto">
+                                <div className="flex items-center justify-center sm:justify-start flex-wrap gap-2 flex-shrink-0 w-full md:w-auto">
                                     <button onClick={() => setActiveTab('all')}
-                                        className={`flex items-center justify-center min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-display text-[9px] sm:text-[10px] tracking-wider uppercase transition-all duration-300 ${activeTab === 'all' ? 'bg-[#2d6af2] text-white shadow-[0_0_15px_rgba(45,106,242,0.5)]' : 'bg-transparent text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                                        <Search size={12} className="w-3.5 h-3.5" />{t('select_quiz.tabs.quizzes')}
+                                        className={`group/tb flex items-center justify-center h-9 px-4 relative overflow-hidden transform -skew-x-[12deg] transition-all duration-300 rounded-sm hover:shadow-[0_0_15px_rgba(45,106,242,0.3)] ${activeTab === 'all' ? 'bg-[#2d6af2] text-white border border-white/20' : 'bg-white/[0.03] border border-white/5 text-gray-400 hover:text-white hover:bg-white/[0.08]'}`}>
+                                        <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/tb:translate-x-[200%] transition-transform duration-700" />
+                                        <div className="relative z-10 flex items-center gap-2 transform skew-x-[12deg]">
+                                            <Search size={12} className="w-3.5 h-3.5" />
+                                            <span className="font-display text-[10px] tracking-widest uppercase font-black">{t('select_quiz.tabs.quizzes')}</span>
+                                        </div>
                                     </button>
+                                    
                                     <button onClick={() => setActiveTab('favorites')}
-                                        className={`flex items-center justify-center min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-display text-[9px] sm:text-[10px] tracking-wider uppercase transition-all duration-300 ${activeTab === 'favorites' ? 'bg-gradient-to-r from-[#ec4899] to-[#ef4444] text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]' : 'bg-transparent text-gray-400 hover:text-pink-400 hover:bg-pink-500/10'}`}>
-                                        <Heart size={12} className={`w-3.5 h-3.5 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
-                                        {t('select_quiz.tabs.favorites')}
+                                        className={`group/tb flex items-center justify-center h-9 px-4 relative overflow-hidden transform -skew-x-[12deg] transition-all duration-300 rounded-sm hover:shadow-[0_0_15px_rgba(236,72,153,0.3)] ${activeTab === 'favorites' ? 'bg-gradient-to-r from-[#ec4899] to-[#ef4444] text-white border border-white/20' : 'bg-white/[0.03] border border-white/5 text-gray-400 hover:text-pink-400 hover:bg-pink-500/10'}`}>
+                                        <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/tb:translate-x-[200%] transition-transform duration-700" />
+                                        <div className="relative z-10 flex items-center gap-2 transform skew-x-[12deg]">
+                                            <Heart size={12} className={`w-3.5 h-3.5 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
+                                            <span className="font-display text-[10px] tracking-widest uppercase font-black">{t('select_quiz.tabs.favorites')}</span>
+                                        </div>
                                     </button>
+                                    
                                     <button onClick={() => setActiveTab('myquiz')}
-                                        className={`flex items-center justify-center min-w-max gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-display text-[9px] sm:text-[10px] tracking-wider uppercase transition-all duration-300 ${activeTab === 'myquiz' ? 'bg-[#7c3aed] text-white shadow-[0_0_15px_rgba(124,58,237,0.5)]' : 'bg-transparent text-gray-400 hover:text-[#a78bfa] hover:bg-[#7c3aed]/10'}`}>
-                                        <FileText size={12} className="w-3.5 h-3.5" />{t('select_quiz.tabs.my_quiz')}
+                                        className={`group/tb flex items-center justify-center h-9 px-4 relative overflow-hidden transform -skew-x-[12deg] transition-all duration-300 rounded-sm hover:shadow-[0_0_15px_rgba(124,58,237,0.3)] ${activeTab === 'myquiz' ? 'bg-[#7c3aed] text-white border border-white/20' : 'bg-white/[0.03] border border-white/5 text-gray-400 hover:text-[#a78bfa] hover:bg-[#7c3aed]/10'}`}>
+                                        <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/tb:translate-x-[200%] transition-transform duration-700" />
+                                        <div className="relative z-10 flex items-center gap-2 transform skew-x-[12deg]">
+                                            <FileText size={12} className="w-3.5 h-3.5" />
+                                            <span className="font-display text-[10px] tracking-widest uppercase font-black">{t('select_quiz.tabs.my_quiz')}</span>
+                                        </div>
                                     </button>
                                 </div>
 
                                 {/* Category Dropdown Section */}
                                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                    <SelectTrigger className="w-full md:w-56 h-10 bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.06] focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED]/50 rounded-lg font-display text-[10px] tracking-widest uppercase transition-all flex-shrink-0">
-                                        <SelectValue placeholder={t('select_quiz.category_placeholder')} />
+                                    <SelectTrigger className="w-full md:w-56 h-10 bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.06] focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED]/50 rounded-sm font-display text-[10px] tracking-widest uppercase transition-all flex-shrink-0 transform -skew-x-[8deg]">
+                                        <SelectValue placeholder={t('select_quiz.category_placeholder')} className="transform skew-x-[8deg]" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#0c1020]/95 border border-white/[0.08] shadow-[0_20px_60px_rgba(0,0,0,0.5)] text-white font-display text-[10px] uppercase tracking-wide backdrop-blur-2xl">
                                         {categories.map((cat) => (
@@ -493,7 +504,7 @@ export default function SelectQuizPage() {
                                         return (
                                             <motion.div key={quiz.id}
                                                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                                                transition={{ duration: 0.2 }} whileHover={{ scale: 1.02 }}
+                                                transition={{ duration: 0.2 }}
                                                 className="cursor-pointer relative group h-full flex flex-col"
                                                 onClick={() => handleOpenQuizDetail(quiz.id)}
                                                 style={{ willChange: "transform, opacity" }}>
@@ -536,7 +547,7 @@ export default function SelectQuizPage() {
                                                     <CardHeader className="p-3 pb-1 relative z-20 flex flex-col">
                                                         {/* ── Slanted Category badge ── */}
                                                         <div className="flex items-start mb-1.5">
-                                                            <div className="px-2 py-[2px] rounded-sm text-[7px] font-display font-black uppercase tracking-[0.2em] transform -skew-x-[15deg] group-hover:skew-x-0 transition-all duration-300"
+                                                            <div className="px-2 py-[2px] rounded-sm text-[7px] font-display font-black uppercase tracking-[0.2em] transform -skew-x-[15deg] transition-all duration-300"
                                                                 style={{
                                                                     background: `linear-gradient(90deg, ${colors.badgeBorder}60, transparent)`,
                                                                     borderLeft: `2.5px solid ${colors.bar}`,
@@ -544,7 +555,7 @@ export default function SelectQuizPage() {
                                                                     color: '#fff',
                                                                     textShadow: `0 0 5px ${colors.bar}`
                                                                 }}>
-                                                                <div className="transform skew-x-[15deg] group-hover:skew-x-0 transition-transform">
+                                                                <div className="transform skew-x-[15deg]">
                                                                     {getCategoryDisplayName(quiz.category)}
                                                                 </div>
                                                             </div>
@@ -575,7 +586,7 @@ export default function SelectQuizPage() {
                                                     </CardHeader>
                                                     
                                                     {/* Footer Hud */}
-                                                    <CardFooter className="p-3 border-t border-white/10 flex justify-between items-end relative z-20 bg-gradient-to-t from-[#0c1020]/95 to-transparent">
+                                                    <CardFooter className="p-3 border-t border-white/10 flex justify-between items-end relative z-20 bg-gradient-to-t from-[#0c1020]/95 to-transparent mt-auto">
                                                         <div className="flex flex-col">
                                                             <span className="text-[8px] text-white/80 font-display uppercase tracking-[0.25em] mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-bold">QUESTIONS</span>
                                                             <div className="flex items-center gap-1.5 font-bold text-white text-xs font-display">
@@ -587,7 +598,7 @@ export default function SelectQuizPage() {
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleSelectQuiz(quiz.id); }}
                                                             disabled={creating}
-                                                            className="group/btn flex items-center h-8 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed transform -skew-x-[15deg] hover:skew-x-0 transition-transform duration-300 rounded-sm"
+                                                            className="group/btn flex items-center h-10 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed transform -skew-x-[12deg] transition-all duration-300 rounded-sm"
                                                             style={{ background: `linear-gradient(135deg, ${colors.bar}, ${colors.badgeBorder})` }}
                                                         >
                                                             {/* Slanted Button Border */}
@@ -596,8 +607,8 @@ export default function SelectQuizPage() {
                                                             {/* Inner Hover Glow */}
                                                             <div className="absolute top-0 right-0 bottom-0 w-1/2 bg-white/20 transform -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-out" />
                                                                 
-                                                            <div className="relative z-10 flex items-center gap-2 px-4 transform skew-x-[15deg] group-hover/btn:skew-x-0 transition-transform duration-300">
-                                                                <span className="text-white font-black text-[9px] tracking-[0.2em] uppercase">{t('select_quiz.start_button')}</span>
+                                                            <div className="relative z-10 flex items-center gap-2 px-5 transform skew-x-[12deg] transition-transform duration-300">
+                                                                <span className="text-white font-black text-[10px] tracking-[0.2em] uppercase">{t('select_quiz.start_button')}</span>
                                                                 <Play size={10} className="fill-white" />
                                                             </div>
                                                         </button>
@@ -642,14 +653,36 @@ export default function SelectQuizPage() {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="flex justify-center mt-6 mb-2 gap-2 flex-shrink-0">
-                                <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            <div className="flex justify-center mt-6 mb-2 gap-3 flex-shrink-0">
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1 || isFetching || creating || isReturning}
-                                    className="h-9 px-5 bg-[#2d6af2]/10 border border-[#2d6af2]/50 text-[#93c5fd] hover:bg-[#2d6af2] hover:text-white transition-all font-display text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:border-white/5 shadow-[0_0_15px_rgba(45,106,242,0.4)] hover:shadow-[0_0_25px_rgba(45,106,242,0.7)]">{t('select_quiz.pagination.prev')}</Button>
-                                <div className="flex items-center px-6 bg-[#7C3AED]/20 border border-[#7C3AED]/40 rounded-md text-white font-display font-black text-[11px] tracking-[0.2em] shadow-[0_0_15px_rgba(124,58,237,0.3)]">{t('select_quiz.pagination.page')} {currentPage} / {totalPages}</div>
-                                <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="group/prev flex items-center h-10 px-6 relative overflow-hidden disabled:opacity-30 disabled:cursor-not-allowed transform -skew-x-[15deg] transition-all duration-300 rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#2d6af2]/10 to-transparent -translate-x-full group-hover/prev:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                                    <div className="relative z-10 flex items-center gap-2 transform skew-x-[15deg] transition-transform duration-300">
+                                        <ArrowLeft size={12} className="text-[#2d6af2]" />
+                                        <span className="text-white font-black text-[10px] tracking-[0.2em] uppercase">{t('select_quiz.pagination.prev')}</span>
+                                    </div>
+                                </button>
+
+                                <div className="flex items-center px-6 bg-[#0c1020]/80 border border-white/10 rounded-sm text-white font-display font-black text-[11px] tracking-[0.2em] shadow-[0_0_15px_rgba(0,0,0,0.3)] transform -skew-x-[15deg]">
+                                    <div className="transform skew-x-[15deg]">
+                                        {t('select_quiz.pagination.page')} {currentPage} / {totalPages}
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages || isFetching || creating || isReturning}
-                                    className="h-9 px-5 bg-[#2d6af2]/10 border border-[#2d6af2]/50 text-[#93c5fd] hover:bg-[#2d6af2] hover:text-white transition-all font-display text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:border-white/5 shadow-[0_0_15px_rgba(45,106,242,0.4)] hover:shadow-[0_0_25px_rgba(45,106,242,0.7)]">{t('select_quiz.pagination.next')}</Button>
+                                    className="group/next flex items-center h-10 px-6 relative overflow-hidden disabled:opacity-30 disabled:cursor-not-allowed transform -skew-x-[15deg] transition-all duration-300 rounded-sm bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 hover:shadow-[0_0_20px_rgba(45,106,242,0.4)]"
+                                >
+                                    <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/next:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                                    <div className="relative z-10 flex items-center gap-2 transform skew-x-[15deg] transition-transform duration-300">
+                                        <span className="text-white font-black text-[10px] tracking-[0.2em] uppercase">{t('select_quiz.pagination.next')}</span>
+                                        <Play size={10} className="fill-white" />
+                                    </div>
+                                </button>
                             </div>
                         )}
                     </div>
