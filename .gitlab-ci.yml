@@ -1,32 +1,25 @@
 stages:
-  - test
-  - deploy
+  - build_and_deploy
 
-# TAHAP 1: PENGECEKAN KODE (TESTING)
-check_code:
-  stage: test
-  tags:
-    - nodejs # Sesuaikan dengan tag runner kamu, atau hapus baris tags ini jika runner tidak pakai tag
-  script:
-    - echo "Sedang mengecek kelayakan kodingan..."
-    - npm install
-    # Jika kamu belum punya script test, baris di bawah bisa dikomentari dulu
-    - npm test || echo "Test belum dikonfigurasi, lanjut..." 
-  only:
-    - main
-
-# TAHAP 2: PENGIRIMAN KE SERVER (DEPLOY)
-deploy_to_aapanel:
-  stage: deploy
+deploy_proyek:
+  stage: build_and_deploy
   tags:
     - nodejs
   script:
-    - echo "Kodingan aman! Mengirim ke aaPanel..."
+    - echo "🚀 Deploy bersih sebagai user www..."
+    - npm ci --prefer-offline
+    - npm run build
+    
+    # 1. Kirim file
+    - rsync -az --delete --exclude '.git' --exclude 'node_modules' ./ root@192.168.1.157:/www/wwwroot/NitroQuiz/
+    
+    # 2. Perbaiki Permission & Restart via sudo -u www
     - ssh -o StrictHostKeyChecking=no root@192.168.1.157 "
+        chown -R www:www /www/wwwroot/NitroQuiz && 
         cd /www/wwwroot/NitroQuiz && 
-        git pull origin main && 
-        npm install && 
-        pm2 restart all || echo 'Aplikasi sudah terupdate!'
+        sudo -u www npm install --production --no-audit && 
+        sudo -u www pm2 startOrReload ecosystem.config.js --update-env &&
+        echo '✅ Deploy Berhasil via User www!'
       "
   only:
     - main

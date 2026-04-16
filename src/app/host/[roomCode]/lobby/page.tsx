@@ -22,6 +22,7 @@ import {
   DialogOverlay,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useBgm } from "@/contexts/BgmContext";
 
 // Helper: Generate initials from a name
 const getInitials = (name: string): string => {
@@ -55,6 +56,7 @@ export default function HostLobby() {
   const params = useParams();
   const { t } = useTranslation();
   const { profile } = useAuth();
+  const { isMuted, toggleMute } = useBgm();
   const roomCode = params.roomCode as string;
 
   const [participants, setParticipants] = useState<any[]>([]);
@@ -66,7 +68,6 @@ export default function HostLobby() {
   const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
   const [inviteGroupOpen, setInviteGroupOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [kickDialogOpen, setKickDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
@@ -765,8 +766,8 @@ export default function HostLobby() {
 
                 {/* Sound */}
                 <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`w-10 h-9 flex items-center justify-center rounded-sm border transition-all transform -skew-x-[15deg] ${isMuted ? "bg-red-500/25 border-red-500/60 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)]" : "bg-white/10 border-white/30 text-white/90 hover:text-white hover:bg-white/20 hover:border-white/50 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]"}`}
+                  onClick={toggleMute}
+                  className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isMuted ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10"}`}
                 >
                   <div className="transform skew-x-[15deg]">
                     {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
