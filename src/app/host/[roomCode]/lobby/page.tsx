@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Users, Play, LogOut, Copy, Check, Maximize2, Minimize2,
   Volume2, VolumeX, X, UserPlus, Users2, Bot, Search
@@ -71,7 +71,6 @@ export default function HostLobby() {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [kickDialogOpen, setKickDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
-  const channelRef = useRef<any>(null);
   const [searchGroupQuery, setSearchGroupQuery] = useState("");
   const [invitedGroups, setInvitedGroups] = useState<string[]>([]);
   const [inviteToastVisible, setInviteToastVisible] = useState(false);
@@ -277,73 +276,54 @@ export default function HostLobby() {
     }
   };
 
-  const fetchParticipants = useCallback(async (sid: string) => {
-    const { data: pData, error } = await supabase
-      .from("participants")
-      .select("*")
-      .eq("session_id", sid);
-    if (!error && pData) {
-      setParticipants(pData);
-    }
-  }, []);
-
-  const loadSession = useCallback(async () => {
-    await syncServerTime(); // Ensure offset is ready before logic
-    const { data, error } = await supabase
-      .from("sessions")
-      .select("*")
-      .eq("game_pin", roomCode)
-      .single();
-    if (error || !data) return;
-    setSession(data);
-    setSessionId(data.id);
-
-    // Resume countdown if it started but not finished
-    if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
-      const now = getSyncedServerTime();
-      const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
-      const remaining = Math.max(0, Math.min(3, 3 - diff));
-      if (remaining > 0) {
-        setCountdown(remaining);
-      } else if (remaining <= 0) {
-        const startSessionFallback = async () => {
-          await supabase
-            .from("sessions")
-            .update({
-              status: "active",
-              started_at: new Date(getSyncedServerTime()).toISOString(),
-              countdown_started_at: null
-            })
-            .eq("id", data.id);
-          router.push(`/host/${roomCode}/monitor`);
-        };
-        startSessionFallback();
-      }
-    }
-
-    fetchParticipants(data.id);
-  }, [roomCode, router, fetchParticipants]);
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       setJoinLink(`${window.location.origin}/join/${roomCode}`);
     }
 
-    loadSession();
+    const loadSession = async () => {
+      await syncServerTime(); // Ensure offset is ready before logic
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("game_pin", roomCode)
+        .single();
+      if (error || !data) return;
+      setSession(data);
+      setSessionId(data.id);
 
-    // Visibility listener to re-sync when tab is focused
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        console.log("[NitroQuiz] Host Lobby focused, re-syncing...");
-        loadSession();
+      // Resume countdown if it started but not finished
+      if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
+        const now = getSyncedServerTime();
+        const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
+        const remaining = Math.max(0, Math.min(3, 3 - diff));
+        if (remaining > 0) {
+          setCountdown(remaining);
+        } else if (remaining <= 0) {
+          const startSessionFallback = async () => {
+            await supabase
+              .from("sessions")
+              .update({
+                status: "active",
+                started_at: new Date(getSyncedServerTime()).toISOString(),
+                countdown_started_at: null
+              })
+              .eq("id", data.id);
+            router.push(`/host/${roomCode}/monitor`);
+          };
+          startSessionFallback();
+        }
       }
-    };
-    window.addEventListener("visibilitychange", handleVisibilityChange);
 
-    return () => {
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      const { data: pData } = await supabase
+        .from("participants")
+        .select("*")
+        .eq("session_id", data.id);
+      if (pData) setParticipants(pData);
     };
-  }, [roomCode, loadSession]);
+
+    loadSession();
+  }, [roomCode, router]); // separated from channel so it doesn't loop
 
   useEffect(() => {
     if (!sessionId) return;
@@ -359,7 +339,16 @@ export default function HostLobby() {
         "postgres_changes",
         { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
         (payload: any) => {
-          fetchParticipants(sessionId);
+          if (payload.eventType === "INSERT") {
+            setParticipants(prev => {
+              if (prev.some(p => p.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === "UPDATE") {
+            setParticipants(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+          } else if (payload.eventType === "DELETE") {
+            setParticipants(prev => prev.filter(p => p.id !== payload.old.id));
+          }
         }
       )
       .on(
@@ -367,26 +356,17 @@ export default function HostLobby() {
         { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         (payload: any) => {
           setSession(payload.new);
+          // Trigger countdown when server confirms it started
           if (payload.new.countdown_started_at && !payload.new.started_at) {
             setCountdown(prev => prev === null ? 3 : prev);
           }
           handleStartedOrFinished(payload.new.status);
         }
       )
-      .on("broadcast", { event: "player_left" }, () => {
-        fetchParticipants(sessionId);
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log("[NitroQuiz] Host Subscribed to realtime");
-        }
-      });
-
-    channelRef.current = channel;
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
-      channelRef.current = null;
     };
   }, [sessionId, roomCode, router]);
 
@@ -503,25 +483,10 @@ export default function HostLobby() {
   };
 
   const confirmKick = async () => {
-    if (!selectedPlayer) return;
-    const playerId = selectedPlayer.id;
-
-    // Optimistic UI update
-    setParticipants(prev => prev.filter(p => p.id !== playerId));
-    setKickDialogOpen(false);
-    setSelectedPlayer(null);
-
-    // 1. Delete from DB
-    await supabase.from("participants").delete().eq("id", playerId);
-
-    // 2. Broadcast kick event for near-instant client reaction
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "kick_player",
-        payload: { id: playerId }
-      });
+    if (selectedPlayer) {
+      await supabase.from("participants").delete().eq("id", selectedPlayer.id);
     }
+    setKickDialogOpen(false);
   };
 
   if (!session) {
@@ -586,9 +551,9 @@ export default function HostLobby() {
               {/* TOP ROW: Split Info & QR */}
               <div className="flex border-b border-white/5">
                 {/* Left Side: Info (Code & Link) */}
-                <div className="flex-1 flex flex-col p-4 md:p-8 gap-3 md:gap-6 border-r border-white/5">
+                <div className="flex-1 flex flex-col p-3 md:p-8 gap-3 md:gap-6 border-r border-white/5">
                   <div
-                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-3 md:py-8 px-4 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-3 md:py-8 px-3 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                     onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
@@ -617,7 +582,7 @@ export default function HostLobby() {
                       className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-14 xl:h-16 px-6 font-display text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0 transform -skew-x-[15deg]"
                     >
                       <div className="transform skew-x-[15deg]">
-                        <LogOut size={22} className="rtl:rotate-180 scale-x-[-1]" />
+                        <LogOut size={22} className="rtl:rotate-180" />
                       </div>
                     </Button>
                     <Button
@@ -636,11 +601,11 @@ export default function HostLobby() {
 
                 {/* Right Side: QR Code Area */}
                 <div
-                  className="w-[100px] sm:w-[140px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-3 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
+                  className="w-[130px] sm:w-[160px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-2.5 sm:p-4 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
                   onClick={() => setQrOpen(true)}
                 >
-                  <div className="bg-white p-2 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                    <div className="w-[70px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
+                  <div className="bg-white p-2 sm:p-3 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                    <div className="w-[85px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
                       <QRCode value={joinLink} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
                     </div>
                   </div>
@@ -654,7 +619,7 @@ export default function HostLobby() {
                   className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-12 md:h-16 px-4 md:px-6 font-display text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0 transform -skew-x-[15deg]"
                 >
                   <div className="transform skew-x-[15deg]">
-                    <LogOut size={20} className="md:size-6 rtl:rotate-180 scale-x-[-1]" />
+                    <LogOut size={20} className="md:size-6 rtl:rotate-180" />
                   </div>
                 </Button>
                 <Button
@@ -720,7 +685,7 @@ export default function HostLobby() {
                     className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-12 px-3 sm:px-4 font-display text-sm font-bold uppercase tracking-wider transition-all shrink-0 transform -skew-x-[15deg]"
                   >
                     <div className="transform skew-x-[15deg] flex items-center gap-1.5">
-                      <LogOut size={16} className="rtl:rotate-180 scale-x-[-1]" />
+                      <LogOut size={16} className="rtl:rotate-180" />
                       <span className="hidden sm:inline text-[11px]">{t('host_lobby.exit')}</span>
                     </div>
                   </Button>
@@ -906,7 +871,7 @@ export default function HostLobby() {
         <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-              <LogOut size={32} className="text-red-500 scale-x-[-1]" />
+              <LogOut size={32} className="text-red-500" />
             </div>
             <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.15em] text-center mb-2">
               {t('host_lobby.exit_dialog_title')}
