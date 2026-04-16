@@ -32,48 +32,60 @@ export function FloatingHostActions() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="fixed bottom-6 end-6 z-[250] flex flex-col gap-3">
+      <div className="fixed bottom-6 end-6 z-[250] flex flex-row gap-2">
         {/* Sound Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
+            <button
               onClick={toggleMute}
-              variant="outline"
-              className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl backdrop-blur-xl border transition-all shadow-2xl group flex items-center justify-center p-0 ${
+              className={`w-9 h-9 md:w-11 md:h-11 transform -skew-x-[15deg] transition-all duration-300 shadow-2xl group relative overflow-hidden flex items-center justify-center border-2 rounded-sm ${
                 isMuted 
-                  ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30" 
-                  : "bg-black/60 border-white/10 text-white/50 hover:text-white hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10"
+                  ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
+                  : "bg-[#0a0a0f]/80 backdrop-blur-xl border-[#2d6af2]/30 text-[#2d6af2] hover:border-[#2d6af2] hover:bg-[#2d6af2]/10 shadow-[0_0_20px_rgba(45,106,242,0.2)]"
               }`}
             >
-              {isMuted ? (
-                <VolumeX size={20} className="md:size-6" />
-              ) : (
-                <Volume2 size={20} className="md:size-6" />
-              )}
-            </Button>
+              {/* Shine Animation */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+              
+              <div className="relative z-10 transform skew-x-[15deg]">
+                {isMuted ? (
+                  <VolumeX size={16} className="md:size-5" />
+                ) : (
+                  <Volume2 size={16} className="md:size-5" />
+                )}
+              </div>
+            </button>
           </TooltipTrigger>
-          <TooltipContent side="left" className="bg-[#0c1020]/95 border border-white/10 text-white font-display text-[10px] uppercase tracking-widest backdrop-blur-xl">
-            {isMuted ? (t('room_settings.sound_unmute') || "Unmute") : (t('room_settings.sound_mute') || "Mute")}
+          <TooltipContent side="top" className="bg-[#0a0a0f] border-2 border-white/10 text-white font-display text-[10px] uppercase tracking-widest backdrop-blur-xl rounded-none transform -skew-x-[15deg]">
+            <span className="block transform skew-x-[15deg]">
+               {isMuted ? (t('room_settings.sound_unmute') || "Unmute") : (t('room_settings.sound_mute') || "Mute")}
+            </span>
           </TooltipContent>
         </Tooltip>
 
         {/* Fullscreen Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
+            <button
               onClick={toggleFullscreen}
-              variant="outline"
-              className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-black/60 backdrop-blur-xl border-white/10 hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10 text-white/50 hover:text-white transition-all shadow-2xl group flex items-center justify-center p-0"
+              className="w-9 h-9 md:w-11 md:h-11 bg-[#0a0a0f]/80 backdrop-blur-xl border-2 border-[#2d6af2]/30 text-[#2d6af2] hover:border-[#2d6af2] hover:bg-[#2d6af2]/10 transition-all duration-300 shadow-2xl group relative overflow-hidden flex items-center justify-center transform -skew-x-[15deg] rounded-sm"
             >
-              {isFullscreen ? (
-                <Minimize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-              ) : (
-                <Maximize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-              )}
-            </Button>
+              {/* Shine Animation */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+
+              <div className="relative z-10 transform skew-x-[15deg]">
+                {isFullscreen ? (
+                  <Minimize2 size={16} className="md:size-5 group-hover:scale-110 transition-transform" />
+                ) : (
+                  <Maximize2 size={16} className="md:size-5 group-hover:scale-110 transition-transform" />
+                )}
+              </div>
+            </button>
           </TooltipTrigger>
-          <TooltipContent side="left" className="bg-[#0c1020]/95 border border-white/10 text-white font-display text-[10px] uppercase tracking-widest backdrop-blur-xl">
-            {isFullscreen ? (t('host_lobby.exit_fullscreen') || "Exit Fullscreen") : (t('host_lobby.enter_fullscreen') || "Enter Fullscreen")}
+          <TooltipContent side="top" className="bg-[#0a0a0f] border-2 border-white/10 text-white font-display text-[10px] uppercase tracking-widest backdrop-blur-xl rounded-none transform -skew-x-[15deg]">
+            <span className="block transform skew-x-[15deg]">
+              {isFullscreen ? (t('host_lobby.exit_fullscreen') || "Exit Fullscreen") : (t('host_lobby.enter_fullscreen') || "Enter Fullscreen")}
+            </span>
           </TooltipContent>
         </Tooltip>
       </div>
