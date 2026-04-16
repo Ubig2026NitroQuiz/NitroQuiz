@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Users, Play, LogOut, Copy, Check, Maximize2, Minimize2,
   Volume2, VolumeX, X, UserPlus, Users2, Bot, Search
@@ -72,7 +72,6 @@ export default function HostLobby() {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [kickDialogOpen, setKickDialogOpen] = useState(false);
   const [exitDialogOpen, setExitDialogOpen] = useState(false);
-  const channelRef = useRef<any>(null);
   const [searchGroupQuery, setSearchGroupQuery] = useState("");
   const [invitedGroups, setInvitedGroups] = useState<string[]>([]);
   const [inviteToastVisible, setInviteToastVisible] = useState(false);
@@ -272,65 +271,50 @@ export default function HostLobby() {
     if (!error && pData) {
       setParticipants(pData);
     }
-  }, []);
 
-  const loadSession = useCallback(async () => {
-    await syncServerTime(); // Ensure offset is ready before logic
-    const { data, error } = await supabase
-      .from("sessions")
-      .select("*")
-      .eq("game_pin", roomCode)
-      .single();
-    if (error || !data) return;
-    setSession(data);
-    setSessionId(data.id);
+    const loadSession = async () => {
+      await syncServerTime(); // Ensure offset is ready before logic
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("game_pin", roomCode)
+        .single();
+      if (error || !data) return;
+      setSession(data);
+      setSessionId(data.id);
 
-    // Resume countdown if it started but not finished
-    if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
-      const now = getSyncedServerTime();
-      const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
-      const remaining = Math.max(0, Math.min(3, 3 - diff));
-      if (remaining > 0) {
-        setCountdown(remaining);
-      } else if (remaining <= 0) {
-        const startSessionFallback = async () => {
-          await supabase
-            .from("sessions")
-            .update({
-              status: "active",
-              started_at: new Date(getSyncedServerTime()).toISOString(),
-              countdown_started_at: null
-            })
-            .eq("id", data.id);
-          router.push(`/host/${roomCode}/monitor`);
-        };
-        startSessionFallback();
+      // Resume countdown if it started but not finished
+      if (data.countdown_started_at && data.status !== "active" && data.status !== "finished") {
+        const now = getSyncedServerTime();
+        const diff = Math.floor((now - new Date(data.countdown_started_at).getTime()) / 1000);
+        const remaining = Math.max(0, Math.min(3, 3 - diff));
+        if (remaining > 0) {
+          setCountdown(remaining);
+        } else if (remaining <= 0) {
+          const startSessionFallback = async () => {
+            await supabase
+              .from("sessions")
+              .update({
+                status: "active",
+                started_at: new Date(getSyncedServerTime()).toISOString(),
+                countdown_started_at: null
+              })
+              .eq("id", data.id);
+            router.push(`/host/${roomCode}/monitor`);
+          };
+          startSessionFallback();
+        }
       }
-    }
 
-    fetchParticipants(data.id);
-  }, [roomCode, router, fetchParticipants]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setJoinLink(`${window.location.origin}/join/${roomCode}`);
-    }
+      const { data: pData } = await supabase
+        .from("participants")
+        .select("*")
+        .eq("session_id", data.id);
+      if (pData) setParticipants(pData);
+    };
 
     loadSession();
-
-    // Visibility listener to re-sync when tab is focused
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        console.log("[NitroQuiz] Host Lobby focused, re-syncing...");
-        loadSession();
-      }
-    };
-    window.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [roomCode, loadSession]);
+  }, [roomCode, router]); // separated from channel so it doesn't loop
 
   useEffect(() => {
     if (!sessionId) return;
@@ -346,7 +330,16 @@ export default function HostLobby() {
         "postgres_changes",
         { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
         (payload: any) => {
-          fetchParticipants(sessionId);
+          if (payload.eventType === "INSERT") {
+            setParticipants(prev => {
+              if (prev.some(p => p.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === "UPDATE") {
+            setParticipants(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+          } else if (payload.eventType === "DELETE") {
+            setParticipants(prev => prev.filter(p => p.id !== payload.old.id));
+          }
         }
       )
       .on(
@@ -354,26 +347,17 @@ export default function HostLobby() {
         { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         (payload: any) => {
           setSession(payload.new);
+          // Trigger countdown when server confirms it started
           if (payload.new.countdown_started_at && !payload.new.started_at) {
             setCountdown(prev => prev === null ? 3 : prev);
           }
           handleStartedOrFinished(payload.new.status);
         }
       )
-      .on("broadcast", { event: "player_left" }, () => {
-        fetchParticipants(sessionId);
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log("[NitroQuiz] Host Subscribed to realtime");
-        }
-      });
-
-    channelRef.current = channel;
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
-      channelRef.current = null;
     };
   }, [sessionId, roomCode, router]);
 
@@ -490,25 +474,10 @@ export default function HostLobby() {
   };
 
   const confirmKick = async () => {
-    if (!selectedPlayer) return;
-    const playerId = selectedPlayer.id;
-
-    // Optimistic UI update
-    setParticipants(prev => prev.filter(p => p.id !== playerId));
-    setKickDialogOpen(false);
-    setSelectedPlayer(null);
-
-    // 1. Delete from DB
-    await supabase.from("participants").delete().eq("id", playerId);
-
-    // 2. Broadcast kick event for near-instant client reaction
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "kick_player",
-        payload: { id: playerId }
-      });
+    if (selectedPlayer) {
+      await supabase.from("participants").delete().eq("id", selectedPlayer.id);
     }
+    setKickDialogOpen(false);
   };
 
   if (!session) {
@@ -573,13 +542,13 @@ export default function HostLobby() {
               {/* TOP ROW: Split Info & QR */}
               <div className="flex border-b border-white/5">
                 {/* Left Side: Info (Code & Link) */}
-                <div className="flex-1 flex flex-col p-4 md:p-8 gap-3 md:gap-6 border-r border-white/5">
+                <div className="flex-1 flex flex-col p-3 md:p-8 gap-3 md:gap-6 border-r border-white/5">
                   <div
-                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-3 md:py-8 px-4 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-4 md:py-8 px-5 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                     onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
-                    <h1 className="font-display text-2xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
+                    <h1 className="font-display text-3xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
                       {roomCode}
                     </h1>
                     <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-5 opacity-40 group-hover:opacity-100 transition-opacity">
@@ -591,7 +560,7 @@ export default function HostLobby() {
                     className="flex items-center justify-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 bg-white/5 rounded-lg md:rounded-xl border border-white/5 cursor-pointer group/link hover:border-[#2d6af2]/30 transition-all relative"
                     onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
                   >
-                    <p className="text-white text-[9px] md:text-xs font-mono truncate tracking-wide text-center max-w-[85%]">{joinLink}</p>
+                    <p className="text-white text-[10px] md:text-xs font-mono truncate tracking-wide text-center max-w-[85%]">{joinLink}</p>
                     <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-4">
                       {copiedJoin ? <Check size={12} className="md:size-3.5 text-[#00ff9d] shrink-0" /> : <Copy size={12} className="md:size-3.5 text-white/20 group-hover/link:text-[#2d6af2] shrink-0" />}
                     </div>
@@ -599,35 +568,36 @@ export default function HostLobby() {
 
                   {/* TABLET ONLY BUTTONS: Inside left column on md screens */}
                   <div className="hidden md:flex gap-3 mt-auto">
-                    <Button
+                    <button
                       onClick={() => setExitDialogOpen(true)}
-                      className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-14 xl:h-16 px-6 font-display text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0 transform -skew-x-[15deg]"
+                      className="group/btn bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-14 xl:h-16 px-6 font-display text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0 transform -skew-x-[15deg] overflow-hidden relative"
                     >
-                      <div className="transform skew-x-[15deg]">
-                        <LogOut size={22} className="rtl:rotate-180 scale-x-[-1]" />
+                      <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                      <div className="relative z-10 transform skew-x-[15deg]">
+                        <LogOut size={22} className="rtl:rotate-180" />
                       </div>
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       onClick={startGame}
                       disabled={participants.length === 0 || countdown !== null}
-                      className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/50 font-display font-black h-14 xl:h-16 rounded-sm shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-lg transition-all disabled:opacity-50 active:scale-[0.98] group overflow-hidden relative transform -skew-x-[15deg]"
+                      className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/50 font-display font-black h-14 xl:h-16 rounded-sm shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-lg transition-all disabled:opacity-50 active:scale-[0.98] group/btn overflow-hidden relative transform -skew-x-[15deg]"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
                       <div className="relative z-10 flex items-center justify-center gap-3 transform skew-x-[15deg]">
                         <Play className="fill-current w-6 h-6" />
                         <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
                       </div>
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
                 {/* Right Side: QR Code Area */}
                 <div
-                  className="w-[100px] sm:w-[140px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-3 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
+                  className="w-[130px] sm:w-[160px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-2.5 sm:p-4 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
                   onClick={() => setQrOpen(true)}
                 >
-                  <div className="bg-white p-2 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                    <div className="w-[70px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
+                  <div className="bg-white p-2 sm:p-3 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                    <div className="w-[85px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
                       <QRCode value={joinLink} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
                     </div>
                   </div>
@@ -636,25 +606,26 @@ export default function HostLobby() {
 
               {/* MOBILE ONLY BUTTONS: Full width row ONLY for phones (< md) */}
               <div className="md:hidden p-4 flex gap-3">
-                <Button
+                <button
                   onClick={() => setExitDialogOpen(true)}
-                  className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-12 md:h-16 px-4 md:px-6 font-display text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0 transform -skew-x-[15deg]"
+                  className="group/btn bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-12 md:h-16 px-4 md:px-6 font-display text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center shrink-0 transform -skew-x-[15deg] overflow-hidden relative"
                 >
-                  <div className="transform skew-x-[15deg]">
-                    <LogOut size={20} className="md:size-6 rtl:rotate-180 scale-x-[-1]" />
+                  <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                  <div className="relative z-10 transform skew-x-[15deg]">
+                    <LogOut size={20} className="md:size-6 rtl:rotate-180" />
                   </div>
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={startGame}
                   disabled={participants.length === 0 || countdown !== null}
-                  className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/50 font-display font-black h-12 md:h-16 rounded-sm shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-sm md:text-lg transition-all disabled:opacity-50 active:scale-[0.98] group overflow-hidden relative transform -skew-x-[15deg]"
+                  className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/50 font-display font-black h-12 md:h-16 rounded-sm shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.2em] uppercase text-sm md:text-lg transition-all disabled:opacity-50 active:scale-[0.98] group/btn overflow-hidden relative transform -skew-x-[15deg]"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
                   <div className="relative z-10 flex items-center justify-center gap-2 md:gap-3 transform skew-x-[15deg]">
                     <Play className="fill-current w-5 h-5 md:w-6 md:h-6" />
                     <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
                   </div>
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -665,7 +636,7 @@ export default function HostLobby() {
             <div className="hidden lg:flex flex-col gap-3 p-4 flex-1 relative z-10">
               {/* Room Code */}
               <div
-                className="group/code cursor-pointer bg-white/5 rounded-xl py-4 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                className="group/code cursor-pointer bg-white/5 rounded-xl py-4 lg:py-6 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                 onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
@@ -702,27 +673,28 @@ export default function HostLobby() {
               {/* Action Buttons */}
               <div className="shrink-0 border-white/5 bg-gradient-to-t from-black/40 to-transparent relative z-10">
                 <div className="flex gap-2">
-                  <Button
+                  <button
                     onClick={() => setExitDialogOpen(true)}
-                    className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-12 px-3 sm:px-4 font-display text-sm font-bold uppercase tracking-wider transition-all shrink-0 transform -skew-x-[15deg]"
+                    className="bg-red-500/25 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] rounded-sm h-12 px-3 sm:px-4 font-display text-sm font-bold uppercase tracking-wider transition-all shrink-0 transform -skew-x-[15deg] group/btn overflow-hidden relative"
                   >
-                    <div className="transform skew-x-[15deg] flex items-center gap-1.5">
-                      <LogOut size={16} className="rtl:rotate-180 scale-x-[-1]" />
+                    <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                    <div className="relative z-10 transform skew-x-[15deg] flex items-center gap-1.5">
+                      <LogOut size={16} className="rtl:rotate-180" />
                       <span className="hidden sm:inline text-[11px]">{t('host_lobby.exit')}</span>
                     </div>
-                  </Button>
+                  </button>
 
-                  <Button
+                  <button
                     onClick={startGame}
                     disabled={participants.length === 0 || countdown !== null}
-                    className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/50 font-display font-black h-12 rounded-sm shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.15em] uppercase text-sm transition-all disabled:opacity-50 group overflow-hidden relative transform -skew-x-[15deg]"
+                    className="flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/50 font-display font-black h-12 rounded-sm shadow-[0_10px_25px_rgba(45,106,242,0.3)] tracking-[0.15em] uppercase text-sm transition-all disabled:opacity-50 group/btn overflow-hidden relative transform -skew-x-[15deg]"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
                     <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg]">
                       <Play className="fill-current w-4 h-4 me-2" />
                       <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{countdown !== null ? t('host_lobby.starting') : t('host_lobby.start')}</span>
                     </div>
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -756,9 +728,10 @@ export default function HostLobby() {
                 {/* Invite Friends */}
                 <button
                   onClick={() => setInviteFriendOpen(true)}
-                  className="group/hb h-9 px-4 rounded-sm border bg-[#2d6af2]/25 border-[#2d6af2]/60 text-white hover:bg-[#2d6af2]/40 hover:border-[#2d6af2]/80 hover:shadow-[0_0_15px_rgba(45,106,242,0.5)] transition-all font-display text-[10px] uppercase tracking-wider transform -skew-x-[15deg]"
+                  className="group/hb h-9 px-4 rounded-sm border bg-[#2d6af2]/25 border-[#2d6af2]/60 text-white hover:bg-[#2d6af2]/40 hover:border-[#2d6af2]/80 hover:shadow-[0_0_15px_rgba(45,106,242,0.5)] transition-all font-display text-[10px] uppercase tracking-wider transform -skew-x-[15deg] overflow-hidden relative"
                 >
-                  <div className="transform skew-x-[15deg] flex items-center gap-1.5">
+                  <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/hb:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                  <div className="relative z-10 transform skew-x-[15deg] flex items-center gap-1.5">
                     <UserPlus size={14} />
                     <span className="hidden sm:inline">{t('host_lobby.invite_friends') ?? 'Invite Friends'}</span>
                   </div>
@@ -767,9 +740,10 @@ export default function HostLobby() {
                 {/* Invite Groups */}
                 <button
                   onClick={() => setInviteGroupOpen(true)}
-                  className="group/hg h-9 px-4 rounded-sm border bg-purple-500/25 border-purple-500/60 text-white hover:bg-purple-500/40 hover:border-purple-500/80 hover:shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all font-display text-[10px] uppercase tracking-wider transform -skew-x-[15deg]"
+                  className="group/hg h-9 px-4 rounded-sm border bg-purple-500/25 border-purple-500/60 text-white hover:bg-purple-500/40 hover:border-purple-500/80 hover:shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all font-display text-[10px] uppercase tracking-wider transform -skew-x-[15deg] overflow-hidden relative"
                 >
-                  <div className="transform skew-x-[15deg] flex items-center gap-1.5">
+                  <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/hg:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                  <div className="relative z-10 transform skew-x-[15deg] flex items-center gap-1.5">
                     <Users2 size={14} />
                     <span className="hidden sm:inline">{t('host_lobby.invite_groups') ?? 'Invite Groups'}</span>
                   </div>
@@ -778,9 +752,10 @@ export default function HostLobby() {
                 {/* Add Bot */}
                 <button
                   onClick={handleAddBot}
-                  className="group/ht h-9 px-4 rounded-sm border bg-yellow-500/25 border-yellow-500/60 text-white hover:bg-yellow-500/40 hover:border-yellow-500/80 hover:shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all font-display text-[10px] uppercase tracking-wider transform -skew-x-[15deg]"
+                  className="group/ht h-9 px-4 rounded-sm border bg-yellow-500/25 border-yellow-500/60 text-white hover:bg-yellow-500/40 hover:border-yellow-500/80 hover:shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all font-display text-[10px] uppercase tracking-wider transform -skew-x-[15deg] overflow-hidden relative"
                 >
-                  <div className="transform skew-x-[15deg] flex items-center gap-1.5">
+                  <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/ht:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+                  <div className="relative z-10 transform skew-x-[15deg] flex items-center gap-1.5">
                     <Bot size={14} />
                     <span className="hidden sm:inline">Add Bot</span>
                   </div>
@@ -863,46 +838,75 @@ export default function HostLobby() {
 
       {/* ═══ KICK DIALOG ═══ */}
       <Dialog open={kickDialogOpen} onOpenChange={setKickDialogOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
-          <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.10em] text-center mb-6">
-            {t('host_lobby.kick')} {selectedPlayer?.nickname}?
-          </DialogTitle>
-          <div className="flex gap-4">
-            <Button onClick={() => setKickDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400">
-              {t('host_lobby.cancel') ?? 'Cancel'}
-            </Button>
-            <Button onClick={confirmKick} className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest">
-              KICK
-            </Button>
+        <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
+        <DialogContent className="bg-[#0a0a0f] border-2 border-red-500/40 text-white p-8 max-w-sm rounded-none shadow-[0_0_50px_rgba(239,68,68,0.2)] transform -skew-x-[2deg]">
+          <div className="transform skew-x-[2deg]">
+            <DialogTitle className="text-2xl font-display font-black uppercase tracking-[0.10em] text-center mb-8 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+              {t('host_lobby.kick')} {selectedPlayer?.nickname}?
+            </DialogTitle>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setKickDialogOpen(false)} 
+                className="group/btn flex-1 flex items-center justify-center border border-white/20 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-white/5"
+              >
+                <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 font-display font-black uppercase text-[10px] tracking-widest text-gray-400 group-hover/btn:text-white transform skew-x-[15deg]">
+                  {t('host_lobby.cancel') ?? 'Cancel'}
+                </span>
+              </button>
+              <button 
+                onClick={confirmKick} 
+                className="group/btn flex-1 flex items-center justify-center bg-red-600 border border-red-400/50 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+              >
+                <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 font-display font-black uppercase text-[10px] tracking-widest text-white transform skew-x-[15deg]">
+                  KICK
+                </span>
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ═══ EXIT CONFIRMATION DIALOG ═══ */}
       <Dialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-              <LogOut size={32} className="text-red-500 scale-x-[-1]" />
+        <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
+        <DialogContent className="bg-[#0a0a0f] border-2 border-red-500/40 text-white p-8 max-w-sm rounded-none shadow-[0_0_50px_rgba(239,68,68,0.2)] transform -skew-x-[2deg]">
+          <div className="transform skew-x-[2deg] flex flex-col items-center">
+            <div className="w-16 h-16 bg-red-500/10 rounded-sm flex items-center justify-center mb-6 border border-red-500/20 transform -skew-x-[15deg]">
+              <div className="transform skew-x-[15deg]">
+                <LogOut size={32} className="text-red-500" />
+              </div>
             </div>
-            <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.15em] text-center mb-2">
+            
+            <DialogTitle className="text-2xl font-display font-black uppercase tracking-[0.15em] text-center mb-2 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]">
               {t('host_lobby.exit_dialog_title')}
             </DialogTitle>
-            <p className="text-white/60 text-sm text-center font-body tracking-wider mb-8 uppercase">
+            
+            <p className="text-white/60 text-xs text-center font-display tracking-widest mb-10 uppercase leading-relaxed">
               {t('host_lobby.exit_dialog_desc')}
             </p>
+            
             <div className="flex gap-4 w-full">
-              <Button onClick={() => setExitDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
-                {t('host_lobby.cancel')}
-              </Button>
-              <Button
-                onClick={() => router.push("/host/select-quiz")}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
+              <button 
+                onClick={() => setExitDialogOpen(false)} 
+                className="group/btn flex-1 flex items-center justify-center border border-white/20 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-white/5"
               >
-                {t('host_lobby.confirm_exit')}
-              </Button>
+                <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 font-display font-black uppercase text-[10px] tracking-widest text-gray-400 group-hover/btn:text-white transform skew-x-[15deg]">
+                  {t('host_lobby.cancel')}
+                </span>
+              </button>
+              
+              <button
+                onClick={() => router.push("/host/select-quiz")}
+                className="group/btn flex-1 flex items-center justify-center bg-red-600 border border-red-400/50 h-11 relative overflow-hidden transform -skew-x-[15deg] transition-all hover:bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+              >
+                <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 font-display font-black uppercase text-[10px] tracking-widest text-white transform skew-x-[15deg]">
+                  {t('host_lobby.confirm_exit')}
+                </span>
+              </button>
             </div>
           </div>
         </DialogContent>
@@ -925,172 +929,189 @@ export default function HostLobby() {
 
       {/* ═══ INVITE FRIENDS DIALOG ═══ */}
       <Dialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#0a0f18]/98 backdrop-blur-2xl border border-[#2d6af2]/40 text-white p-6 max-w-[480px] rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.9)] overflow-hidden">
-          <button
-            onClick={() => setInviteFriendOpen(false)}
-            className="absolute top-4 right-4 text-white/20 hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
+        <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
+        <DialogContent className="bg-[#0a0a0f] border-2 border-[#2d6af2]/40 text-white p-6 max-w-[480px] rounded-none shadow-[0_0_50px_rgba(45,106,242,0.15)] overflow-hidden transform -skew-x-[2deg]">
+          <div className="transform skew-x-[2deg]">
+            <button
+              onClick={() => setInviteFriendOpen(false)}
+              className="absolute top-4 right-4 text-white/20 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
 
-          <DialogTitle className="sr-only">
-            {t('host_lobby.invite_friends') ?? 'Invite Friends'}
-          </DialogTitle>
+            <DialogTitle className="sr-only">
+              {t('host_lobby.invite_friends') ?? 'Invite Friends'}
+            </DialogTitle>
 
-          <div className="flex items-center gap-2.5 mb-7 mt-2">
-            <UserPlus className="text-[#2d6af2] w-6 h-6" />
-            <h2 className="text-xl font-display font-black uppercase tracking-widest text-[#2d6af2]">
-              INVITE FRIEND
-            </h2>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-6">
-            <input
-              type="text"
-              placeholder="Find a friend..."
-              value={searchFriendQuery}
-              onChange={(e) => setSearchFriendQuery(e.target.value)}
-              className="w-full bg-[#05070a] border border-white/10 rounded-lg py-3.5 px-4 pr-12 text-sm font-display outline-none focus:border-[#2d6af2]/50 text-white placeholder:text-white/20 transition-all"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
-              <Search size={18} />
+            <div className="flex items-center gap-2.5 mb-7 mt-2">
+              <div className="p-2 border border-[#2d6af2]/30 rounded-sm transform -skew-x-[12deg] bg-[#2d6af2]/5">
+                <UserPlus className="text-[#2d6af2] w-6 h-6 transform skew-x-[12deg]" />
+              </div>
+              <h2 className="text-xl font-display font-black uppercase tracking-widest text-[#2d6af2] drop-shadow-[0_0_8px_rgba(45,106,242,0.4)]">
+                INVITE FRIEND
+              </h2>
             </div>
-          </div>
 
-          {/* Friends List */}
-          <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1.5 pt-1">
-            {loadingFriends ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#2d6af2]/20 border-t-[#2d6af2] rounded-full animate-spin mb-4"></div>
-                <p className="text-white/30 text-[10px] font-display tracking-[0.2em] uppercase">ACCESSING NETWORK...</p>
+            {/* Search */}
+            <div className="relative mb-6 transform -skew-x-[8deg]">
+              <input
+                type="text"
+                placeholder="Find a friend..."
+                value={searchFriendQuery}
+                onChange={(e) => setSearchFriendQuery(e.target.value)}
+                className="w-full bg-[#05070a] border border-white/10 rounded-none py-3.5 px-6 pr-12 text-sm font-display outline-none focus:border-[#2d6af2]/50 text-white placeholder:text-white/20 transition-all transform skew-x-[8deg]"
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 transform skew-x-[8deg]">
+                <Search size={18} />
               </div>
-            ) : filteredFriends.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <UserPlus size={40} className="text-white/5 mb-4" />
-                <p className="text-white/20 text-[10px] font-display tracking-[0.2em] uppercase">
-                  {searchFriendQuery ? 'NO RESULTS' : 'NO FRIENDS'}
-                </p>
-              </div>
-            ) : (
-              filteredFriends.map(friend => {
-                const displayName = friend.nickname || friend.fullname || friend.username || '?';
-                return (
-                  <div key={friend.id} className="flex items-center justify-between bg-black/40 border border-white/[0.04] rounded-lg p-4 hover:bg-black/60 transition-colors group/friend">
-                    <div className="flex items-center gap-3">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full border-2 border-[#2d6af2]/30 bg-[#0a0f18] overflow-hidden flex items-center justify-center shrink-0 group-hover/friend:border-[#2d6af2]/60 transition-all">
-                        {friend.avatar_url ? (
-                          <img src={friend.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                        ) : (
-                          <InitialsAvatar name={displayName} size="sm" />
-                        )}
+            </div>
+
+            {/* Friends List */}
+            <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1.5 pt-1">
+              {loadingFriends ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-[#2d6af2]/20 border-t-[#2d6af2] rounded-full animate-spin mb-4"></div>
+                  <p className="text-white/30 text-[10px] font-display tracking-[0.2em] uppercase">ACCESSING NETWORK...</p>
+                </div>
+              ) : filteredFriends.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <UserPlus size={40} className="text-white/5 mb-4" />
+                  <p className="text-white/20 text-[10px] font-display tracking-[0.2em] uppercase">
+                    {searchFriendQuery ? 'NO RESULTS' : 'NO FRIENDS'}
+                  </p>
+                </div>
+              ) : (
+                filteredFriends.map(friend => {
+                  const displayName = friend.nickname || friend.fullname || friend.username || '?';
+                  return (
+                    <div key={friend.id} className="flex items-center justify-between bg-white/[0.02] border border-white/[0.04] rounded-sm p-4 hover:bg-[#2d6af2]/5 transition-colors group/friend transform -skew-x-[8deg] mb-1">
+                      <div className="flex items-center gap-3 transform skew-x-[8deg]">
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-sm border-2 border-[#2d6af2]/30 bg-[#0a0f18] overflow-hidden flex items-center justify-center shrink-0 group-hover/friend:border-[#2d6af2]/60 transition-all transform -skew-x-[12deg]">
+                          <div className="transform skew-x-[12deg] w-full h-full">
+                            {friend.avatar_url ? (
+                              <img src={friend.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                            ) : (
+                              <InitialsAvatar name={displayName} size="sm" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
+                          <h3 className="font-display font-bold text-[14px] text-white tracking-wide">{displayName}</h3>
+                          <p className="text-white/30 text-[11px] font-mono leading-none mt-1">@{friend.username}</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <h3 className="font-display font-bold text-[15px] text-white tracking-wide">{displayName}</h3>
-                        <p className="text-white/30 text-[12px] font-mono leading-none mt-1">@{friend.username}</p>
-                      </div>
+                      
+                      <button
+                        onClick={() => !invitedFriends.includes(friend.id) && handleInviteFriend(friend.id)}
+                        disabled={invitedFriends.includes(friend.id)}
+                        className={`group/btn flex items-center justify-center h-10 px-8 relative overflow-hidden transform -skew-x-[12deg] transition-all disabled:opacity-100 ${invitedFriends.includes(friend.id)
+                            ? 'bg-white/5 border border-white/10'
+                            : 'bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] border border-[#2d6af2]/40 shadow-[0_5px_15px_rgba(45,106,242,0.3)]'
+                          }`}
+                      >
+                        <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                        <span className={`relative z-10 font-display font-black uppercase text-[10px] tracking-widest transform skew-x-[12deg] ${invitedFriends.includes(friend.id) ? 'text-white/30' : 'text-white'}`}>
+                          {invitedFriends.includes(friend.id) ? 'INVITED' : 'INVITE'}
+                        </span>
+                      </button>
                     </div>
-                    <Button
-                      onClick={() => !invitedFriends.includes(friend.id) && handleInviteFriend(friend.id)}
-                      disabled={invitedFriends.includes(friend.id)}
-                      className={`font-display font-black uppercase text-[11px] tracking-[0.2em] px-7 h-10 rounded-md shadow-none transition-all disabled:opacity-100 ${invitedFriends.includes(friend.id)
-                          ? 'bg-white/5 text-white/20 border border-white/10'
-                          : 'bg-gradient-to-r from-[#2d6af2] to-[#1e40af] hover:from-[#3b7ff6] hover:to-[#2d6af2] text-white border border-[#2d6af2]/30 shadow-[0_8px_20px_rgba(45,106,242,0.4)] active:scale-95'
-                        }`}
-                    >
-                      {invitedFriends.includes(friend.id) ? 'INVITED' : 'INVITE'}
-                    </Button>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ═══ INVITE GROUPS DIALOG ═══ */}
       <Dialog open={inviteGroupOpen} onOpenChange={setInviteGroupOpen}>
-        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#0a0f18]/98 backdrop-blur-2xl border border-[#00e5ff]/40 text-white p-6 max-w-[480px] rounded-xl shadow-[0_30px_90px_rgba(0,0,0,0.9)] overflow-hidden">
-          <button
-            onClick={() => setInviteGroupOpen(false)}
-            className="absolute top-4 right-4 text-white/20 hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
+        <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
+        <DialogContent className="bg-[#0a0a0f] border-2 border-[#00e5ff]/40 text-white p-6 max-w-[480px] rounded-none shadow-[0_0_50px_rgba(0,229,255,0.15)] overflow-hidden transform -skew-x-[2deg]">
+          <div className="transform skew-x-[2deg]">
+            <button
+              onClick={() => setInviteGroupOpen(false)}
+              className="absolute top-4 right-4 text-white/20 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
 
-          <DialogTitle className="sr-only">
-            {t('host_lobby.invite_groups') ?? 'Invite Group'}
-          </DialogTitle>
+            <DialogTitle className="sr-only">
+              {t('host_lobby.invite_groups') ?? 'Invite Group'}
+            </DialogTitle>
 
-          <div className="flex items-center gap-2.5 mb-7 mt-2">
-            <Users2 className="text-[#00e5ff] w-6 h-6" />
-            <h2 className="text-xl font-display font-black uppercase tracking-widest text-[#00e5ff]">
-              INVITE GROUP
-            </h2>
-          </div>
-
-          <div className="relative mb-6">
-            <input
-              type="text"
-              placeholder="Find a group..."
-              value={searchGroupQuery}
-              onChange={(e) => setSearchGroupQuery(e.target.value)}
-              className="w-full bg-[#05070a] border border-white/10 rounded-lg py-3.5 px-4 pr-12 text-sm font-display outline-none focus:border-[#00e5ff]/50 text-white placeholder:text-white/20 transition-all"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
-              <Search size={18} />
+            <div className="flex items-center gap-2.5 mb-7 mt-2">
+              <div className="p-2 border border-[#00e5ff]/30 rounded-sm transform -skew-x-[12deg] bg-[#00e5ff]/5">
+                <Users2 className="text-[#00e5ff] w-6 h-6 transform skew-x-[12deg]" />
+              </div>
+              <h2 className="text-xl font-display font-black uppercase tracking-widest text-[#00e5ff] drop-shadow-[0_0_8px_rgba(0,229,255,0.4)]">
+                INVITE GROUP
+              </h2>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1.5 pt-1">
-            {loadingGroups ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#00e5ff]/20 border-t-[#00e5ff] rounded-full animate-spin mb-4"></div>
-                <p className="text-white/30 text-[10px] font-display tracking-[0.2em] uppercase">SYNCING GROUPS...</p>
+            <div className="relative mb-6 transform -skew-x-[8deg]">
+              <input
+                type="text"
+                placeholder="Find a group..."
+                value={searchGroupQuery}
+                onChange={(e) => setSearchGroupQuery(e.target.value)}
+                className="w-full bg-[#05070a] border border-white/10 rounded-none py-3.5 px-6 pr-12 text-sm font-display outline-none focus:border-[#00e5ff]/50 text-white placeholder:text-white/20 transition-all transform skew-x-[8deg]"
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 transform skew-x-[8deg]">
+                <Search size={18} />
               </div>
-            ) : filteredGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Users2 size={40} className="text-white/5 mb-4" />
-                <p className="text-white/20 text-[10px] font-display tracking-[0.2em] uppercase">
-                  {searchGroupQuery ? 'NO RESULTS' : 'NO GROUPS'}
-                </p>
-              </div>
-            ) : (
-              filteredGroups.map(group => (
-                <div key={group.id} className="flex items-center justify-between bg-black/40 border border-white/[0.04] rounded-lg p-4 hover:bg-black/60 transition-colors group/gr">
-                  <div className="flex flex-col gap-1.5">
-                    <h3 className="font-display font-bold text-[15px] text-white tracking-wide group-hover/gr:text-[#00e5ff] transition-colors">{group.name}</h3>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-[#00e5ff]/80 text-[11px] font-bold">
-                        <Users size={14} />
-                        <span className="font-mono">{group.membersCount}</span>
-                      </div>
-                      <div className={`text-[10px] font-black px-2.5 py-0.5 rounded-sm border-l-2 tracking-widest uppercase ${group.role.toLowerCase() === 'owner' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' :
-                        group.role.toLowerCase() === 'admin' ? 'bg-[#00e5ff]/10 border-[#00e5ff] text-[#00e5ff]' :
-                          'bg-white/5 border-white/20 text-white/50'
-                        }`}>
-                        {group.role}
+            </div>
+
+            <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1.5 pt-1">
+              {loadingGroups ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-[#00e5ff]/20 border-t-[#00e5ff] rounded-full animate-spin mb-4"></div>
+                  <p className="text-white/30 text-[10px] font-display tracking-[0.2em] uppercase">SYNCING GROUPS...</p>
+                </div>
+              ) : filteredGroups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <Users2 size={40} className="text-white/5 mb-4" />
+                  <p className="text-white/20 text-[10px] font-display tracking-[0.2em] uppercase">
+                    {searchGroupQuery ? 'NO RESULTS' : 'NO GROUPS'}
+                  </p>
+                </div>
+              ) : (
+                filteredGroups.map(group => (
+                  <div key={group.id} className="flex items-center justify-between bg-white/[0.02] border border-white/[0.04] rounded-sm p-4 hover:bg-[#00e5ff]/5 transition-colors group/gr transform -skew-x-[8deg] mb-1">
+                    <div className="flex flex-col gap-1.5 transform skew-x-[8deg]">
+                      <h3 className="font-display font-bold text-[15px] text-white tracking-wide group-hover/gr:text-[#00e5ff] transition-colors">{group.name}</h3>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-[#00e5ff]/80 text-[11px] font-bold">
+                          <Users size={14} />
+                          <span className="font-mono">{group.membersCount}</span>
+                        </div>
+                        <div className={`text-[10px] font-black px-2.5 py-0.5 rounded-sm border-l-2 tracking-widest uppercase ${group.role.toLowerCase() === 'owner' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' :
+                          group.role.toLowerCase() === 'admin' ? 'bg-[#00e5ff]/10 border-[#00e5ff] text-[#00e5ff]' :
+                            'bg-white/5 border-white/20 text-white/50'
+                          }`}>
+                          {group.role}
+                        </div>
                       </div>
                     </div>
+                    {(group.role.toLowerCase() === 'owner' || group.role.toLowerCase() === 'admin') && (
+                      <button
+                        onClick={() => !invitedGroups.includes(group.id) && handleInviteGroup(group.id)}
+                        disabled={invitedGroups.includes(group.id)}
+                        className={`group/btn flex items-center justify-center h-10 px-8 relative overflow-hidden transform -skew-x-[12deg] transition-all disabled:opacity-100 ${invitedGroups.includes(group.id)
+                            ? 'bg-white/5 border border-white/10'
+                            : 'bg-gradient-to-r from-[#00e5ff] to-[#0089ff] hover:from-[#00f2ff] hover:to-[#00e5ff] border border-[#00e5ff]/40 shadow-[0_5px_15px_rgba(0,229,255,0.3)]'
+                          }`}
+                      >
+                        <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                        <span className={`relative z-10 font-display font-black uppercase text-[10px] tracking-widest transform skew-x-[12deg] ${invitedGroups.includes(group.id) ? 'text-white/30' : 'text-black'}`}>
+                          {invitedGroups.includes(group.id) ? 'INVITED' : 'INVITE'}
+                        </span>
+                      </button>
+                    )}
                   </div>
-                  {(group.role.toLowerCase() === 'owner' || group.role.toLowerCase() === 'admin') && (
-                    <Button
-                      onClick={() => !invitedGroups.includes(group.id) && handleInviteGroup(group.id)}
-                      disabled={invitedGroups.includes(group.id)}
-                      className={`font-display font-black uppercase text-[11px] tracking-[0.2em] px-7 h-10 rounded-md shadow-none transition-all disabled:opacity-100 ${invitedGroups.includes(group.id)
-                          ? 'bg-white/5 text-white/20 border border-white/10'
-                          : 'bg-gradient-to-r from-[#00e5ff] to-[#0089ff] hover:from-[#00f2ff] hover:to-[#00e5ff] text-black border border-[#00e5ff]/30 shadow-[0_8px_20px_rgba(0,229,255,0.4)] active:scale-95'
-                        }`}
-                    >
-                      {invitedGroups.includes(group.id) ? 'INVITED' : 'INVITE'}
-                    </Button>
-                  )}
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
