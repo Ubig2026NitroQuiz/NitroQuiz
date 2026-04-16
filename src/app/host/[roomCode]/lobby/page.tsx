@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useBgm } from "@/contexts/BgmContext";
+import { FloatingHostActions } from "@/components/FloatingHostActions";
 
 // Helper: Generate initials from a name
 const getInitials = (name: string): string => {
@@ -261,21 +262,7 @@ export default function HostLobby() {
   };
 
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  useEffect(() => {
-    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFsChange);
-    return () => document.removeEventListener("fullscreenchange", handleFsChange);
-  }, []);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  };
 
   const fetchParticipants = useCallback(async (sid: string) => {
     const { data: pData, error } = await supabase
@@ -799,15 +786,7 @@ export default function HostLobby() {
                   </div>
                 </button>
 
-                {/* Sound */}
-                <button
-                  onClick={toggleMute}
-                  className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isMuted ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10"}`}
-                >
-                  <div className="transform skew-x-[15deg]">
-                    {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                  </div>
-                </button>
+
               </div>
             </div>
 
@@ -1188,20 +1167,7 @@ export default function HostLobby() {
         </div>
       )}
 
-      {/* ═══ FLOATING FULLSCREEN BUTTON ═══ */}
-      <div className="fixed bottom-6 end-6 z-[250] flex">
-        <Button
-          onClick={toggleFullscreen}
-          variant="outline"
-          className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-black/60 backdrop-blur-xl border-white/10 hover:border-[#2d6af2]/50 hover:bg-[#2d6af2]/10 text-white/50 hover:text-white transition-all shadow-2xl group flex items-center justify-center p-0"
-        >
-          {isFullscreen ? (
-            <Minimize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-          ) : (
-            <Maximize2 size={20} className="md:size-6 group-hover:scale-110 transition-transform" />
-          )}
-        </Button>
-      </div>
+      <FloatingHostActions />
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

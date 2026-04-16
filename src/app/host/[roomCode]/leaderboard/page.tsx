@@ -21,6 +21,7 @@ import { supabase, supabaseCentral } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { useTranslation } from "react-i18next";
 import { generateXID } from "@/lib/id-generator";
+import { FloatingHostActions } from "@/components/FloatingHostActions";
 
 const carImageMap: Record<string, string> = {
   purple: "/assets/characters/rico/showroom/showroom1.png",
@@ -627,6 +628,7 @@ export default function LeaderboardPage() {
           </button>
         </div>
       </div>
+      <FloatingHostActions />
     </div>
   );
 }

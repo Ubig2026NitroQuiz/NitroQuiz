@@ -25,6 +25,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Globe, Users, Clock, Languages, Layers, Star, Target } from "lucide-react";
+import { FloatingHostActions } from "@/components/FloatingHostActions";
 
 interface QuizView {
     id: string;
@@ -501,7 +502,7 @@ export default function SelectQuizPage() {
                                                 {/* Outer Glow Wrapper */}
                                                 <div className="absolute -inset-[1px] bg-gradient-to-br from-white/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 
-                                                <Card className="h-full flex flex-col bg-[#161c33]/85 backdrop-blur-xl border-t border-t-white/20 border border-white/10 transition-all duration-300 relative overflow-hidden group rounded-xl pb-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.3)]">
+                                                <Card className="h-full flex flex-col bg-[#161c33]/85 backdrop-blur-xl border-t border-t-white/20 border border-white/10 transition-all duration-300 relative overflow-hidden group rounded-xl pb-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.3)] justify-between">
                                                     
                                                     {/* Animated Cyber Texture */}
                                                     <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.06] pointer-events-none transition-opacity"
@@ -655,6 +656,8 @@ export default function SelectQuizPage() {
                     </div>
                 </div>
             </div>
+
+            <FloatingHostActions />
 
             {/* Quiz Detail Dialog */}
             {(() => {
