@@ -247,7 +247,7 @@
     "go": "GO!",
     "launching": "LAUNCHING RACE...",
     "exit_title": "Leave?",
-    "exit_description": "Progress will be lost.",
+    "exit_description": "Are you sure you want to leave the room?",
     "exit_confirm": "LEAVE",
     "exit_cancel": "CANCEL"
   },
