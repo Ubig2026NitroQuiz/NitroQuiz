@@ -553,11 +553,11 @@ export default function HostLobby() {
                 {/* Left Side: Info (Code & Link) */}
                 <div className="flex-1 flex flex-col p-3 md:p-8 gap-3 md:gap-6 border-r border-white/5">
                   <div
-                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-3 md:py-8 px-3 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-4 md:py-8 px-5 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                     onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
-                    <h1 className="font-display text-2xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
+                    <h1 className="font-display text-3xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
                       {roomCode}
                     </h1>
                     <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-5 opacity-40 group-hover:opacity-100 transition-opacity">
@@ -569,7 +569,7 @@ export default function HostLobby() {
                     className="flex items-center justify-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 bg-white/5 rounded-lg md:rounded-xl border border-white/5 cursor-pointer group/link hover:border-[#2d6af2]/30 transition-all relative"
                     onClick={() => copyToClipboard(joinLink, setCopiedJoin)}
                   >
-                    <p className="text-white text-[9px] md:text-xs font-mono truncate tracking-wide text-center max-w-[85%]">{joinLink}</p>
+                    <p className="text-white text-[10px] md:text-xs font-mono truncate tracking-wide text-center max-w-[85%]">{joinLink}</p>
                     <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-4">
                       {copiedJoin ? <Check size={12} className="md:size-3.5 text-[#00ff9d] shrink-0" /> : <Copy size={12} className="md:size-3.5 text-white/20 group-hover/link:text-[#2d6af2] shrink-0" />}
                     </div>
@@ -645,7 +645,7 @@ export default function HostLobby() {
             <div className="hidden lg:flex flex-col gap-3 p-4 flex-1 relative z-10">
               {/* Room Code */}
               <div
-                className="group/code cursor-pointer bg-white/5 rounded-xl py-4 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                className="group/code cursor-pointer bg-white/5 rounded-xl py-4 lg:py-6 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                 onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
