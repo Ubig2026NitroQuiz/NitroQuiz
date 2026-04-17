@@ -16,7 +16,7 @@ import {
   RotateCw,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { supabase, supabaseCentral } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { useTranslation } from "react-i18next";
@@ -58,6 +58,34 @@ const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md
       {getInitials(name)}
     </div>
   );
+};
+
+// Score Counter Component for Motorsport Odometer effect
+const Odometer = ({ value, delay = 0 }: { value: number; delay?: number }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      let start = 0;
+      const end = value;
+      const duration = 1500; // 1.5s animation
+      const increment = end / (duration / 16);
+
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= end) {
+          setDisplayValue(end);
+          clearInterval(timer);
+        } else {
+          setDisplayValue(Math.floor(start));
+        }
+      }, 16);
+      return () => clearInterval(timer);
+    }, delay * 1000);
+    return () => clearTimeout(timeout);
+  }, [value, delay]);
+
+  return <span>{displayValue.toLocaleString()}</span>;
 };
 
 // Helper: Shuffle Array
@@ -178,18 +206,65 @@ export default function LeaderboardPage() {
     }
   }, [isLoading, rankedPlayers.length]);
 
-  const podiumVariants: any = {
-    hidden: { y: 150, opacity: 0 },
+  // NITRO LAUNCH SEQUENCE — stands rocket up like cars launching from the start line
+  const standVariants: Variants = {
+    hidden: { y: 500, opacity: 0 },
     visible: (custom: number) => ({
       y: 0,
       opacity: 1,
       transition: {
         type: "spring",
-        stiffness: 70,
-        damping: 12,
-        delay: custom * 0.35 + 0.4,
+        stiffness: 400,
+        damping: 28,
+        mass: 1.5,
+        delay: custom * 0.55, // 3rd → 2nd → 1st stagger
       },
     }),
+  };
+
+  // Name tag slides in like a telemetry data panel deploying
+  const nameplateVariants: Variants = {
+    hidden: { x: -60, opacity: 0 },
+    visible: (custom: number) => ({
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 22,
+        delay: custom * 0.55 + 0.5,
+      },
+    }),
+  };
+
+  // RPM gauge sweeps like a tachometer redlining
+  const rpmGaugeVariants: Variants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: (custom: number) => ({
+      pathLength: 1,
+      opacity: 1,
+      transition: {
+        duration: 1.2,
+        ease: [0.12, 0, 0.39, 0], // custom "punch" easing
+        delay: custom * 0.55 + 0.2,
+      },
+    }),
+  };
+
+  // Crown drops + bounces, like flagging the race finish
+  const crownVariants: Variants = {
+    hidden: { y: -120, opacity: 0, scale: 1.6 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 150,
+        damping: 14,
+        delay: 3 * 0.55 + 1.0,
+      },
+    },
   };
 
   const firstPlace = rankedPlayers[0];
@@ -228,8 +303,8 @@ export default function LeaderboardPage() {
 
       if (quizError || !quizData) throw new Error("Quiz data not found");
 
-      const allQuestions = typeof quizData.questions === 'string' 
-        ? JSON.parse(quizData.questions) 
+      const allQuestions = typeof quizData.questions === 'string'
+        ? JSON.parse(quizData.questions)
         : quizData.questions;
 
       // 3. Acak soal-soalnya
@@ -298,11 +373,28 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden font-body text-white flex flex-col items-center pb-12">
-      {/* Background effects */}
-      <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#0a0a0f] to-[#050508] pointer-events-none" />
-      <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.05)_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#2d6af2]/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
+    <div className="min-h-screen bg-[#04060f] relative overflow-hidden font-body text-white flex flex-col items-center pb-12">
+      {/* Racing Stripe at top */}
+      <div className="racing-stripe z-50 pointer-events-none"></div>
+
+      {/* Background Image */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-40"
+        style={{
+          backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")',
+          backgroundAttachment: 'fixed'
+        }}
+      ></div>
+
+      {/* Overlays for readability */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/80 to-[#7C3AED]/10 pointer-events-none"></div>
+
+      {/* Grid Pattern */}
+      <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.03)_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
+
+      {/* Glow Effects */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#2d6af2]/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#7C3AED]/10 blur-[150px] rounded-full pointer-events-none" />
 
       {/* Top Bar: Logo1 left, Logo2 right */}
       <div className="w-full z-30 px-4 md:px-6 pt-2 flex items-center justify-between">
@@ -329,18 +421,18 @@ export default function LeaderboardPage() {
         <div className="fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-50 hidden md:flex">
           <Button
             onClick={() => router.push("/")}
-            className="w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#2d6af2]/50 hover:bg-[#2d6af2]/20 hover:scale-110 flex items-center justify-center text-[#2d6af2] shadow-[0_0_15px_rgba(45,106,242,0.4)] transition-all"
+            className="w-12 h-12 rounded-sm p-0 bg-[#0d1a3a] backdrop-blur-md border-2 border-[#2d6af2] shadow-[0_0_12px_rgba(45,106,242,0.5)] hover:bg-[#2d6af2]/40 hover:shadow-[0_0_22px_rgba(45,106,242,0.8)] flex items-center justify-center text-[#60a5fa] transition-all transform -skew-x-[15deg]"
             title={t("host_leaderboard.home_tooltip")}
           >
-            <House size={20} />
+            <div className="transform skew-x-[15deg]"><House size={20} /></div>
           </Button>
           <Button
             onClick={handleRestart}
             disabled={isRestarting}
-            className={`w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#00ff9d]/50 hover:bg-[#00ff9d]/20 hover:scale-110 flex items-center justify-center text-[#00ff9d] shadow-[0_0_15px_rgba(0,255,157,0.4)] transition-all ${isRestarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-12 h-12 rounded-sm p-0 bg-[#0a2a1f] backdrop-blur-md border-2 border-[#00ff9d] shadow-[0_0_12px_rgba(0,255,157,0.5)] hover:bg-[#00ff9d]/30 hover:shadow-[0_0_22px_rgba(0,255,157,0.8)] flex items-center justify-center text-[#00ff9d] transition-all transform -skew-x-[15deg] ${isRestarting ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={t("host_leaderboard.play_again_tooltip")}
           >
-            <RotateCw size={20} className={isRestarting ? 'animate-spin' : ''} />
+            <div className="transform skew-x-[15deg]"><RotateCw size={20} className={isRestarting ? 'animate-spin' : ''} /></div>
           </Button>
         </div>
 
@@ -354,137 +446,264 @@ export default function LeaderboardPage() {
                 "_blank",
               )
             }
-            className="w-12 h-12 rounded-full p-0 bg-black/60 backdrop-blur-md border border-[#f59e0b]/50 hover:bg-[#f59e0b]/20 hover:scale-110 flex items-center justify-center text-[#f59e0b] shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all"
+            className="w-12 h-12 rounded-sm p-0 bg-[#2a1a00] backdrop-blur-md border-2 border-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] hover:bg-[#f59e0b]/30 hover:shadow-[0_0_22px_rgba(245,158,11,0.8)] flex items-center justify-center text-[#fbbf24] transition-all transform -skew-x-[15deg]"
             title={t("host_leaderboard.stats_tooltip")}
           >
-            <BarChart2 size={20} />
+            <div className="transform skew-x-[15deg]"><BarChart2 size={20} /></div>
           </Button>
         </div>
 
-        {/* Compact Podium */}
+        {/* ══════════════════════════════════════════
+              NITRO QUIZ — PODIUM LAUNCH SEQUENCE
+           ══════════════════════════════════════════ */}
         {showResults && rankedPlayers.length > 0 && (
-          <div className="relative flex items-end justify-center w-full h-[220px] sm:h-[300px] mb-4 px-2">
-            <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-2/3 h-16 bg-[#2d6af2]/20 blur-[30px] rounded-full pointer-events-none" />
+          <div className="relative w-full max-w-3xl mx-auto mt-4 mb-6 px-2">
 
-            {/* 2nd Place */}
-            {secondPlace && (
-              <motion.div
-                custom={2}
-                variants={podiumVariants}
-                initial="hidden"
-                animate="visible"
-                className="flex flex-col items-center relative z-10 mx-[-8px] sm:mx-1"
-              >
-                <div className="mb-2 text-center">
-                  <div className="bg-black/60 border border-slate-300/40 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-                    <p className="font-display text-slate-200 text-xs sm:text-sm tracking-wider truncate max-w-[100px]" title={secondPlace.nickname}>
-                      {secondPlace.nickname}
-                    </p>
-                  </div>
-                </div>
-                <div className="w-[85px] sm:w-[120px] h-[110px] sm:h-[140px] bg-gradient-to-b from-[#1a2235] to-[#0a0f1a] border-t-4 border-l border-r border-[#64748b] rounded-t-xl flex flex-col items-center justify-between py-2 sm:py-3">
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-slate-400/30 bg-black/40 overflow-hidden flex items-center justify-center p-0 shadow-inner relative z-10">
-                      {secondPlace.avatar_url ? (
-                        <img
-                          src={secondPlace.avatar_url}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <InitialsAvatar name={secondPlace.nickname} size="sm" />
-                      )}
-                    </div>
-                  </div>
-                  <span className="font-display text-2xl sm:text-4xl text-slate-300 font-bold mb-1 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">
-                    {secondPlace.score.toLocaleString()}
-                  </span>
-                </div>
-              </motion.div>
-            )}
+            {/* ── PODIUM STANDS ── */}
+            <div className="relative flex items-end justify-center h-[230px] sm:h-[320px]">
 
-            {/* 1st Place */}
-            {firstPlace && (
-              <motion.div
-                custom={3}
-                variants={podiumVariants}
-                initial="hidden"
-                animate="visible"
-                className="flex flex-col items-center relative z-20 mx-0 sm:mx-2"
-              >
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="mb-1"
-                >
-                  <Crown className="w-7 h-7 sm:w-9 sm:h-9 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]" />
-                </motion.div>
-                <div className="mb-2 text-center">
-                  <div className="bg-[#1a1500]/80 border border-yellow-500/60 backdrop-blur-md px-4 sm:px-5 py-2 rounded-xl shadow-[0_0_25px_rgba(250,204,21,0.3)]">
-                    <p className="font-display text-yellow-500 text-sm sm:text-lg font-bold tracking-widest uppercase truncate max-w-[130px]" title={firstPlace.nickname}>
-                      {firstPlace.nickname}
-                    </p>
-                  </div>
-                </div>
-                <div className="w-[100px] sm:w-[140px] h-[160px] sm:h-[200px] bg-gradient-to-b from-[#2a1f0a] to-[#0a0f1a] border-t-8 border-l-2 border-r-2 border-[#eab308] rounded-t-xl relative overflow-hidden flex flex-col items-center justify-between py-3 sm:py-5">
-                  <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#eab308] to-transparent" />
-                  <div className="absolute inset-0 bg-yellow-500/5 opacity-50 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-yellow-500/40 to-transparent" />
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-yellow-500/30 bg-black/40 overflow-hidden flex items-center justify-center p-0 shadow-inner relative z-10">
-                      {firstPlace.avatar_url ? (
-                        <img
-                          src={firstPlace.avatar_url}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <InitialsAvatar name={firstPlace.nickname} size="md" />
-                      )}
-                    </div>
-                  </div>
-                  <span className="font-display text-3xl sm:text-5xl text-yellow-400 font-bold relative z-10 pb-0 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]">
-                    {firstPlace.score.toLocaleString()}
-                  </span>
-                </div>
-              </motion.div>
-            )}
+              {/* Ground Nitro Glow */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-8 bg-[#00ff9d]/10 blur-2xl rounded-full pointer-events-none" />
 
-            {/* 3rd Place */}
-            {thirdPlace && (
-              <motion.div
-                custom={1}
-                variants={podiumVariants}
-                initial="hidden"
-                animate="visible"
-                className="flex flex-col items-center relative z-10 mx-[-8px] sm:mx-1"
-              >
-                <div className="mb-2 text-center">
-                  <div className="bg-black/60 border border-orange-700/40 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-                    <p className="font-display text-orange-200 text-xs sm:text-sm tracking-wider truncate max-w-[100px]" title={thirdPlace.nickname}>
-                      {thirdPlace.nickname}
-                    </p>
-                  </div>
-                </div>
-                <div className="w-[75px] sm:w-[110px] h-[80px] sm:h-[110px] bg-gradient-to-b from-[#25140b] to-[#0a0f1a] border-t-4 border-l border-r border-[#c2410c] rounded-t-xl flex flex-col items-center justify-between py-2 sm:py-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 border-orange-700/30 bg-black/40 overflow-hidden flex items-center justify-center p-0 shadow-inner relative z-10">
-                      {thirdPlace.avatar_url ? (
-                        <img
-                          src={thirdPlace.avatar_url}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <InitialsAvatar name={thirdPlace.nickname} size="sm" />
-                      )}
+              {/* ── 2ND PLACE ── */}
+              {secondPlace && (
+                <div className="flex flex-col items-center relative z-10 mx-1 sm:mx-2">
+                  {/* Name Tag — speed-slides from left */}
+                  <motion.div
+                    custom={2}
+                    variants={nameplateVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="mb-2 z-30"
+                  >
+                    <div className="bg-[#0d1526]/90 border-l-4 border-slate-400 backdrop-blur-xl pl-3 pr-4 py-1 transform -skew-x-[10deg] shadow-[4px_4px_0px_rgba(148,163,184,0.2)] relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-slate-400/10 to-transparent" />
+                      <p className="font-display text-white text-xs sm:text-base font-black tracking-widest truncate max-w-[100px] sm:max-w-[130px] skew-x-[10deg]">
+                        {secondPlace.nickname}
+                      </p>
                     </div>
-                  </div>
-                  <span className="font-display text-xl sm:text-3xl text-orange-300 font-bold mb-1 drop-shadow-[0_0_10px_rgba(251,146,60,0.4)]">
-                    {thirdPlace.score.toLocaleString()}
-                  </span>
+                  </motion.div>
+
+                  {/* Stand — ROCKETS UP */}
+                  <motion.div
+                    custom={2}
+                    variants={standVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="w-[88px] sm:w-[130px] h-[120px] sm:h-[185px] relative overflow-hidden rounded-t-md"
+                    style={{ background: "linear-gradient(to bottom, #1e2d45 0%, #0d1526 60%, #04060f 100%)", borderTop: "3px solid #94a3b8" }}
+                  >
+                    {/* Speed lines flash on entry */}
+                    <motion.div
+                      initial={{ x: "-100%", opacity: 0.7 }}
+                      animate={{ x: "200%", opacity: 0 }}
+                      transition={{ delay: 2 * 0.55 + 0.1, duration: 0.5, ease: "easeOut" }}
+                      className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] pointer-events-none z-20"
+                    />
+                    {/* Exhaust Flame at base */}
+                    <motion.div
+                      animate={{ scaleY: [1, 1.4, 0.9, 1.2, 1], opacity: [0.6, 1, 0.5, 0.9, 0.6] }}
+                      transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut", delay: 2 * 0.55 + 0.6 }}
+                      className="absolute bottom-0 left-0 right-0 h-6 pointer-events-none z-10"
+                      style={{ background: "linear-gradient(to top, rgba(148,163,184,0.3), transparent)", filter: "blur(4px)" }}
+                    />
+                    {/* RPM Gauge + Avatar */}
+                    <div className="flex flex-col items-center justify-start pt-4 h-full relative z-10">
+                      <div className="relative">
+                        <svg className="w-[60px] h-[60px] sm:w-[80px] sm:h-[80px]" style={{ transform: "rotate(-90deg)" }}>
+                          <circle cx="50%" cy="50%" r="44%" fill="none" stroke="rgba(148,163,184,0.08)" strokeWidth="6" />
+                          <motion.circle
+                            custom={2}
+                            variants={rpmGaugeVariants}
+                            cx="50%" cy="50%" r="44%" fill="none" stroke="#94a3b8" strokeWidth="6"
+                            strokeLinecap="butt" strokeDasharray="246" strokeDashoffset="246"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center p-2">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-slate-900/80 border border-slate-600/50">
+                            {secondPlace.avatar_url ? (
+                              <img src={secondPlace.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <InitialsAvatar name={secondPlace.nickname} size="md" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Score */}
+                      <div className="mt-auto mb-3 font-mono text-lg sm:text-2xl text-slate-200 font-black tracking-tighter drop-shadow-[0_0_12px_rgba(148,163,184,0.5)]">
+                        <Odometer value={secondPlace.score} delay={2 * 0.55 + 0.8} />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-1 right-1 font-display text-[60px] sm:text-[80px] font-black leading-none text-white opacity-[0.04] select-none pointer-events-none">2</div>
+                  </motion.div>
                 </div>
-              </motion.div>
-            )}
+              )}
+
+              {/* ── 1ST PLACE ── */}
+              {firstPlace && (
+                <div className="flex flex-col items-center relative z-20 mx-2 sm:mx-3">
+                  {/* Name Tag */}
+                  <motion.div
+                    custom={3}
+                    variants={nameplateVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="mb-2 z-30"
+                  >
+                    <div className="bg-yellow-500 border-l-4 border-yellow-200 pl-4 pr-5 py-1.5 transform -skew-x-[10deg] shadow-[4px_4px_0px_rgba(234,179,8,0.4),0_0_20px_rgba(234,179,8,0.3)] relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-300/20 to-transparent" />
+                      <p className="font-display text-white text-sm sm:text-2xl font-black tracking-widest uppercase truncate max-w-[160px] sm:max-w-[200px] skew-x-[10deg] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+                        {firstPlace.nickname}
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  {/* Stand — ROCKETS UP FIRST */}
+                  <motion.div
+                    custom={3}
+                    variants={standVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="w-[105px] sm:w-[160px] h-[165px] sm:h-[260px] relative overflow-hidden rounded-t-xl"
+                    style={{ background: "linear-gradient(to bottom, #78350f 0%, #451a03 50%, #04060f 100%)", borderTop: "4px solid #facc15", boxShadow: "0 0 40px rgba(234,179,8,0.15), 0 0 80px rgba(234,179,8,0.06)" }}
+                  >
+                    {/* Speed line flash */}
+                    <motion.div
+                      initial={{ x: "-100%", opacity: 0.9 }}
+                      animate={{ x: "200%", opacity: 0 }}
+                      transition={{ delay: 3 * 0.55 + 0.1, duration: 0.6, ease: "easeOut" }}
+                      className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-yellow-300/40 to-transparent skew-x-[-20deg] pointer-events-none z-20"
+                    />
+                    {/* NITRO EXHAUST — animated flame jets */}
+                    <motion.div
+                      animate={{ scaleY: [1, 1.8, 0.7, 1.5, 1], opacity: [0.7, 1, 0.4, 1, 0.7] }}
+                      transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut", delay: 3 * 0.55 + 0.6 }}
+                      className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none z-10"
+                      style={{ background: "linear-gradient(to top, rgba(251,191,36,0.4), rgba(251,191,36,0.1), transparent)", filter: "blur(6px)" }}
+                    />
+                    <motion.div
+                      animate={{ scaleY: [1, 1.3, 0.8, 1.2, 1], opacity: [0.4, 0.7, 0.2, 0.6, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.1, ease: "easeInOut", delay: 3 * 0.55 + 0.65 }}
+                      className="absolute bottom-0 left-1/4 right-1/4 h-14 pointer-events-none z-10"
+                      style={{ background: "linear-gradient(to top, rgba(250,204,21,0.6), rgba(251,146,60,0.3), transparent)", filter: "blur(8px)" }}
+                    />
+
+                    {/* RPM Gauge + Avatar */}
+                    <div className="flex flex-col items-center justify-start pt-5 sm:pt-7 h-full relative z-10">
+                      <div className="relative">
+                        <svg className="w-[72px] h-[72px] sm:w-[96px] sm:h-[96px]" style={{ transform: "rotate(-90deg)" }}>
+                          <circle cx="50%" cy="50%" r="44%" fill="none" stroke="rgba(250,204,21,0.08)" strokeWidth="7" />
+                          <motion.circle
+                            custom={3}
+                            variants={rpmGaugeVariants}
+                            cx="50%" cy="50%" r="44%" fill="none" stroke="#facc15" strokeWidth="7"
+                            strokeLinecap="butt" strokeDasharray="270" strokeDashoffset="270"
+                          />
+                        </svg>
+                        {/* Rotating nitro ring */}
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+                          className="absolute inset-0 rounded-full"
+                          style={{ border: "2px dashed rgba(250,204,21,0.2)" }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-3">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-yellow-950/60 border-2 border-yellow-500/60 shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                            {firstPlace.avatar_url ? (
+                              <img src={firstPlace.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <InitialsAvatar name={firstPlace.nickname} size="lg" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Score */}
+                      <div className="mt-auto mb-5 sm:mb-7 font-mono text-3xl sm:text-5xl text-yellow-400 font-black tracking-tighter italic drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                        <Odometer value={firstPlace.score} delay={3 * 0.55 + 0.8} />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-3 right-1 font-display text-[90px] sm:text-[130px] font-black leading-none text-yellow-400 opacity-[0.05] select-none pointer-events-none">1</div>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* ── 3RD PLACE ── */}
+              {thirdPlace && (
+                <div className="flex flex-col items-center relative z-10 mx-1 sm:mx-2">
+                  {/* Name Tag */}
+                  <motion.div
+                    custom={1}
+                    variants={nameplateVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="mb-2 z-30"
+                  >
+                    <div className="bg-[#0d1526]/90 border-l-4 border-orange-700 backdrop-blur-xl pl-3 pr-4 py-1 transform -skew-x-[10deg] shadow-[4px_4px_0px_rgba(194,65,12,0.2)] relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-700/10 to-transparent" />
+                      <p className="font-display text-white text-xs sm:text-sm font-black tracking-widest truncate max-w-[90px] sm:max-w-[110px] skew-x-[10deg]">
+                        {thirdPlace.nickname}
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  {/* Stand */}
+                  <motion.div
+                    custom={1}
+                    variants={standVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="w-[78px] sm:w-[115px] h-[95px] sm:h-[155px] relative overflow-hidden rounded-t-md"
+                    style={{ background: "linear-gradient(to bottom, #2a1309 0%, #1a0a05 60%, #04060f 100%)", borderTop: "3px solid #c2410c" }}
+                  >
+                    {/* Speed line flash */}
+                    <motion.div
+                      initial={{ x: "-100%", opacity: 0.7 }}
+                      animate={{ x: "200%", opacity: 0 }}
+                      transition={{ delay: 1 * 0.55 + 0.1, duration: 0.5, ease: "easeOut" }}
+                      className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-orange-400/25 to-transparent skew-x-[-20deg] pointer-events-none z-20"
+                    />
+                    {/* Exhaust Flame */}
+                    <motion.div
+                      animate={{ scaleY: [1, 1.4, 0.8, 1.3, 1], opacity: [0.5, 0.9, 0.3, 0.8, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 2.0, ease: "easeInOut", delay: 1 * 0.55 + 0.6 }}
+                      className="absolute bottom-0 left-0 right-0 h-5 pointer-events-none z-10"
+                      style={{ background: "linear-gradient(to top, rgba(194,65,12,0.3), transparent)", filter: "blur(4px)" }}
+                    />
+                    {/* RPM Gauge + Avatar */}
+                    <div className="flex flex-col items-center justify-start pt-3 sm:pt-4 h-full relative z-10">
+                      <div className="relative">
+                        <svg className="w-[52px] h-[52px] sm:w-[64px] sm:h-[64px]" style={{ transform: "rotate(-90deg)" }}>
+                          <circle cx="50%" cy="50%" r="44%" fill="none" stroke="rgba(194,65,12,0.08)" strokeWidth="5" />
+                          <motion.circle
+                            custom={1}
+                            variants={rpmGaugeVariants}
+                            cx="50%" cy="50%" r="44%" fill="none" stroke="#ea580c" strokeWidth="5"
+                            strokeLinecap="butt" strokeDasharray="201" strokeDashoffset="201"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center p-1.5 sm:p-2">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-orange-950/40 border border-orange-700/40">
+                            {thirdPlace.avatar_url ? (
+                              <img src={thirdPlace.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <InitialsAvatar name={thirdPlace.nickname} size="sm" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Score */}
+                      <div className="mt-auto mb-2 sm:mb-3 font-mono text-base sm:text-xl text-orange-400 font-bold tracking-tighter drop-shadow-[0_0_10px_rgba(249,115,22,0.4)]">
+                        <Odometer value={thirdPlace.score} delay={1 * 0.55 + 0.8} />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-1 right-1 font-display text-[50px] sm:text-[70px] font-black leading-none text-orange-700 opacity-[0.05] select-none pointer-events-none">3</div>
+                  </motion.div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -500,8 +719,12 @@ export default function LeaderboardPage() {
               stiffness: 100,
               damping: 14,
             }}
-            className="bg-black/40 backdrop-blur-xl border border-[#2d6af2]/30 rounded-2xl p-4 sm:p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+            className="bg-[#111729]/80 backdrop-blur-xl border border-white/5 rounded-xl p-4 sm:p-6 shadow-[0_15px_40px_rgba(0,0,0,0.6)] relative overflow-hidden group"
           >
+            {/* Cyber texture on table */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
+              style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }} />
+
             <div className="overflow-x-auto w-full custom-scrollbar max-h-[470px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -524,13 +747,13 @@ export default function LeaderboardPage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 2.5 + index * 0.1 }}
-                          className={`border-b border-[#2d6af2]/10 transition-colors ${isTop3
-                              ? index === 0
-                                ? "bg-yellow-500/5"
-                                : index === 1
-                                  ? "bg-slate-300/5"
-                                  : "bg-orange-600/5"
-                              : "hover:bg-[#2d6af2]/5"
+                          className={`border-b border-white/[0.03] transition-colors ${isTop3
+                            ? index === 0
+                              ? "bg-yellow-500/5 hover:bg-yellow-500/10"
+                              : index === 1
+                                ? "bg-slate-300/5 hover:bg-slate-300/10"
+                                : "bg-orange-600/5 hover:bg-orange-600/10"
+                            : "hover:bg-white/[0.02]"
                             }`}
                         >
                           <td className="px-2 sm:px-4 py-3 text-center">
@@ -552,14 +775,14 @@ export default function LeaderboardPage() {
                             <div className="flex items-center gap-2 sm:gap-3">
                               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-lg shadow-inner overflow-hidden flex-shrink-0">
                                 {player.avatar_url ? (
-                                    <img
-                                      src={player.avatar_url}
-                                      alt="Avatar"
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <InitialsAvatar name={player.nickname} size="sm" />
-                                  )}
+                                  <img
+                                    src={player.avatar_url}
+                                    alt="Avatar"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <InitialsAvatar name={player.nickname} size="sm" />
+                                )}
                               </div>
                               <p
                                 className={`font-display tracking-wider text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"}`}
@@ -591,24 +814,28 @@ export default function LeaderboardPage() {
           </motion.div>
         )}
         {/* Actions Mobile (sm ke bawah) */}
-        <div className="md:hidden bg-black/40 backdrop-blur-md w-full text-center py-4 fixed bottom-0 left-0 z-50 flex items-center justify-center space-x-4 border-t border-white/5 px-4 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+        <div className="md:hidden bg-[#111729]/95 backdrop-blur-xl w-full text-center py-4 fixed bottom-0 left-0 z-50 flex items-center justify-center space-x-3 border-t border-white/10 px-4 shadow-[0_-15px_40px_rgba(0,0,0,0.6)]">
           {/* Tombol Home */}
           <button
             onClick={() => router.push("/")}
-            className="flex-1 bg-black/40 border border-[#2d6af2]/50 rounded-xl text-[#2d6af2] py-3.5 text-xs font-display font-bold tracking-widest uppercase hover:bg-[#2d6af2]/10 transition-all flex items-center justify-center gap-2"
+            className="flex-1 bg-white/5 border border-white/10 rounded-sm text-white/70 py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg]"
           >
-            <House size={16} />
-            {t("host_leaderboard.home_tooltip")}
+            <div className="transform skew-x-[15deg] flex items-center gap-1.5">
+              <House size={14} />
+              {t("host_leaderboard.home_tooltip")}
+            </div>
           </button>
 
           {/* Tombol Play Again (Restart) */}
           <button
             onClick={handleRestart}
             disabled={isRestarting}
-            className={`flex-1 bg-[#00ff9d] border border-white/20 rounded-xl text-black py-3.5 text-xs font-display font-bold tracking-widest uppercase hover:bg-[#00ff9d]/80 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,157,0.3)] ${isRestarting ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-[#2d6af2]/50 rounded-sm text-white py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(45,106,242,0.3)] transform -skew-x-[15deg] ${isRestarting ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            <RotateCw size={16} className={isRestarting ? 'animate-spin' : ''} />
-            {isRestarting ? "Restarting..." : t("host_leaderboard.play_again_tooltip")}
+            <div className="transform skew-x-[15deg] flex items-center gap-1.5">
+              <RotateCw size={14} className={isRestarting ? 'animate-spin' : ''} />
+              {isRestarting ? "Restarting..." : t("host_leaderboard.play_again_tooltip")}
+            </div>
           </button>
 
           {/* Tombol Statistics */}
@@ -620,10 +847,12 @@ export default function LeaderboardPage() {
                 "_blank",
               )
             }
-            className="flex-1 bg-black/40 border border-[#f59e0b]/50 rounded-xl text-[#f59e0b] py-3.5 text-xs font-display font-bold tracking-widest uppercase hover:bg-[#f59e0b]/10 transition-all flex items-center justify-center gap-2"
+            className="flex-1 bg-white/5 border border-white/10 rounded-sm text-white/70 py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg]"
           >
-            <BarChart2 size={16} />
-            {t("host_leaderboard.stats_tooltip")}
+            <div className="transform skew-x-[15deg] flex items-center gap-1.5">
+              <BarChart2 size={14} />
+              STAT
+            </div>
           </button>
         </div>
       </div>
