@@ -688,43 +688,27 @@ export default function GameMonitorPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#07091a",
+        background: "#04060f",
         position: "relative",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        fontFamily: "Rajdhani, sans-serif",
         color: "white",
       }}
+      className="font-display"
     >
-      {/* BG Grid */}
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          opacity: 0.25,
-          backgroundImage: `
-            linear-gradient(rgba(45,106,242,0.18) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(45,106,242,0.18) 1px, transparent 1px)
-          `,
-          backgroundSize: "40px 40px",
-        }}
-      />
-      {/* Radial center glow */}
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          background: "radial-gradient(ellipse 80% 55% at 50% 50%, rgba(45,106,242,0.07) 0%, transparent 70%)",
-        }}
-      />
-      {/* Purple corner accents */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, zIndex: 0, pointerEvents: "none", width: "320px", height: "320px", background: "radial-gradient(circle at bottom left, rgba(139,92,246,0.35) 0%, transparent 70%)", opacity: 0.2 }} />
-      <div style={{ position: "fixed", top: 0, right: 0, zIndex: 0, pointerEvents: "none", width: "320px", height: "320px", background: "radial-gradient(circle at top right, rgba(139,92,246,0.3) 0%, transparent 70%)", opacity: 0.15 }} />
+      {/* Racing Stripe */}
+      <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1" />
+      {/* Background Image */}
+      <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-30"
+        style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }} />
+      {/* Overlays for readability */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/85 to-[#2d6af2]/10 pointer-events-none" />
+      {/* Grid Pattern */}
+      <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.04)_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
+      {/* Glow Effects */}
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-[#2d6af2]/8 blur-[150px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-[400px] h-[400px] bg-[#7C3AED]/8 blur-[120px] rounded-full pointer-events-none" />
 
       {/* ── HEADER ── */}
       <div
@@ -742,9 +726,11 @@ export default function GameMonitorPage() {
         {/* Center: Timer (Always visible) */}
         <div className="relative md:absolute md:left-1/2 md:-translate-x-1/2">
           <div
-            className="px-8 py-2 md:px-10 md:py-3 rounded-xl bg-[#0a0e1e]/95 border-2 border-blue-500/60 shadow-[0_0_20px_rgba(45,106,242,0.3)]"
+            className="px-8 py-2 md:px-10 md:py-3 bg-[#0a0e1e]/95 border-2 shadow-[0_0_25px_rgba(45,106,242,0.3)] transform -skew-x-[10deg]"
+            style={{ borderColor: timeLeft < 60 ? 'rgba(239,68,68,0.6)' : 'rgba(59,130,246,0.6)' }}
           >
             <span
+              className="transform skew-x-[10deg] block"
               style={{
                 fontFamily: "Orbitron, monospace",
                 fontSize: "28px",
@@ -765,9 +751,15 @@ export default function GameMonitorPage() {
           <button
             onClick={() => setEndGameDialogOpen(true)}
             disabled={isEnding}
-            className="px-6 py-2 md:px-8 md:py-2.5 rounded-xl bg-gradient-to-br from-red-600 to-red-900 border border-red-500/50 shadow-[0_0_20px_rgba(220,38,38,0.35)] text-[#fecaca] font-body font-bold text-xs md:text-sm tracking-[0.15em] uppercase cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group/btn relative h-10 md:h-11 px-6 md:px-8 font-display font-bold text-xs md:text-sm tracking-[0.15em] uppercase text-[#fecaca] cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transform -skew-x-[12deg] overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.25), rgba(127,29,29,0.4))',
+              border: '1px solid rgba(239,68,68,0.5)',
+              boxShadow: '0 0 20px rgba(220,38,38,0.3)',
+            }}
           >
-            {isEnding ? t("host_monitor.ending") : t("host_monitor.end_race")}
+            <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+            <span className="relative z-10 transform skew-x-[12deg]">{isEnding ? t("host_monitor.ending") : t("host_monitor.end_race")}</span>
           </button>
         </div>
       </div>
@@ -785,9 +777,9 @@ export default function GameMonitorPage() {
         {/* Label area with responsive layout */}
         <div className="flex flex-row items-center justify-between mb-4 md:mb-6 px-2">
           {/* Player Count on the Left */}
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.15)]">
-            <Users size={18} className="text-blue-400" />
-            <span className="font-body font-bold text-lg md:text-2xl text-blue-400 tracking-wider">
+          <div className="flex items-center gap-3 px-4 py-2 bg-blue-500/10 border border-blue-500/25 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.15)] transform -skew-x-[10deg]">
+            <Users size={18} className="text-blue-400 transform skew-x-[10deg]" />
+            <span className="font-display font-bold text-lg md:text-2xl text-blue-400 tracking-wider transform skew-x-[10deg]">
               {participants.length}
             </span>
           </div>
@@ -840,29 +832,32 @@ export default function GameMonitorPage() {
       {/* ═══ END GAME CONFIRMATION DIALOG ═══ */}
       <Dialog open={endGameDialogOpen} onOpenChange={setEndGameDialogOpen}>
         <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="bg-[#11111a] border border-red-500/30 text-white p-8 max-w-sm rounded-[2rem] shadow-[0_0_100px_rgba(239,68,68,0.2)]">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-              <Flag size={32} className="text-red-500" />
+        <DialogContent className="bg-[#0a0e1a]/95 backdrop-blur-2xl border border-red-500/30 text-white p-0 max-w-sm shadow-[0_0_80px_rgba(239,68,68,0.15)] rounded-none overflow-hidden" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)' }}>
+          {/* Red laser top */}
+          <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+          <div className="flex flex-col items-center p-8">
+            <div className="w-14 h-14 bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/25 transform -skew-x-[10deg]">
+              <Flag size={28} className="text-red-500 transform skew-x-[10deg]" />
             </div>
-            <DialogTitle className="text-2xl font-body font-bold uppercase tracking-[0.15em] text-center mb-2">
+            <DialogTitle className="text-xl font-display font-black uppercase tracking-[0.15em] text-center mb-2">
               {t('host_monitor.end_game_title')}
             </DialogTitle>
-            <p className="text-white/60 text-sm text-center font-body tracking-wider mb-8">
+            <p className="text-white/50 text-sm text-center font-display tracking-wider mb-8">
               {t('host_monitor.end_game_desc')}
             </p>
             <div className="flex gap-4 w-full">
-              <Button onClick={() => setEndGameDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest text-gray-400 hover:bg-white/5 hover:text-white">
-                {t('host_lobby.cancel')}
+              <Button onClick={() => setEndGameDialogOpen(false)} variant="ghost" className="flex-1 border border-white/10 h-11 font-display font-bold uppercase text-xs tracking-widest text-gray-400 hover:bg-white/5 hover:text-white transform -skew-x-[8deg] rounded-none">
+                <span className="transform skew-x-[8deg]">{t('host_lobby.cancel')}</span>
               </Button>
               <Button
                 onClick={() => {
                   setEndGameDialogOpen(false);
                   handleEndRace();
                 }}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl font-body font-bold uppercase text-xs tracking-widest shadow-[0_5px_15px_rgba(239,68,68,0.3)] transition-all hover:scale-105 active:scale-95"
+                className="flex-1 h-11 font-display font-bold uppercase text-xs tracking-widest text-white transition-all active:scale-95 transform -skew-x-[8deg] rounded-none"
+                style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)', boxShadow: '0 5px 20px rgba(239,68,68,0.35)' }}
               >
-                {t('host_monitor.confirm_end')}
+                <span className="transform skew-x-[8deg]">{t('host_monitor.confirm_end')}</span>
               </Button>
             </div>
           </div>
