@@ -536,13 +536,13 @@ export default function HostLobby() {
               {/* TOP ROW: Split Info & QR */}
               <div className="flex border-b border-white/5">
                 {/* Left Side: Info (Code & Link) */}
-                <div className="flex-1 flex flex-col p-3 md:p-8 gap-3 md:gap-6 border-r border-white/5">
+                <div className="flex-1 flex flex-col p-2.5 md:p-8 gap-3 md:gap-6 border-r border-white/5 min-w-0">
                   <div
-                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-4 md:py-8 px-5 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
+                    className="group/code cursor-pointer bg-white/5 rounded-xl md:rounded-2xl py-4 md:py-8 px-3 md:px-12 border border-white/10 hover:border-[#2d6af2]/50 transition-all flex items-center justify-center relative overflow-hidden"
                     onClick={() => copyToClipboard(roomCode, setCopiedRoom)}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-[#2d6af2]/5 to-transparent opacity-0 group-hover/code:opacity-100 transition-opacity"></div>
-                    <h1 className="font-display text-3xl md:text-5xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
+                    <h1 className="font-display text-2xl sm:text-3xl md:text-5xl font-black text-white tracking-wider sm:tracking-widest drop-shadow-[0_0_15px_rgba(45,106,242,0.3)] text-center">
                       {roomCode}
                     </h1>
                     <div className="absolute top-1/2 -translate-y-1/2 end-2 md:end-5 opacity-40 group-hover:opacity-100 transition-opacity">
@@ -587,11 +587,11 @@ export default function HostLobby() {
 
                 {/* Right Side: QR Code Area */}
                 <div
-                  className="w-[130px] sm:w-[160px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-2.5 sm:p-4 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
+                  className="w-[100px] sm:w-[160px] md:w-[320px] lg:w-[360px] flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors shrink-0"
                   onClick={() => setQrOpen(true)}
                 >
-                  <div className="bg-white p-2 sm:p-3 md:p-5 rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                    <div className="w-[85px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
+                  <div className="bg-white p-1.5 sm:p-3 md:p-5 rounded-lg sm:rounded-xl md:rounded-[2rem] shadow-xl md:shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                    <div className="w-[65px] sm:w-[110px] md:w-[220px] lg:w-[260px] aspect-square">
                       <QRCode value={joinLink} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
                     </div>
                   </div>
@@ -708,17 +708,17 @@ export default function HostLobby() {
 
             {/* Players Header */}
             <div className="px-4 sm:px-5 py-4 flex items-center justify-between border-b border-white/5 shrink-0 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[#00ff9d]/10 rounded-xl">
-                  <Users size={20} className="text-[#00ff9d]" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-2.5 bg-[#00ff9d]/10 rounded-xl">
+                  <Users size={18} className="text-[#00ff9d] sm:size-5" />
                 </div>
-                <div className="flex flex-row items-baseline gap-2 sm:gap-3">
-                  <h2 className="font-display text-2xl sm:text-3xl font-bold text-white leading-none">{participants.length}</h2>
+                <div className="flex flex-row items-baseline gap-1.5 sm:gap-3">
+                  <h2 className="font-display text-xl sm:text-3xl font-bold text-white leading-none">{participants.length}</h2>
                   <p className="text-[#00ff9d] text-[9px] sm:text-[11px] font-bold uppercase font-display tracking-[0.2em]">{t('host_lobby.players')}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Invite Friends */}
                 <button
                   onClick={() => setInviteFriendOpen(true)}
@@ -763,8 +763,8 @@ export default function HostLobby() {
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-5 relative z-10">
               {participants.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-30 py-10">
-                  <Users size={80} className="text-white mb-6 animate-pulse" />
-                  <p className="font-display tracking-[0.4em] text-sm uppercase text-white">{t('host_lobby.waiting')}</p>
+                  <Users size={60} className="text-white mb-4 animate-pulse sm:size-24 sm:mb-6" />
+                  <p className="font-display tracking-[0.2em] sm:tracking-[0.4em] text-[10px] sm:text-sm uppercase text-white">{t('host_lobby.waiting')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
