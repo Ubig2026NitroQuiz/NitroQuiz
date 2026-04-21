@@ -239,10 +239,13 @@ export default function SettingsPage() {
 
     if (!quizDetail) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-[#0d1b3e] relative overflow-hidden font-display text-white">
+            <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-display text-white">
+                <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
+                    style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }} />
+                <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/85 to-[#2d6af2]/10 pointer-events-none" />
                 <div className="text-center z-10">
-                    <div className="w-16 h-16 border-4 border-[#4a3d8f]/30 border-t-[#a98dc5] rounded-full animate-spin mx-auto mb-6"></div>
-                    <p className="mt-4 text-[#a98dc5] text-xl tracking-[0.2em] uppercase animate-pulse">{t('room_settings.loading')}</p>
+                    <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
+                    <p className="mt-4 text-[#5a9cff] text-xl tracking-[0.2em] uppercase animate-pulse">{t('room_settings.loading')}</p>
                 </div>
             </div>
         );
@@ -252,6 +255,11 @@ export default function SettingsPage() {
 
     return (
         <div className="h-screen bg-[#04060f] relative overflow-hidden font-body selection:bg-[#2d6af2] selection:text-white">
+            {/* Racing Stripe */}
+            <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1" />
+            {/* Background Image */}
+            <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
+                style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }} />
             <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(0,255,157,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.022)_1px,transparent_1px)] bg-[length:80px_80px]" />
             <div className="fixed bottom-0 left-0 right-0 h-52 z-0 bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px)] bg-[length:80px_40px] [transform:perspective(400px)_rotateX(60deg)] origin-bottom pointer-events-none opacity-60" />
             <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(45,106,242,0.07),transparent)] pointer-events-none" />

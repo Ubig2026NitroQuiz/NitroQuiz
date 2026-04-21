@@ -285,57 +285,42 @@ export default function PlayerResultPage() {
     return `${m}:${s}`;
   };
 
-  const MobileBG = () => (
-    <div className="fixed inset-0 z-0 pointer-events-none">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_15%,rgba(45,106,242,0.2),transparent_65%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(45,106,242,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.03)_1px,transparent_1px)] bg-[length:40px_40px]" />
-      {[
-        [12, 8],
-        [88, 15],
-        [25, 35],
-        [70, 22],
-        [45, 60],
-        [92, 45],
-        [8, 72],
-        [60, 80],
-        [35, 90],
-        [78, 68],
-        [18, 55],
-        [55, 12],
-        [82, 35],
-        [40, 48],
-        [65, 92],
-        [30, 75],
-        [50, 28],
-        [10, 42],
-        [95, 70],
-        [72, 50],
-      ].map(([x, y], i) => (
-        <div
-          key={i}
-          className="absolute rounded-full bg-white"
-          style={{
-            left: `${x}%`,
-            top: `${y}%`,
-            width: i % 3 === 0 ? 2 : 1,
-            height: i % 3 === 0 ? 2 : 1,
-            opacity: 0.15 + (i % 5) * 0.08,
-          }}
-        />
-      ))}
-    </div>
+  const NitroBackground = () => (
+    <>
+      <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1"></div>
+
+      {/* Background Image */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-40"
+        style={{
+          backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")',
+          backgroundAttachment: 'fixed'
+        }}
+      ></div>
+
+      {/* Overlays for readability */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/80 to-[#7C3AED]/10 pointer-events-none"></div>
+
+      {/* Grid Pattern */}
+      <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.03)_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
+
+      {/* Glow Effects */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#2d6af2]/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#7C3AED]/10 blur-[150px] rounded-full pointer-events-none" />
+    </>
   );
 
   const MobileStatCard = ({ children }: { children: React.ReactNode }) => (
     <div
-      className="flex flex-col items-center justify-center rounded-2xl py-4 px-1"
+      className="flex flex-col items-center justify-center py-4 px-1 transform -skew-x-[8deg]"
       style={{
         background: "linear-gradient(155deg,#1a2540,#0d1526)",
         border: "1px solid rgba(45,106,242,0.4)",
         boxShadow: "0 0 16px rgba(45,106,242,0.1)",
+        clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)',
       }}
     >
-      {children}
+      <div className="transform skew-x-[8deg]">{children}</div>
     </div>
   );
 
@@ -347,11 +332,12 @@ export default function PlayerResultPage() {
     children: React.ReactNode;
   }) => (
     <div
-      className="rounded-2xl overflow-hidden flex-1 flex flex-col justify-center items-center"
+      className="overflow-hidden flex-1 flex flex-col justify-center items-center"
       style={{
         background: "rgba(200,215,240,0.08)",
         border: "1px solid rgba(180,200,240,0.25)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+        clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%)',
       }}
     >
       <div className="text-center mb-1">
@@ -383,9 +369,9 @@ export default function PlayerResultPage() {
 
   return (
     <>
-      {/* ══ MOBILE — TIDAK DIUBAH ══ */}
-      <div className="md:hidden min-h-screen bg-[#070d1c] text-white flex flex-col relative overflow-hidden font-body">
-        <MobileBG />
+      {/* ══ MOBILE ══ */}
+      <div className="md:hidden min-h-screen bg-[#04060f] text-white flex flex-col relative overflow-hidden font-body">
+        <NitroBackground />
         {mobileView === "result" && showResults && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -501,23 +487,25 @@ export default function PlayerResultPage() {
             >
               <button
                 onClick={() => router.push("/")}
-                className="flex-1 h-14 flex items-center justify-center gap-2 rounded-full font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-transform"
+                className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all transform -skew-x-[12deg] relative overflow-hidden"
                 style={{
                   background: "linear-gradient(135deg,#00bcd4,#0288d1)",
                   boxShadow: "0 0 24px rgba(0,188,212,0.38)",
                 }}
               >
-                <House className="w-5 h-5" /> {t("player_result.home")}
+                <div className="absolute inset-0 bg-white/15 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><House className="w-5 h-5" /> {t("player_result.home")}</span>
               </button>
               <button
                 onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
-                className="flex-1 h-14 flex items-center justify-center gap-2 rounded-full font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-transform"
+                className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all transform -skew-x-[12deg] relative overflow-hidden"
                 style={{
                   background: "linear-gradient(135deg,#f59e0b,#d97706)",
                   boxShadow: "0 0 24px rgba(245,158,11,0.38)",
                 }}
               >
-                <BarChart2 className="w-5 h-5" /> {t("player_result.stats")}
+                <div className="absolute inset-0 bg-white/15 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><BarChart2 className="w-5 h-5" /> {t("player_result.stats")}</span>
               </button>
             </motion.div>
           </motion.div>
@@ -531,9 +519,9 @@ export default function PlayerResultPage() {
             <div className="flex items-center gap-3 mb-4 flex-shrink-0">
               <button
                 onClick={() => setMobileView("result")}
-                className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-lg active:scale-95 transition-transform"
+                className="w-10 h-10 bg-white/10 border border-white/20 flex items-center justify-center text-white text-lg active:scale-95 transition-transform transform -skew-x-[10deg]"
               >
-                ←
+                <span className="transform skew-x-[10deg]">←</span>
               </button>
               <h2 className="font-display text-lg font-black uppercase tracking-widest text-white">
                 {t("player_result.leaderboard")}
@@ -681,7 +669,7 @@ export default function PlayerResultPage() {
                 </motion.div>
               )}
             </div>
-            <div className="bg-black/40 backdrop-blur-xl border border-[#2d6af2]/30 rounded-2xl p-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-4 overflow-y-auto flex-1">
+            <div className="bg-black/40 backdrop-blur-xl border border-[#2d6af2]/30 p-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-4 overflow-y-auto flex-1" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)' }}>
               <div className="space-y-1.5">
                 {rankedPlayers.map((player, index) => {
                   const isMe = player.id === storedParticipantId || (player.nickname === profile?.username && !storedParticipantId);
@@ -732,293 +720,267 @@ export default function PlayerResultPage() {
             </div>
             <button
               onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
-              className="w-full h-12 flex items-center justify-center gap-2 rounded-full border border-[#f59e0b]/50 text-[#f59e0b] font-display text-sm uppercase tracking-widest hover:bg-[#f59e0b]/10 active:scale-95 transition-all flex-shrink-0"
+              className="group/btn w-full h-12 flex items-center justify-center gap-2 border border-[#f59e0b]/50 text-[#f59e0b] font-display text-sm uppercase tracking-widest hover:bg-[#f59e0b]/10 active:scale-95 transition-all flex-shrink-0 transform -skew-x-[10deg] relative overflow-hidden"
             >
-              <BarChart2 className="w-4 h-4" /> {t("player_result.stats")}
+              <div className="absolute inset-0 bg-[#f59e0b]/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+              <span className="relative z-10 transform skew-x-[10deg] flex items-center gap-2"><BarChart2 className="w-4 h-4" /> {t("player_result.stats")}</span>
             </button>
           </motion.div>
         )}
       </div>
 
-      {/* ══ DESKTOP ══ */}
       <div
         className="hidden md:block fixed inset-0 font-body text-white overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(180deg,#1e2230 0%,#1c2030 50%,#181c28 100%)",
-        }}
+        style={{ background: "#04060f" }}
       >
-        {/* Showroom BG */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div
-            className="absolute bottom-0 inset-x-0 h-[42%]"
-            style={{
-              background:
-                "linear-gradient(to top, #282e3e 0%, transparent 100%)",
-            }}
-          />
-          <div
-            className="absolute top-0 left-[28%] w-[2px] h-[48%] bg-gradient-to-b from-white/25 to-transparent"
-            style={{ filter: "blur(1px)" }}
-          />
-          <div className="absolute top-0 left-[42%] w-[1px] h-[55%] bg-gradient-to-b from-white/15 to-transparent" />
-          <div
-            className="absolute top-0 left-[56%] w-[2px] h-[50%] bg-gradient-to-b from-white/20 to-transparent"
-            style={{ filter: "blur(1px)" }}
-          />
-          <div className="absolute top-0 left-[72%] w-[1px] h-[40%] bg-gradient-to-b from-white/12 to-transparent" />
-          <div className="absolute top-0 right-[12%] w-[1px] h-[35%] bg-gradient-to-b from-white/10 to-transparent" />
-          <div
-            className="absolute top-0 right-0 w-[20%] h-full"
-            style={{
-              background:
-                "linear-gradient(to left, rgba(30,50,80,0.35), transparent)",
-            }}
-          />
-          <div
-            className="absolute bottom-[18%] left-[38%] w-[320px] h-[40px] -translate-x-1/4"
-            style={{
-              background: "rgba(180,190,220,0.06)",
-              filter: "blur(20px)",
-              borderRadius: "50%",
-            }}
-          />
-        </div>
+        <NitroBackground />
 
-        {/* Top bar */}
-        <div
-          className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-6 py-3"
-          style={{
-            background: "rgba(16,20,32,0.65)",
-            backdropFilter: "blur(16px)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <img
-            src="/assets/logo/logo1.png"
-            alt="Logo"
-            className="h-15 object-contain"
-          />
-          <h1
-            className="font-display text-2xl font-black text-white uppercase tracking-[0.2em] absolute left-1/2 -translate-x-1/2"
-            style={{ textShadow: "0 0 30px rgba(255,255,255,0.2)" }}
-          >
-            {t("player_result.race_complete")}
-          </h1>
-          <img
-            src="/assets/logo/logo2.png"
-            alt="NitroQuiz"
-            className="h-10 object-contain"
-          />
+        {/* Floating Logos */}
+        <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-8 py-6 pointer-events-none">
+          <img src="/assets/logo/logo1.png" alt="Logo" className="h-14 object-contain" />
+          <img src="/assets/logo/logo2.png" alt="NitroQuiz" className="h-10 object-contain ml-auto opacity-90" />
         </div>
 
         {showResults && (
           <>
-            {/* ── LEFT card — WIDER (280px), 3 section layout, bigger text ── */}
+            {/* ── LEFT — Driver Profile Card ── */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 90 }}
-              className="absolute z-10 flex items-center"
-              style={{
-                top: "10%",
-                left: "8%",
-                bottom: "10%",
-                width: "min(280px, 18vw)",
-              }}
+              className="absolute z-10"
+              style={{ top: "20%", left: "12%", bottom: "18%", width: "min(260px, 17vw)" }}
             >
               <div
-                className="w-full rounded-2xl overflow-hidden flex flex-col"
+                className="w-full h-full overflow-hidden flex flex-col"
                 style={{
-                  background: "transparent",
-                  border: "1px solid rgba(220,230,250,0.18)",
-                  backdropFilter: "blur(32px) saturate(1.4)",
-                  WebkitBackdropFilter: "blur(32px) saturate(1.4)",
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.2)",
-                  overflow: "hidden",
+                  background: "linear-gradient(170deg, #0a1628 0%, #050a18 100%)",
+                  border: "1px solid rgba(45,106,242,0.4)",
+                  boxShadow: "0 0 50px rgba(45,106,242,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  backdropFilter: "blur(20px)",
+                  clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%)',
                 }}
               >
-                {/* Profile Section — darker bg */}
-                <div
-                  className="flex flex-col items-center justify-center px-6 py-10 flex-shrink-0"
-                  style={{
-                    background: "rgba(10,15,30,0.55)",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <div className="relative mb-4">
+                {/* Racing stripe top */}
+                <div className="h-[3px] w-full flex-shrink-0" style={{ background: "linear-gradient(90deg, #7c3aed, #2d6af2, #06b6d4)" }} />
+
+                {/* Avatar zone — large top area */}
+                <div className="relative flex-1 flex items-center justify-center" style={{ background: "rgba(2,5,15,0.4)" }}>
+                  {/* Background radial glow */}
+                  <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(45,106,242,0.12) 0%, transparent 65%)" }} />
+
+                  <div className="relative">
+                    {/* Outer pulse ring */}
+                    <motion.div
+                      className="absolute rounded-full"
+                      style={{ inset: "-18px", border: "1px solid rgba(45,106,242,0.2)" }}
+                      animate={{ scale: [1, 1.06, 1], opacity: [0.3, 0.8, 0.3] }}
+                      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                    />
+                    {/* Mid rotating dashed ring */}
+                    <motion.div
+                      className="absolute rounded-full"
+                      style={{ inset: "-8px", border: "1.5px dashed rgba(96,165,250,0.3)" }}
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
+                    />
+                    {/* Avatar circle */}
                     <div
-                      className="w-28 h-28 rounded-full flex items-center justify-center relative z-10 overflow-hidden"
+                      className="w-28 h-28 rounded-full overflow-hidden relative z-10"
                       style={{
-                        background: "rgba(45,106,242,0.15)",
-                        border: "2.5px solid rgba(45,106,242,0.5)",
-                        boxShadow: "0 0 30px rgba(45,106,242,0.25)",
+                        border: "2.5px solid rgba(45,106,242,0.9)",
+                        boxShadow: "0 0 25px rgba(45,106,242,0.5), 0 0 50px rgba(45,106,242,0.15)",
                       }}
                     >
                       {currentPlayerData?.avatar_url ? (
-                        <img
-                          src={currentPlayerData.avatar_url}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={currentPlayerData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
                         <InitialsAvatar name={currentPlayerData ? getDisplayName(currentPlayerData) : 'P'} size="lg" />
                       )}
                     </div>
-                    <div className="absolute inset-[-8px] rounded-full border border-[#2d6af2]/20 animate-pulse" />
                   </div>
                 </div>
-                <div className="flex flex-col items-center justify-center gap-6 px-6 py-10 flex-1">
-                  <p className="font-display text-white text-xl font-bold uppercase tracking-widest text-center leading-tight" title={currentPlayerData ? getDisplayName(currentPlayerData) : ""}>
+
+                {/* Divider stripe */}
+                <div className="flex-shrink-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(45,106,242,0.5), transparent)" }} />
+
+                {/* Name + Status bottom section */}
+                <div
+                  className="flex-shrink-0 flex flex-col items-center justify-center gap-3 px-5 py-6"
+                  style={{ background: "rgba(4,8,20,0.6)" }}
+                >
+                  <p
+                    className="font-display text-white font-black uppercase tracking-widest text-center leading-snug"
+                    style={{ fontSize: "clamp(13px,1.2vw,17px)", textShadow: "0 0 20px rgba(255,255,255,0.15)" }}
+                    title={currentPlayerData ? getDisplayName(currentPlayerData) : ""}
+                  >
                     {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                   </p>
+
                   {currentPlayerData?.eliminated ? (
-                    <span
-                      className="font-display text-xl font-black uppercase tracking-wider"
-                      style={{
-                        color: "#ef4444",
-                        textShadow: "0 0 16px rgba(239,68,68,0.7)",
-                      }}
-                    >
-                      {t("player_result.eliminated")}
-                    </span>
+                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
+                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)" }}>
+                      <span className="text-base">💀</span>
+                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#f87171" }}>{t("player_result.eliminated")}</span>
+                    </div>
                   ) : !allFinished ? (
-                    <span
-                      className="font-display text-xl font-black uppercase tracking-wider"
-                      style={{
-                        color: "#60a5fa",
-                        textShadow: "0 0 14px rgba(96,165,250,0.5)",
-                      }}
-                    >
-                      {t("player_result.waiting")}
-                    </span>
+                    <motion.div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
+                      style={{ background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.35)" }}
+                      animate={{ opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                      <span className="text-base">⏳</span>
+                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#93c5fd" }}>{t("player_result.waiting")}</span>
+                    </motion.div>
                   ) : currentPlayerRank === 1 ? (
-                    <span
-                      className="font-display text-xl font-black uppercase tracking-wider"
-                      style={{
-                        color: "#facc15",
-                        textShadow: "0 0 14px rgba(250,204,21,0.6)",
-                      }}
-                    >
-                      {t("player_result.champion")}
-                    </span>
+                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
+                      style={{ background: "rgba(250,204,21,0.1)", border: "1px solid rgba(250,204,21,0.45)" }}>
+                      <span className="text-base">🏆</span>
+                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#fde047" }}>{t("player_result.champion")}</span>
+                    </div>
                   ) : (
-                    <span
-                      className="font-display text-xl font-black uppercase tracking-wider"
-                      style={{
-                        color: "#00ff9d",
-                        textShadow: "0 0 14px rgba(0,255,157,0.5)",
-                      }}
-                    >
-                      {t("player_result.finished")}
-                    </span>
+                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
+                      style={{ background: "rgba(0,255,157,0.08)", border: "1px solid rgba(0,255,157,0.35)" }}>
+                      <span className="text-base">✅</span>
+                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#4ade80" }}>{t("player_result.finished")}</span>
+                    </div>
                   )}
                 </div>
+
+                {/* Bottom racing stripe */}
+                <div className="h-[3px] w-full flex-shrink-0" style={{ background: "linear-gradient(90deg, #06b6d4, #2d6af2, #7c3aed)" }} />
               </div>
             </motion.div>
 
+            {/* ── CENTER — Character Showcase ── */}
             <div
               className="absolute z-10 flex items-center justify-center"
-              style={{
-                top: "60px",
-                left: "28%",
-                right: "28%",
-                bottom: "60px",
-              }}
+              style={{ top: "60px", left: "26%", right: "26%", bottom: "20px" }}
             >
               <motion.div
-                className="relative"
+                className="relative flex flex-col items-center"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 80 }}
               >
+                {/* Ambient background glow behind character */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: "radial-gradient(ellipse at 50% 55%, rgba(45,106,242,0.15) 0%, transparent 65%)",
+                    filter: "blur(20px)",
+                  }}
+                />
+
+                {/* Character image — natural, no color filters */}
                 <motion.img
                   src={currentPlayerCarSrc}
                   alt="Your Car"
-                  className="object-contain"
+                  className="object-contain relative z-10"
                   style={{
-                    width: "clamp(300px,38vw,540px)",
-                    maxHeight: "54vh",
-                    filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.4))",
+                    width: "clamp(280px,36vw,500px)",
+                    maxHeight: "52vh",
+                    filter: "drop-shadow(0 12px 40px rgba(0,0,0,0.55))",
                   }}
                   animate={{ y: [0, -10, 0] }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 4,
-                    ease: "easeInOut",
-                  }}
+                  transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}
                 />
+
+                {/* Ground shadow */}
                 <div
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[70%] h-3 rounded-full"
+                  className="relative z-10 flex-shrink-0"
                   style={{
-                    background: "rgba(0,0,0,0.35)",
-                    filter: "blur(12px)",
+                    width: "clamp(180px,22vw,320px)",
+                    height: "18px",
+                    marginTop: "-6px",
+                    background: "radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%)",
+                    filter: "blur(8px)",
                   }}
                 />
               </motion.div>
             </div>
 
+            {/* ── RIGHT — Telemetry Stats Panel ── */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.25, type: "spring", stiffness: 90 }}
-              className="absolute z-10 flex flex-col p-[22px]"
+              className="absolute z-10 flex flex-col"
               style={{
-                top: "15%",
-                right: "8%",
-                bottom: "10%",
-                width: "min(300px, 20vw)",
-                background: "rgba(160,180,210,0.12)",
-                border: "1px solid rgba(220,230,250,0.18)",
-                backdropFilter: "blur(32px) saturate(1.4)",
-                WebkitBackdropFilter: "blur(32px) saturate(1.4)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.2)",
-                borderRadius: "1rem",
+                top: "20%",
+                right: "12%",
+                bottom: "18%",
+                width: "min(280px, 19vw)",
+                background: "linear-gradient(170deg, #0a1628 0%, #050a18 100%)",
+                border: "1px solid rgba(45,106,242,0.4)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                boxShadow: "0 0 50px rgba(45,106,242,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%)',
+                overflow: "hidden",
               }}
             >
-              <div className="w-full h-full flex flex-col justify-between gap-4">
-                <DesktopStatCard label={t("player_result.rank")}>
-                  <p
-                    className="font-display font-black text-white leading-none"
-                    style={{ fontSize: "52px", textShadow: "0 0 20px rgba(255,255,255,0.4)" }}
-                  >
-                    {allFinished ? currentPlayerRank : "?"}
-                  </p>
-                  <p
-                    className="font-display font-bold text-[#facc15]"
-                    style={{ fontSize: "16px", letterSpacing: "0.2em" }}
-                  >
-                    {allFinished ? getRankSuffix(currentPlayerRank) : t("player_result.wait_for_host")}
-                  </p>
-                </DesktopStatCard>
-                <DesktopStatCard label={t("player_result.score")}>
-                  <p
-                    className="font-display font-black text-white leading-none"
-                    style={{ fontSize: "clamp(32px,3.2vw,46px)" }}
-                  >
-                    {currentPlayerData?.score ?? 0}
-                  </p>
-                </DesktopStatCard>
-                <DesktopStatCard label={t("player_result.correct")}>
-                  <p
-                    className="font-display font-black text-white leading-none"
-                    style={{ fontSize: "clamp(26px,2.8vw,40px)" }}
-                  >
-                    {totalQuestions > 0
-                      ? `${currentPlayerData?.correct ?? 0}/${totalQuestions}`
-                      : (currentPlayerData?.correct ?? 0)}
-                  </p>
-                </DesktopStatCard>
-                <DesktopStatCard label={t("player_result.time")}>
-                  <p
-                    className="font-display font-black text-white leading-none font-mono"
-                    style={{ fontSize: "clamp(26px,2.8vw,40px)" }}
-                  >
-                    {formatDuration(currentPlayerData?.duration)}
-                  </p>
-                </DesktopStatCard>
+              {/* Racing stripe top */}
+              <div className="h-[3px] w-full flex-shrink-0" style={{ background: "linear-gradient(90deg, #7c3aed, #2d6af2, #06b6d4)" }} />
+
+              {/* RANK — hero stat */}
+              <div
+                className="flex-[1.6] flex flex-col items-center justify-center relative"
+                style={{ background: "rgba(250,204,21,0.06)", borderBottom: "1px solid rgba(250,204,21,0.2)" }}
+              >
+                <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 100%, rgba(250,204,21,0.08) 0%, transparent 65%)" }} />
+                <p className="font-display text-[10px] font-bold uppercase tracking-[0.4em] mb-1" style={{ color: "rgba(250,204,21,0.6)" }}>
+                  {t("player_result.rank")}
+                </p>
+                <motion.p
+                  className="font-display font-black text-white leading-none"
+                  style={{ fontSize: "clamp(52px,5.5vw,72px)", textShadow: "0 0 30px rgba(250,204,21,0.6), 0 0 60px rgba(250,204,21,0.2)" }}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                >
+                  {allFinished ? currentPlayerRank : "?"}
+                </motion.p>
+                <p className="font-display font-bold mt-0.5" style={{ fontSize: "13px", letterSpacing: "0.25em", color: "#facc15" }}>
+                  {allFinished ? getRankSuffix(currentPlayerRank) : t("player_result.wait_for_host")}
+                </p>
               </div>
+
+              {/* SCORE */}
+              <div
+                className="flex-1 flex items-center justify-between px-5 relative"
+                style={{ borderBottom: "1px solid rgba(0,255,157,0.15)" }}
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: "linear-gradient(to bottom, transparent, #00ff9d, transparent)" }} />
+                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "rgba(0,255,157,0.65)" }}>{t("player_result.score")}</p>
+                <p className="font-display font-black text-white" style={{ fontSize: "clamp(24px,2.8vw,36px)", textShadow: "0 0 18px rgba(0,255,157,0.5)" }}>
+                  {currentPlayerData?.score ?? 0}
+                </p>
+              </div>
+
+              {/* CORRECT */}
+              <div
+                className="flex-1 flex items-center justify-between px-5 relative"
+                style={{ borderBottom: "1px solid rgba(34,211,238,0.15)" }}
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: "linear-gradient(to bottom, transparent, #22d3ee, transparent)" }} />
+                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "rgba(34,211,238,0.65)" }}>{t("player_result.correct")}</p>
+                <p className="font-display font-black text-white" style={{ fontSize: "clamp(22px,2.6vw,34px)", textShadow: "0 0 16px rgba(34,211,238,0.5)" }}>
+                  {totalQuestions > 0 ? `${currentPlayerData?.correct ?? 0}/${totalQuestions}` : (currentPlayerData?.correct ?? 0)}
+                </p>
+              </div>
+
+              {/* TIME */}
+              <div
+                className="flex-1 flex items-center justify-between px-5 relative"
+              >
+                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: "linear-gradient(to bottom, transparent, #60a5fa, transparent)" }} />
+                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "rgba(96,165,250,0.65)" }}>{t("player_result.time")}</p>
+                <p className="font-display font-black text-white font-mono" style={{ fontSize: "clamp(20px,2.4vw,30px)", textShadow: "0 0 16px rgba(96,165,250,0.5)" }}>
+                  {formatDuration(currentPlayerData?.duration)}
+                </p>
+              </div>
+
+              {/* Racing stripe bottom */}
+              <div className="h-[3px] w-full flex-shrink-0" style={{ background: "linear-gradient(90deg, #06b6d4, #2d6af2, #7c3aed)" }} />
             </motion.div>
           </>
         )}
@@ -1027,16 +989,10 @@ export default function PlayerResultPage() {
         <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
           <button
             onClick={() => router.push("/")}
-            className="w-[52px] h-[52px] flex items-center justify-center rounded-full active:scale-95 transition-all"
-            style={{
-              background: "rgba(10,18,35,0.85)",
-              border: "2px solid #2d6af2",
-              color: "#2d6af2",
-              boxShadow:
-                "0 0 18px rgba(45,106,242,0.6), inset 0 0 10px rgba(45,106,242,0.15)",
-            }}
+            className="w-12 h-12 flex items-center justify-center rounded-sm bg-[#0d1a3a] backdrop-blur-md border-2 border-[#2d6af2] shadow-[0_0_12px_rgba(45,106,242,0.5)] hover:bg-[#2d6af2]/40 hover:shadow-[0_0_22px_rgba(45,106,242,0.8)] text-[#60a5fa] transition-all transform -skew-x-[15deg] active:scale-95"
+            title={t("player_result.home")}
           >
-            <Home className="w-5 h-5" />
+            <div className="transform skew-x-[15deg]"><Home className="w-5 h-5" /></div>
           </button>
         </div>
 
@@ -1044,16 +1000,10 @@ export default function PlayerResultPage() {
         <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
           <button
             onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
-            className="w-[52px] h-[52px] flex items-center justify-center rounded-full active:scale-95 transition-all"
-            style={{
-              background: "rgba(10,18,35,0.85)",
-              border: "2px solid #f59e0b",
-              color: "#f59e0b",
-              boxShadow:
-                "0 0 18px rgba(245,158,11,0.6), inset 0 0 10px rgba(245,158,11,0.15)",
-            }}
+            className="w-12 h-12 flex items-center justify-center rounded-sm bg-[#2a1a00] backdrop-blur-md border-2 border-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] hover:bg-[#f59e0b]/30 hover:shadow-[0_0_22px_rgba(245,158,11,0.8)] text-[#fbbf24] transition-all transform -skew-x-[15deg] active:scale-95"
+            title={t("player_result.stats")}
           >
-            <BarChart2 className="w-5 h-5" />
+            <div className="transform skew-x-[15deg]"><BarChart2 className="w-5 h-5" /></div>
           </button>
         </div>
       </div>

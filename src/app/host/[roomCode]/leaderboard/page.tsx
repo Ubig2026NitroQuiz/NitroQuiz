@@ -720,11 +720,16 @@ export default function LeaderboardPage() {
               stiffness: 100,
               damping: 14,
             }}
-            className="bg-[#111729]/80 backdrop-blur-xl border border-white/5 rounded-xl p-4 sm:p-6 shadow-[0_15px_40px_rgba(0,0,0,0.6)] relative overflow-hidden group"
+            className="bg-[#111729]/80 backdrop-blur-xl border border-white/5 p-0 shadow-[0_15px_40px_rgba(0,0,0,0.6)] relative overflow-hidden group"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%)' }}
           >
+            {/* Top laser accent */}
+            <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent" />
             {/* Cyber texture on table */}
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }} />
+
+            <div className="p-4 sm:p-6">
 
             <div className="overflow-x-auto w-full custom-scrollbar max-h-[470px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
@@ -811,6 +816,7 @@ export default function LeaderboardPage() {
                   </AnimatePresence>
                 </tbody>
               </table>
+            </div>
             </div>
           </motion.div>
         )}
