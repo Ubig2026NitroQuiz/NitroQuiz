@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useBgm } from "@/contexts/BgmContext";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
+import { usePathname } from "next/navigation";
 
 export function FloatingHostActions() {
+  const pathname = usePathname();
   const { isMuted, toggleMute } = useBgm();
   const { t } = useTranslation();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  const isLeaderboard = pathname?.includes("/leaderboard");
 
   useEffect(() => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -32,7 +36,7 @@ export function FloatingHostActions() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="fixed bottom-6 end-6 z-[250] flex flex-row gap-2">
+      <div className={`fixed ${isLeaderboard ? 'bottom-24' : 'bottom-6'} md:bottom-6 end-4 md:end-6 z-[250] flex flex-col md:flex-row gap-2`}>
         {/* Sound Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
