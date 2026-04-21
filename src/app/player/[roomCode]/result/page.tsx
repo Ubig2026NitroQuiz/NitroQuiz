@@ -312,14 +312,15 @@ export default function PlayerResultPage() {
 
   const MobileStatCard = ({ children }: { children: React.ReactNode }) => (
     <div
-      className="flex flex-col items-center justify-center rounded-2xl py-4 px-1"
+      className="flex flex-col items-center justify-center py-4 px-1 transform -skew-x-[8deg]"
       style={{
         background: "linear-gradient(155deg,#1a2540,#0d1526)",
         border: "1px solid rgba(45,106,242,0.4)",
         boxShadow: "0 0 16px rgba(45,106,242,0.1)",
+        clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)',
       }}
     >
-      {children}
+      <div className="transform skew-x-[8deg]">{children}</div>
     </div>
   );
 
@@ -331,11 +332,12 @@ export default function PlayerResultPage() {
     children: React.ReactNode;
   }) => (
     <div
-      className="rounded-2xl overflow-hidden flex-1 flex flex-col justify-center items-center"
+      className="overflow-hidden flex-1 flex flex-col justify-center items-center"
       style={{
         background: "rgba(200,215,240,0.08)",
         border: "1px solid rgba(180,200,240,0.25)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+        clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%)',
       }}
     >
       <div className="text-center mb-1">
@@ -485,23 +487,25 @@ export default function PlayerResultPage() {
             >
               <button
                 onClick={() => router.push("/")}
-                className="flex-1 h-14 flex items-center justify-center gap-2 rounded-full font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-transform"
+                className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all transform -skew-x-[12deg] relative overflow-hidden"
                 style={{
                   background: "linear-gradient(135deg,#00bcd4,#0288d1)",
                   boxShadow: "0 0 24px rgba(0,188,212,0.38)",
                 }}
               >
-                <House className="w-5 h-5" /> {t("player_result.home")}
+                <div className="absolute inset-0 bg-white/15 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><House className="w-5 h-5" /> {t("player_result.home")}</span>
               </button>
               <button
                 onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
-                className="flex-1 h-14 flex items-center justify-center gap-2 rounded-full font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-transform"
+                className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all transform -skew-x-[12deg] relative overflow-hidden"
                 style={{
                   background: "linear-gradient(135deg,#f59e0b,#d97706)",
                   boxShadow: "0 0 24px rgba(245,158,11,0.38)",
                 }}
               >
-                <BarChart2 className="w-5 h-5" /> {t("player_result.stats")}
+                <div className="absolute inset-0 bg-white/15 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><BarChart2 className="w-5 h-5" /> {t("player_result.stats")}</span>
               </button>
             </motion.div>
           </motion.div>
@@ -515,9 +519,9 @@ export default function PlayerResultPage() {
             <div className="flex items-center gap-3 mb-4 flex-shrink-0">
               <button
                 onClick={() => setMobileView("result")}
-                className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-lg active:scale-95 transition-transform"
+                className="w-10 h-10 bg-white/10 border border-white/20 flex items-center justify-center text-white text-lg active:scale-95 transition-transform transform -skew-x-[10deg]"
               >
-                ←
+                <span className="transform skew-x-[10deg]">←</span>
               </button>
               <h2 className="font-display text-lg font-black uppercase tracking-widest text-white">
                 {t("player_result.leaderboard")}
@@ -665,7 +669,7 @@ export default function PlayerResultPage() {
                 </motion.div>
               )}
             </div>
-            <div className="bg-black/40 backdrop-blur-xl border border-[#2d6af2]/30 rounded-2xl p-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-4 overflow-y-auto flex-1">
+            <div className="bg-black/40 backdrop-blur-xl border border-[#2d6af2]/30 p-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-4 overflow-y-auto flex-1" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)' }}>
               <div className="space-y-1.5">
                 {rankedPlayers.map((player, index) => {
                   const isMe = player.id === storedParticipantId || (player.nickname === profile?.username && !storedParticipantId);
@@ -716,9 +720,10 @@ export default function PlayerResultPage() {
             </div>
             <button
               onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
-              className="w-full h-12 flex items-center justify-center gap-2 rounded-full border border-[#f59e0b]/50 text-[#f59e0b] font-display text-sm uppercase tracking-widest hover:bg-[#f59e0b]/10 active:scale-95 transition-all flex-shrink-0"
+              className="group/btn w-full h-12 flex items-center justify-center gap-2 border border-[#f59e0b]/50 text-[#f59e0b] font-display text-sm uppercase tracking-widest hover:bg-[#f59e0b]/10 active:scale-95 transition-all flex-shrink-0 transform -skew-x-[10deg] relative overflow-hidden"
             >
-              <BarChart2 className="w-4 h-4" /> {t("player_result.stats")}
+              <div className="absolute inset-0 bg-[#f59e0b]/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+              <span className="relative z-10 transform skew-x-[10deg] flex items-center gap-2"><BarChart2 className="w-4 h-4" /> {t("player_result.stats")}</span>
             </button>
           </motion.div>
         )}
@@ -747,12 +752,13 @@ export default function PlayerResultPage() {
               style={{ top: "20%", left: "12%", bottom: "18%", width: "min(260px, 17vw)" }}
             >
               <div
-                className="w-full h-full rounded-2xl overflow-hidden flex flex-col"
+                className="w-full h-full overflow-hidden flex flex-col"
                 style={{
                   background: "linear-gradient(170deg, #0a1628 0%, #050a18 100%)",
                   border: "1px solid rgba(45,106,242,0.4)",
                   boxShadow: "0 0 50px rgba(45,106,242,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
                   backdropFilter: "blur(20px)",
+                  clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%)',
                 }}
               >
                 {/* Racing stripe top */}
@@ -908,7 +914,7 @@ export default function PlayerResultPage() {
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 boxShadow: "0 0 50px rgba(45,106,242,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
-                borderRadius: "1rem",
+                clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%)',
                 overflow: "hidden",
               }}
             >

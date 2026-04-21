@@ -420,160 +420,209 @@ export default function QuizPage() {
     const currentQ = questions[currentIndex];
     const progressPercent = ((currentIndex) / questions.length) * 100;
 
-    const OPTION_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']; // A=blue, B=amber, C=red, D=purple
+    const OPTION_COLORS = ['#2d6af2', '#f59e0b', '#ef4444', '#7C3AED']; // A=blue, B=amber, C=red, D=purple
 
     return (
-        <div className="min-h-[100dvh] w-full bg-[#07091a] text-white font-rajdhani overflow-hidden relative flex flex-col items-center justify-center p-3 md:p-6">
-            {/* Background Effects */}
-            <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#07091a] to-[#050508] pointer-events-none" />
-            <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.03)_1px,transparent_1px)] bg-[length:35px_35px] pointer-events-none" />
+        <div className="min-h-[100dvh] w-full bg-[#04060f] text-white font-display overflow-hidden relative flex flex-col">
+            {/* ── Cinematic Background ── */}
+            <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1" />
+            <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-30"
+                style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }} />
+            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/85 to-[#2d6af2]/10 pointer-events-none" />
+            <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.04)_1px,transparent_1px)] bg-[length:35px_35px] pointer-events-none" />
+            {/* Ambient glow */}
+            <div className="fixed top-0 left-1/3 w-[500px] h-[500px] bg-[#2d6af2]/8 blur-[140px] rounded-full pointer-events-none" />
+            <div className="fixed bottom-0 right-1/4 w-[400px] h-[400px] bg-[#7C3AED]/8 blur-[120px] rounded-full pointer-events-none" />
 
-            <div className="w-full max-w-4xl mx-auto relative z-10 flex flex-col items-center">
-                {/* Main Glass Panel */}
-                <div className="w-full bg-[#0c1225]/40 backdrop-blur-xl border border-white/5 rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-2xl">
+            {/* ── Main Content ── */}
+            <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 relative z-10">
+                <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
 
-                    {/* Progress Bar */}
-                    <div className="w-full h-1 bg-white/5">
-                        <motion.div
-                            className="h-full bg-gradient-to-r from-[#2d6af2] to-[#00ff9d]"
-                            style={{ boxShadow: '0 0 10px rgba(45,106,242,0.4)' }}
-                            initial={{ width: `${((currentIndex) / questions.length) * 100}%` }}
-                            animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                        />
-                    </div>
+                    {/* ── HUD Panel ── */}
+                    <div className="w-full bg-[#0a0e1a]/90 backdrop-blur-2xl border border-white/[0.06] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+                        style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)' }}>
 
-                    {/* Clean Header Grid - Scaled Down */}
-                    <div className="grid grid-cols-3 items-center px-4 md:px-10 py-3 md:py-5 border-b border-white/5">
-                        {/* LEFT: Questions Count */}
-                        <div className="flex flex-col">
-                            <span className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] text-[#2d6af2] font-black">
-                                {t("player_quiz.questions_label") || "Questions"}
-                            </span>
-                            <div className="flex items-baseline gap-1 md:gap-1.5">
-                                <span className="text-lg md:text-2xl font-black text-white leading-none">{(currentIndex + 1).toString().padStart(2, '0')}</span>
-                                <span className="text-[10px] md:text-base font-bold text-white/20">/ {questions.length.toString().padStart(2, '0')}</span>
-                            </div>
-                        </div>
-
-                        {/* CENTER: Timer Pill - Scaled Down */}
-                        <div className="flex justify-center">
-                            {globalTimeLeft !== null && (
-                                <div className={`flex items-center px-4 md:px-8 py-1.5 md:py-2.5 rounded-lg md:rounded-full bg-white/[0.03] border transition-all duration-300 ${globalTimeLeft <= 30
-                                    ? 'border-red-500/40 bg-red-500/5 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]'
-                                    : 'border-white/10 text-white'
-                                    }`}>
-                                    <span
-                                        className="text-base md:text-2xl font-black leading-none"
-                                        style={{
-                                            fontFamily: 'Orbitron, sans-serif',
-                                            letterSpacing: '0.15em',
-                                            fontVariantNumeric: 'tabular-nums'
-                                        }}
-                                    >
-                                        {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* RIGHT: Score Status - Scaled Down */}
-                        <div className="flex flex-col items-end">
-                            <span className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] text-[#f59e0b] font-black text-right">
-                                {t("player_quiz.score_label") || "Score"}
-                            </span>
-                            <div className="flex items-center h-auto">
-                                <span className="text-lg md:text-2xl font-black text-white leading-none tracking-tight">{score}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="px-5 md:px-12 py-5 md:py-10">
-                        {/* Question Content */}
-                        <AnimatePresence mode="wait">
+                        {/* ── Racing Progress Bar ── */}
+                        <div className="w-full h-[3px] bg-white/[0.04] relative">
                             <motion.div
-                                key={currentIndex}
-                                initial={{ y: 10, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -10, opacity: 0 }}
-                                className="mb-6 md:mb-10 flex flex-col items-center"
-                            >
-                                {currentQ.imageUrl && (
-                                    <div className="!mb-6 flex justify-center">
-                                        <img
-                                            src={currentQ.imageUrl}
-                                            alt="Quiz visual"
-                                            className="rounded-lg max-h-[120px] md:max-h-[180px] object-contain cursor-pointer shadow-lg hover:scale-105 transition-transform duration-300"
-                                            onClick={() => setZoomedImage(currentQ.imageUrl || null)}
-                                        />
+                                className="h-full relative"
+                                style={{ background: 'linear-gradient(90deg, #2d6af2, #00ff9d)', boxShadow: '0 0 15px rgba(0,255,157,0.5), 0 0 30px rgba(45,106,242,0.3)' }}
+                                initial={{ width: `${((currentIndex) / questions.length) * 100}%` }}
+                                animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+                                transition={{ duration: 0.6, ease: "easeOut" }}
+                            />
+                        </div>
+
+                        {/* ── Telemetry Header ── */}
+                        <div className="grid grid-cols-3 items-center px-4 md:px-8 py-3 md:py-4" style={{ borderBottom: '1px solid rgba(45,106,242,0.12)' }}>
+                            {/* LEFT: Lap/Question */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-[#2d6af2]/10 border border-[#2d6af2]/30 flex items-center justify-center transform -skew-x-[10deg]">
+                                    <List className="w-4 h-4 md:w-5 md:h-5 text-[#5a9cff] transform skew-x-[10deg]" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[7px] md:text-[9px] uppercase tracking-[0.25em] text-[#5a9cff]/70 font-bold leading-none">
+                                        {t("player_quiz.questions_label") || "LAP"}
+                                    </span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-lg md:text-2xl font-black text-white leading-none italic" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+                                            {(currentIndex + 1).toString().padStart(2, '0')}
+                                        </span>
+                                        <span className="text-[9px] md:text-xs font-bold text-white/20">/ {questions.length.toString().padStart(2, '0')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CENTER: Timer HUD */}
+                            <div className="flex justify-center">
+                                {globalTimeLeft !== null && (
+                                    <div className={`relative flex items-center px-5 md:px-8 py-1.5 md:py-2 transform -skew-x-[8deg] transition-all duration-300 ${globalTimeLeft <= 30
+                                        ? 'bg-red-500/10 border border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+                                        : 'bg-white/[0.03] border border-white/[0.08]'
+                                        }`}>
+                                        <span
+                                            className={`transform skew-x-[8deg] text-base md:text-2xl font-black leading-none ${globalTimeLeft <= 30 ? 'text-red-500' : 'text-white'}`}
+                                            style={{ fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.15em', fontVariantNumeric: 'tabular-nums' }}
+                                        >
+                                            {Math.floor(globalTimeLeft / 60).toString().padStart(2, '0')}:{(globalTimeLeft % 60).toString().padStart(2, '0')}
+                                        </span>
+                                        {globalTimeLeft <= 30 && (
+                                            <div className="absolute inset-0 border border-red-500/30 animate-pulse pointer-events-none" />
+                                        )}
                                     </div>
                                 )}
-                                <h3 className="text-base md:text-2xl font-black leading-tight text-white text-center text-balance max-w-3xl tracking-tight">
-                                    {currentQ.question}
-                                </h3>
-                            </motion.div>
-                        </AnimatePresence>
+                            </div>
 
-                        {/* Options Grid - Scaled Down */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6">
-                            {currentQ.options.map((option, idx) => {
-                                const isSelected = selectedOption === idx;
-                                const optionColor = OPTION_COLORS[idx] || OPTION_COLORS[0];
-                                const letter = String.fromCharCode(65 + idx);
-                                const hasImage = !!option.image;
+                            {/* RIGHT: Score Telemetry */}
+                            <div className="flex flex-col items-end">
+                                <span className="text-[7px] md:text-[9px] uppercase tracking-[0.25em] text-[#f59e0b]/70 font-bold text-right leading-none">
+                                    {t("player_quiz.score_label") || "PTS"}
+                                </span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-lg md:text-2xl font-black text-white leading-none italic" style={{ fontFamily: 'Orbitron, sans-serif' }}>{score}</span>
+                                    <div className="flex gap-[2px] items-end ml-1">
+                                        <div className="w-[2px] h-[6px] bg-[#f59e0b]/40 transform -skew-x-[20deg]" />
+                                        <div className="w-[2px] h-[8px] bg-[#f59e0b]/60 transform -skew-x-[20deg]" />
+                                        <div className="w-[2px] h-[10px] bg-[#f59e0b] shadow-[0_0_4px_#f59e0b] transform -skew-x-[20deg]" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                return (
-                                    <motion.button
-                                        key={`${currentIndex}-${idx}`}
-                                        whileHover={!isAnswered ? { scale: 1.01, backgroundColor: 'rgba(255,255,255,0.02)' } : {}}
-                                        whileTap={!isAnswered ? { scale: 0.98 } : {}}
-                                        onClick={() => handleAnswer(idx)}
-                                        disabled={isAnswered}
-                                        className={`w-full group relative rounded-2xl border text-left flex flex-col overflow-hidden transition-all duration-300 ${isSelected
-                                            ? 'bg-white/5 border-white/20 shadow-lg'
-                                            : 'bg-white/[0.01] border-white/[0.03] hover:border-white/10'
-                                            }`}
-                                    >
-                                        {/* Option Image Overlay/Section if exists */}
-                                        {hasImage && (
-                                            <div
-                                                className="w-full h-24 sm:h-32 md:h-40 overflow-hidden bg-black/20 border-b border-white/5 cursor-zoom-in"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setZoomedImage(option.image || null);
-                                                }}
-                                            >
-                                                <img src={option.image} alt={`Option ${letter}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                            </div>
-                                        )}
-
-                                        <div className="flex items-center gap-3 md:gap-4 p-3 md:p-5 flex-1 w-full">
-                                            <div
-                                                className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center font-black text-sm md:text-lg flex-shrink-0 text-white shadow-lg relative z-10"
-                                                style={{ backgroundColor: optionColor }}
-                                            >
-                                                {letter}
-                                            </div>
-
-                                            <span className={`text-xs md:text-lg font-bold flex-1 tracking-tight leading-snug ${isSelected ? 'text-white' : 'text-gray-200'}`}>
-                                                {option.text}
-                                            </span>
+                        {/* ── Question Content ── */}
+                        <div className="px-5 md:px-10 py-6 md:py-10">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={currentIndex}
+                                    initial={{ y: 15, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: -15, opacity: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="mb-6 md:mb-10 flex flex-col items-center"
+                                >
+                                    {currentQ.imageUrl && (
+                                        <div className="mb-6 flex justify-center">
+                                            <img
+                                                src={currentQ.imageUrl}
+                                                alt="Quiz visual"
+                                                className="max-h-[120px] md:max-h-[180px] object-contain cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:scale-105 transition-transform duration-300 border border-white/10"
+                                                style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
+                                                onClick={() => setZoomedImage(currentQ.imageUrl || null)}
+                                            />
                                         </div>
-                                    </motion.button>
-                                );
-                            })}
+                                    )}
+                                    <h3 className="text-base md:text-2xl font-black leading-tight text-white text-center text-balance max-w-3xl tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+                                        {currentQ.question}
+                                    </h3>
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* ── Answer Options — Skewed HUD Buttons ── */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                                {currentQ.options.map((option, idx) => {
+                                    const isSelected = selectedOption === idx;
+                                    const optionColor = OPTION_COLORS[idx] || OPTION_COLORS[0];
+                                    const letter = String.fromCharCode(65 + idx);
+                                    const hasImage = !!option.image;
+
+                                    return (
+                                        <motion.button
+                                            key={`${currentIndex}-${idx}`}
+                                            whileTap={!isAnswered ? { scale: 0.97 } : {}}
+                                            onClick={() => handleAnswer(idx)}
+                                            disabled={isAnswered}
+                                            className={`group/opt w-full relative text-left overflow-hidden transition-all duration-300 transform -skew-x-[6deg] outline-none ${isSelected
+                                                ? 'shadow-[0_0_25px_rgba(255,255,255,0.1)]'
+                                                : 'hover:shadow-[0_0_20px_rgba(45,106,242,0.15)]'
+                                                }`}
+                                            style={{
+                                                background: isSelected
+                                                    ? `linear-gradient(135deg, ${optionColor}30, ${optionColor}10)`
+                                                    : 'rgba(10,14,26,0.8)',
+                                                border: isSelected
+                                                    ? `1.5px solid ${optionColor}`
+                                                    : '1px solid rgba(255,255,255,0.06)',
+                                                boxShadow: isSelected ? `0 0 20px ${optionColor}30, inset 0 0 30px ${optionColor}08` : undefined,
+                                            }}
+                                        >
+                                            {/* Left color accent laser */}
+                                            <div className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                                                style={{
+                                                    background: isSelected
+                                                        ? `linear-gradient(to bottom, ${optionColor}, ${optionColor}80)`
+                                                        : `linear-gradient(to bottom, ${optionColor}60, transparent)`,
+                                                    boxShadow: isSelected ? `0 0 8px ${optionColor}` : 'none',
+                                                    opacity: isSelected ? 1 : 0.5,
+                                                }} />
+
+                                            {/* Hover shine effect */}
+                                            <div className="absolute inset-0 bg-white/5 -translate-x-full group-hover/opt:translate-x-[200%] transition-transform duration-700 ease-in-out pointer-events-none" />
+
+                                            {/* Option Image */}
+                                            {hasImage && (
+                                                <div
+                                                    className="w-full h-24 sm:h-32 md:h-36 overflow-hidden bg-black/30 border-b border-white/5 cursor-zoom-in transform skew-x-[6deg]"
+                                                    onClick={(e) => { e.stopPropagation(); setZoomedImage(option.image || null); }}
+                                                >
+                                                    <img src={option.image} alt={`Option ${letter}`} className="w-full h-full object-cover transition-transform group-hover/opt:scale-105" />
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 flex-1 w-full transform skew-x-[6deg]">
+                                                {/* Letter badge */}
+                                                <div
+                                                    className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-black text-sm md:text-base flex-shrink-0 text-white transform -skew-x-[8deg] transition-all duration-300"
+                                                    style={{
+                                                        backgroundColor: isSelected ? optionColor : `${optionColor}25`,
+                                                        border: `1px solid ${optionColor}${isSelected ? '' : '50'}`,
+                                                        boxShadow: isSelected ? `0 0 12px ${optionColor}60` : 'none',
+                                                    }}
+                                                >
+                                                    <span className="transform skew-x-[8deg]">{letter}</span>
+                                                </div>
+
+                                                {/* Option text */}
+                                                <span className={`text-xs md:text-base font-bold flex-1 tracking-tight leading-snug transition-colors duration-300 ${isSelected ? 'text-white' : 'text-gray-300 group-hover/opt:text-white'}`}>
+                                                    {option.text}
+                                                </span>
+                                            </div>
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {/* Zoom Modal - Matches ContohAxiomQuiz */}
+
+            {/* Zoom Modal */}
             <AnimatePresence>
                 {zoomedImage && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-4 cursor-pointer"
+                        className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 cursor-pointer"
                         onClick={() => setZoomedImage(null)}
                     >
                         <motion.img
@@ -582,7 +631,8 @@ export default function QuizPage() {
                             exit={{ scale: 0.9, opacity: 0 }}
                             src={zoomedImage}
                             alt="Zoomed"
-                            className="max-w-full max-h-full object-contain rounded-lg"
+                            className="max-w-full max-h-full object-contain border border-white/10"
+                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}
                             onClick={(e) => e.stopPropagation()}
                         />
                     </motion.div>
