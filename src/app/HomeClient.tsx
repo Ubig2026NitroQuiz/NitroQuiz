@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseCentral } from "@/lib/supabase";
 import { User } from "@/types";
 import {
     Menu,
@@ -32,8 +31,10 @@ import { useTranslation } from "react-i18next";
 import { getI18nInstance } from "@/lib/i18n";
 import { Logo } from "@/components/ui/logo";
 import Image from "next/image";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
 
 export default function HomeClient() {
+    const supabase = createGFSClient();
     const router = useRouter();
     const { profile, loading: authLoading } = useAuth();
     const { isMuted, toggleMute } = useBgm();
@@ -129,7 +130,7 @@ export default function HomeClient() {
     };
 
     const performLogout = async () => {
-        await supabaseCentral.auth.signOut();
+        await supabase.auth.signOut();
         router.push("/login");
     };
 

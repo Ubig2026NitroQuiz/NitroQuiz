@@ -9,7 +9,6 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { supabase, supabaseCentral } from "@/lib/supabase";
 import { Logo } from "@/components/ui/logo";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Languages, Play as PlayIcon } from "lucide-react";
 import { FloatingHostActions } from "@/components/FloatingHostActions";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
+import { supabaseGame } from "@/lib/supabase/game-client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ export default function SelectQuizClient({
     initialCategories,
     serverProfileId,
 }: SelectQuizClientProps) {
+    const supabaseCentral = createGFSClient();
     const router = useRouter();
     const { t, i18n } = useTranslation();
     const { profile, user } = useAuth();
@@ -320,7 +322,7 @@ export default function SelectQuizClient({
         try {
             const [mainResult, gameResult] = await Promise.allSettled([
                 supabaseCentral.from('game_sessions').insert(newMainSession),
-                supabase.from('sessions').insert(primarySession)
+                supabaseGame.from('sessions').insert(primarySession)
             ]);
 
             const mainError = mainResult.status === 'rejected' ? mainResult.reason : mainResult.value.error;
@@ -328,7 +330,7 @@ export default function SelectQuizClient({
 
             if (mainError) {
                 console.error('Error creating session (main):', mainError);
-                if (!gameError) await supabase.from('sessions').delete().eq('id', sessId);
+                if (!gameError) await supabaseGame.from('sessions').delete().eq('id', sessId);
                 setCreating(false); setCreatingQuizId(null);
                 return;
             }

@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
+import { supabaseGame } from "@/lib/supabase/game-client";
 
 const carImageMap: Record<string, string> = {
   rico: "/assets/characters/rico/showroom/showroom1.png",
@@ -101,7 +101,7 @@ export default function PlayerResultPage() {
 
   const fetchResults = async () => {
     try {
-      const { data: sessionData, error: sessionError } = await supabase
+      const { data: sessionData, error: sessionError } = await supabaseGame
         .from("sessions")
         .select("id, question_limit, status")
         .eq("game_pin", roomCode)
@@ -118,7 +118,7 @@ export default function PlayerResultPage() {
       setSessionId(sessionData.id);
       setSessionStatus(sessionData.status);
 
-      const { data: pData, error: pError } = await supabase
+      const { data: pData, error: pError } = await supabaseGame
         .from("participants")
         .select("*")
         .eq("session_id", sessionData.id);
@@ -135,7 +135,7 @@ export default function PlayerResultPage() {
 
   useEffect(() => {
     fetchResults();
-    const channel = supabase
+    const channel = supabaseGame
       .channel(`leaderboard_updates_${roomCode}`)
       .on(
         "postgres_changes",
@@ -162,7 +162,7 @@ export default function PlayerResultPage() {
       )
       .subscribe();
     return () => {
-      supabase.removeChannel(channel);
+      supabaseGame.removeChannel(channel);
     };
   }, [roomCode, router]);
 

@@ -6,7 +6,6 @@ import {
   Volume2, VolumeX, X, UserPlus, Users2, Bot, Search
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase, supabaseCentral } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,6 +23,8 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useBgm } from "@/contexts/BgmContext";
 import { FloatingHostActions } from "@/components/FloatingHostActions";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
+import { supabaseGame } from "@/lib/supabase/game-client";
 
 // Helper: Generate initials from a name
 const getInitials = (name: string): string => {
@@ -53,6 +54,7 @@ const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md
 };
 
 export default function HostLobby() {
+  const supabaseCentral = createGFSClient();
   const router = useRouter();
   const params = useParams();
   const { t } = useTranslation();
@@ -264,7 +266,7 @@ export default function HostLobby() {
 
   const loadSession = useCallback(async () => {
     await syncServerTime(); // Ensure offset is ready before logic
-    const { data, error } = await supabase
+    const { data, error } = await supabaseGame
       .from("sessions")
       .select("*")
       .eq("game_pin", roomCode)
@@ -282,7 +284,7 @@ export default function HostLobby() {
         setCountdown(remaining);
       } else if (remaining <= 0) {
         const startSessionFallback = async () => {
-          await supabase
+          await supabaseGame
             .from("sessions")
             .update({
               status: "active",
@@ -296,7 +298,7 @@ export default function HostLobby() {
       }
     }
 
-    const { data: pData } = await supabase
+    const { data: pData } = await supabaseGame
       .from("participants")
       .select("*")
       .eq("session_id", data.id);
@@ -318,7 +320,7 @@ export default function HostLobby() {
       else if (status === "finished" || status === "completed") router.push(`/host/${roomCode}/leaderboard`);
     };
 
-    const channel = supabase
+    const channel = supabaseGame
       .channel(`lobby-${roomCode}`)
       .on(
         "postgres_changes",
@@ -351,7 +353,7 @@ export default function HostLobby() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabaseGame.removeChannel(channel);
     };
   }, [sessionId, roomCode, router]);
 
@@ -371,7 +373,7 @@ export default function HostLobby() {
     setSession((prev: any) => ({ ...prev, countdown_started_at: isoTime }));
     setCountdown(3);
 
-    await supabase
+    await supabaseGame
       .from("sessions")
       .update({
         countdown_started_at: isoTime
@@ -402,7 +404,7 @@ export default function HostLobby() {
         // Trigger start immediately
         const startSession = async () => {
           // 1. Update session to active
-          await supabase
+          await supabaseGame
             .from("sessions")
             .update({
               status: "active",
@@ -455,7 +457,7 @@ export default function HostLobby() {
     const selectedChar = botCharacters[Math.floor(Math.random() * botCharacters.length)];
 
     try {
-      await supabase.from("participants").insert({
+      await supabaseGame.from("participants").insert({
         session_id: session.id,
         nickname: botNickname,
         car_character: selectedChar,
@@ -469,7 +471,7 @@ export default function HostLobby() {
 
   const confirmKick = async () => {
     if (selectedPlayer) {
-      await supabase.from("participants").delete().eq("id", selectedPlayer.id);
+      await supabaseGame.from("participants").delete().eq("id", selectedPlayer.id);
     }
     setKickDialogOpen(false);
   };

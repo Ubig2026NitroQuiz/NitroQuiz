@@ -17,11 +17,12 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { supabase, supabaseCentral } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { useTranslation } from "react-i18next";
 import { generateXID } from "@/lib/id-generator";
 import { FloatingHostActions } from "@/components/FloatingHostActions";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
+import { supabaseGame } from "@/lib/supabase/game-client";
 
 const carImageMap: Record<string, string> = {
   purple: "/assets/characters/rico/showroom/showroom1.png",
@@ -112,6 +113,7 @@ interface Participant {
 }
 
 export default function LeaderboardPage() {
+  const supabaseCentral = createGFSClient();
   const params = useParams();
   const router = useRouter();
   const { t } = useTranslation();
@@ -126,7 +128,7 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const { data: sessionData, error: sessionError } = await supabase
+        const { data: sessionData, error: sessionError } = await supabaseGame
           .from("sessions")
           .select("id")
           .eq("game_pin", roomCode)
@@ -139,7 +141,7 @@ export default function LeaderboardPage() {
 
         setSessionId(sessionData.id);
 
-        const { data: pData, error: pError } = await supabase
+        const { data: pData, error: pError } = await supabaseGame
           .from("participants")
           .select("*")
           .eq("session_id", sessionData.id);
@@ -287,7 +289,7 @@ export default function LeaderboardPage() {
 
     try {
       // 1. Ambil session saat ini
-      const { data: oldSess, error: oldSessErr } = await supabase
+      const { data: oldSess, error: oldSessErr } = await supabaseGame
         .from("sessions")
         .select("*")
         .eq("game_pin", roomCode)
@@ -340,7 +342,7 @@ export default function LeaderboardPage() {
       // 4. Insert ke kedua database
       const [mainResult, gameResult] = await Promise.allSettled([
         supabaseCentral.from("game_sessions").insert(newMainSession),
-        supabase.from("sessions").insert(newSession),
+        supabaseGame.from("sessions").insert(newSession),
       ]);
 
       const mainError = mainResult.status === "rejected" ? mainResult.reason : mainResult.value.error;

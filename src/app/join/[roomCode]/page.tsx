@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { LogIn } from "lucide-react";
+import { supabaseGame } from "@/lib/supabase/game-client";
 
 // Error messages mapping
 const ERROR_MESSAGES = {
@@ -77,7 +77,7 @@ export default function AutoJoinPage() {
                     "Player";
 
                 // Call join_game RPC for NitroQuiz
-                const { data, error } = await supabase.rpc("join_game", {
+                const { data, error } = await supabaseGame.rpc("join_game", {
                     p_room_code: roomCode,
                     p_user_id: profile.id,
                     p_nickname: nickname,
@@ -117,7 +117,7 @@ export default function AutoJoinPage() {
 
                 // Success! Save avatar to participants table for host visibility
                 if (profile?.avatar_url) {
-                    await supabase.from("participants").update({ avatar_url: profile.avatar_url }).eq("id", data.participant_id);
+                    await supabaseGame.from("participants").update({ avatar_url: profile.avatar_url }).eq("id", data.participant_id);
                 }
 
                 // Success! Save data and redirect to lobby/waiting

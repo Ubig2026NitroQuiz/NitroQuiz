@@ -23,14 +23,9 @@
  * =============================================================
  */
 
-import { Metadata } from "next";
 import { createSupabaseCentralServer } from "@/lib/supabase-server";
 import SelectQuizClient, { type QuizView } from "./SelectQuizClient";
-
-export const metadata: Metadata = {
-    title: "Select Quiz",
-    description: "Choose from hundreds of racing-themed quiz packs. Host a live game session for your class or friends.",
-};
+import { createGFSServerClient } from "@/lib/supabase/gfs-server";
 
 // Revalidate data setiap 60 detik (ISR — Incremental Static Regeneration)
 // Daftar kuis tidak berubah setiap detik, jadi cache 60s cukup optimal
@@ -39,7 +34,7 @@ export const revalidate = 60;
 const ITEMS_PER_PAGE = 8;
 
 export default async function SelectQuizPage() {
-    const supabase = await createSupabaseCentralServer();
+    const supabase = await createGFSServerClient();
 
     // ── Ambil profile user yang sedang login (via cookie) ──
     let serverProfileId: string | null = null;
