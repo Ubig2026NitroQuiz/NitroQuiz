@@ -12,10 +12,10 @@ interface QuizQuestion {
     options: string[];
     correctAnswer: number;
 }
-import { supabase } from '@/lib/supabase';
 import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
 import { Clock, Volume2, VolumeX } from 'lucide-react';
 import { useBgm } from '@/contexts/BgmContext';
+import { supabaseGame } from '@/lib/supabase/game-client';
 
 
 const Util = {
@@ -215,7 +215,7 @@ export default function GameSpeedPage() {
         const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
         if (participantId) {
             try {
-                await supabase.from('participants').update(updates).eq('id', participantId);
+                await supabaseGame.from('participants').update(updates).eq('id', participantId);
             } catch (error) {
                 console.error('Failed to sync participant status:', error);
             }
@@ -1478,7 +1478,7 @@ export default function GameSpeedPage() {
 
                     if (participantId) {
                         try {
-                            const { data: pData } = await supabase
+                            const { data: pData } = await supabaseGame
                                 .from('participants')
                                 .select('lap_race')
                                 .eq('id', participantId)
@@ -1486,7 +1486,7 @@ export default function GameSpeedPage() {
 
                             const newLap = (pData?.lap_race || 0) + 1;
 
-                            const { error } = await supabase.from('participants').update({
+                            const { error } = await supabaseGame.from('participants').update({
                                 lap_race: newLap,
                                 minigame: false
                             }).eq('id', participantId);
@@ -1511,7 +1511,7 @@ export default function GameSpeedPage() {
                 // No more questions -> Finish game
                 const participantId = localStorage.getItem('nitroquiz_game_participantId');
                 if (participantId) {
-                    supabase.from('participants').update({ lap_race: currentRound }).eq('id', participantId).then();
+                    supabaseGame.from('participants').update({ lap_race: currentRound }).eq('id', participantId).then();
                 }
                 setGameState('finished');
                 endGame();
@@ -1674,7 +1674,7 @@ export default function GameSpeedPage() {
             const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
             if (!participantId) return;
 
-            const { data } = await supabase.from('participants').select('minigame, finished_at, lap_race').eq('id', participantId).single();
+            const { data } = await supabaseGame.from('participants').select('minigame, finished_at, lap_race').eq('id', participantId).single();
             if (data) {
                 if (data.minigame === false && !data.finished_at) {
                     router.push(`/player/${roomCode}/quiz`);
@@ -2113,7 +2113,7 @@ export default function GameSpeedPage() {
         // 1. Mark player as finished in Supabase
         if (participantId) {
             try {
-                await supabase.from('participants').update({
+                await supabaseGame.from('participants').update({
                     finished_at: new Date().toISOString()
                 }).eq('id', participantId);
             } catch (e) {
@@ -2163,7 +2163,7 @@ export default function GameSpeedPage() {
         const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
         if (!sessId || !participantId) return;
 
-        const channel = supabase
+        const channel = supabaseGame
             .channel(`player_game_guards_${participantId}`)
             // Listen for Session changes
             .on(
@@ -2198,7 +2198,7 @@ export default function GameSpeedPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabaseGame.removeChannel(channel);
         };
     }, [router, roomCode]);
 
@@ -2209,7 +2209,7 @@ export default function GameSpeedPage() {
 
         const fetchAndStartTimer = async () => {
             await syncServerTime();
-            const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessId).single();
+            const { data } = await supabaseGame.from('sessions').select('started_at, total_time_minutes').eq('id', sessId).single();
 
             if (!data?.started_at) {
                 setIsTimerReady(true); // tetap lanjut walau ga ada data
@@ -2264,7 +2264,7 @@ export default function GameSpeedPage() {
                 // 1. Fetch current questions from DB using roomCode (Game PIN)
                 // This ensures we get the LATEST config from host settings
                 console.log(`[GameSpeed] Fetching session data for room: ${roomCode}`);
-                const { data: sessionData, error } = await supabase
+                const { data: sessionData, error } = await supabaseGame
                     .from('sessions')
                     .select('id, current_questions, difficulty')
                     .eq('game_pin', roomCode)
@@ -2355,7 +2355,7 @@ export default function GameSpeedPage() {
                     const participantId = localStorage.getItem('nitroquiz_game_participantId');
                     if (participantId) {
                         try {
-                            const { data: pData } = await supabase
+                            const { data: pData } = await supabaseGame
                                 .from('participants')
                                 .select('lap_race')
                                 .eq('id', participantId)

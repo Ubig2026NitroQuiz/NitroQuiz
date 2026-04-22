@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
 import { Loader2, Zap, Users, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
 import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
+import { supabaseGame } from '@/lib/supabase/game-client';
 
 export const PLAYER_CHARACTERS = [
     {
@@ -147,7 +147,7 @@ export default function PlayerWaitingPage() {
                     });
                 }
                 
-                await supabase.from("participants").delete().eq("id", participantId);
+                await supabaseGame.from("participants").delete().eq("id", participantId);
                 
                 // Clean up local storage
                 localStorage.removeItem('nitroquiz_game_participantId');
@@ -205,7 +205,7 @@ export default function PlayerWaitingPage() {
 
         const fetchSessionState = async () => {
             try {
-                const { data: sessionData, error: sessionError } = await supabase
+                const { data: sessionData, error: sessionError } = await supabaseGame
                     .from("sessions").select("id, status, countdown_started_at, started_at, created_at").eq("game_pin", roomCode).single();
 
                 if (sessionError || !sessionData || !isMounted) {
@@ -251,7 +251,7 @@ export default function PlayerWaitingPage() {
 
                 // Setup Subscriptions only once
                 if (!channelRef.current) {
-                    const channel = supabase.channel(`player-session-${sessionData.id}`)
+                    const channel = supabaseGame.channel(`player-session-${sessionData.id}`)
                         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
                             (payload) => {
                                 // Re-verify via fetchSessionState to be safe and consistent
@@ -259,7 +259,7 @@ export default function PlayerWaitingPage() {
                             })
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
                             async (payload) => {
-                                const { data: pList, count } = await supabase
+                                const { data: pList, count } = await supabaseGame
                                     .from("participants")
                                     .select("id, nickname, car_character, avatar_url, user_id", { count: "exact" })
                                     .eq("session_id", sessionData.id);
@@ -320,7 +320,7 @@ export default function PlayerWaitingPage() {
                 setAssignedCarId(assignedCar);
                 setPendingCharacterId(assignedCar);
 
-                const { data: pList, count } = await supabase.from("participants")
+                const { data: pList, count } = await supabaseGame.from("participants")
                     .select("id, nickname, car_character, avatar_url, user_id", { count: "exact" }).eq("session_id", sessionData.id);
 
                 if (isMounted) {
@@ -370,7 +370,7 @@ export default function PlayerWaitingPage() {
         return () => {
             isMounted = false;
             if (channelRef.current) {
-                supabase.removeChannel(channelRef.current);
+                supabaseGame.removeChannel(channelRef.current);
                 channelRef.current = null;
             }
             window.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -379,7 +379,7 @@ export default function PlayerWaitingPage() {
 
     const preloadQuizData = async (sessId: string) => {
         try {
-            const { data } = await supabase.from("sessions")
+            const { data } = await supabaseGame.from("sessions")
                 .select("current_questions, question_limit, quiz_id, difficulty").eq("id", sessId).single();
             if (data?.current_questions) {
                 let questions = data.current_questions;
@@ -492,7 +492,7 @@ export default function PlayerWaitingPage() {
 
     const handleSelectCharacter = async () => {
         if (participantId && sessionId && pendingCharacterId !== assignedCarId) {
-            await supabase.from("participants")
+            await supabaseGame.from("participants")
                 .update({ car_character: pendingCharacterId })
                 .eq("id", participantId);
         }

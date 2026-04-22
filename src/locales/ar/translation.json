@@ -300,5 +300,12 @@
     "nos": "نيترو",
     "lap": "جولة",
     "pov_hint": "تغيير (T)"
+  },
+  "pwa": {
+    "installTitle": "تثبيت NitroQuiz!",
+    "install": "تثبيت",
+    "later": "لاحقاً",
+    "appInstalled": "تم تثبيت التطبيق",
+    "installApp": "تثبيت التطبيق"
   }
 }

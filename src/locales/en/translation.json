@@ -300,5 +300,12 @@
     "nos": "NOS",
     "lap": "LAP",
     "pov_hint": "POV (T)"
+  },
+  "pwa": {
+    "installTitle": "Install NitroQuiz!",
+    "install": "Install",
+    "later": "Later",
+    "appInstalled": "App Installed",
+    "installApp": "Install App"
   }
 }

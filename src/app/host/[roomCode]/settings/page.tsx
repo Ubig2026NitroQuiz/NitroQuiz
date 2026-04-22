@@ -12,12 +12,13 @@ import { motion } from "framer-motion"
 import Image from "next/image"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { supabase, supabaseCentral } from "@/lib/supabase"
 import { Question } from "@/types"
 import { Logo } from "@/components/ui/logo"
 import { useTranslation } from "react-i18next"
 import { useBgm } from "@/contexts/BgmContext"
 import { FloatingHostActions } from "@/components/FloatingHostActions"
+import { createGFSClient } from "@/lib/supabase/gfs-client"
+import { supabaseGame } from "@/lib/supabase/game-client"
 
 // ── Category color map (Copied from select-quiz) ──
 const categoryColorMap: Record<string, {
@@ -61,6 +62,7 @@ const getCategoryColor = (category?: string) => {
 const backgroundGif = "/assets/background/2_v2.webp"
 
 export default function SettingsPage() {
+    const supabaseCentral = createGFSClient();
     const router = useRouter()
     const { t } = useTranslation()
     const params = useParams()
@@ -150,7 +152,7 @@ export default function SettingsPage() {
             console.log("[handleCreateRoom] Updating session payloads for pin:", roomCode);
 
             // Update in local game DB
-            const { data: sessionData, error } = await supabase
+            const { data: sessionData, error } = await supabaseGame
                 .from('sessions')
                 .update(sessionPayload)
                 .eq('game_pin', roomCode)
@@ -196,7 +198,7 @@ export default function SettingsPage() {
         try {
             await Promise.allSettled([
                 supabaseCentral.from('game_sessions').delete().eq('game_pin', roomCode),
-                supabase.from('sessions').delete().eq('game_pin', roomCode)
+                supabaseGame.from('sessions').delete().eq('game_pin', roomCode)
             ]);
             localStorage.removeItem(`session_${roomCode}`);
             // Remove the popstate listener before navigating to avoid the dialog showing up again

@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Timer, Trophy, ArrowRight, Loader2, Sparkles, Clock, List, Star } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useTranslation } from "react-i18next";
 import { getSyncedServerTime, syncServerTime } from '@/lib/serverTime';
 import { generateXID } from '@/lib/id-generator';
+import { supabaseGame } from '@/lib/supabase/game-client';
 
 // Reuse QuizQuestion type
 export interface QuizQuestion {
@@ -68,7 +68,7 @@ export default function QuizPage() {
 
             try {
                 // 1. Fetch Session Info (Questions & Status)
-                const { data: sessionData, error: sessError } = await supabase
+                const { data: sessionData, error: sessError } = await supabaseGame
                     .from('sessions')
                     .select('id, status, current_questions, difficulty')
                     .eq('game_pin', roomToUse)
@@ -80,7 +80,7 @@ export default function QuizPage() {
                 }
 
                 // 2. Fetch Participant Info (Progress & Guard)
-                const { data: pData, error: pError } = await supabase
+                const { data: pData, error: pError } = await supabaseGame
                     .from('participants')
                     .select('score, current_question, minigame, finished_at')
                     .eq('id', participantId)
@@ -201,7 +201,7 @@ export default function QuizPage() {
             if (participantId) {
                 try {
                     // Fetch the current state from Supabase to prevent overwriting
-                    const { data: currentData } = await supabase
+                    const { data: currentData } = await supabaseGame
                         .from('participants')
                         .select('answers, correct, score, current_question')
                         .eq('id', participantId)
@@ -233,7 +233,7 @@ export default function QuizPage() {
                         const updatedAnswers = [...currentAnswers, newEntry];
                         const updatedCorrect = (currentData.correct || 0) + (correct ? 1 : 0);
 
-                        await supabase
+                        await supabaseGame
                             .from('participants')
                             .update({
                                 answers: updatedAnswers,
@@ -265,7 +265,7 @@ export default function QuizPage() {
             const participantId = localStorage.getItem('nitroquiz_game_participantId');
             if (participantId) {
                 try {
-                    await supabase.from('participants')
+                    await supabaseGame.from('participants')
                         .update({
                             minigame: false,
                             finished_at: new Date().toISOString(),
@@ -290,7 +290,7 @@ export default function QuizPage() {
             const participantId = localStorage.getItem('nitroquiz_game_participantId');
             if (participantId) {
                 try {
-                    await supabase.from('participants')
+                    await supabaseGame.from('participants')
                         .update({
                             minigame: true,
                             current_question: nextIdx
@@ -318,7 +318,7 @@ export default function QuizPage() {
         const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
         if (!sessId || !participantId) return;
 
-        const channel = supabase
+        const channel = supabaseGame
             .channel(`player_quiz_guards_${participantId}`)
             // Listen for Session changes
             .on(
@@ -348,7 +348,7 @@ export default function QuizPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabaseGame.removeChannel(channel);
         };
     }, [router, roomCode, roomCodeFromParams]);
 
@@ -357,7 +357,7 @@ export default function QuizPage() {
         if (!sessionId) return;
 
         const fetchAndStartTimer = async () => {
-            const { data } = await supabase.from('sessions').select('started_at, total_time_minutes').eq('id', sessionId).single();
+            const { data } = await supabaseGame.from('sessions').select('started_at, total_time_minutes').eq('id', sessionId).single();
             if (!data?.started_at) {
                 setIsTimerReady(true);
                 return;

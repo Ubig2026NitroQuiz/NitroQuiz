@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Users, Skull } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { supabase, supabaseCentral } from "@/lib/supabase";
 import { useTranslation } from "react-i18next";
 import { syncServerTime, getSyncedServerTime } from "@/lib/serverTime";
 import { generateXID } from "@/lib/id-generator";
@@ -408,8 +407,11 @@ function PlayerCard({
 
 // ── Main Page ──
 import { FloatingHostActions } from "@/components/FloatingHostActions";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
+import { supabaseGame } from "@/lib/supabase/game-client";
 
 export default function GameMonitorPage() {
+  const supabaseCentral = createGFSClient();
   const params = useParams();
   const router = useRouter();
   const { t } = useTranslation();
@@ -432,7 +434,7 @@ export default function GameMonitorPage() {
     const fetchInitialData = async () => {
       try {
         await syncServerTime(); // Force sync first
-        const { data: sessionData, error: sessionError } = await supabase
+        const { data: sessionData, error: sessionError } = await supabaseGame
           .from("sessions")
           .select("id, question_limit, total_time_minutes, started_at")
           .eq("game_pin", roomCode)
@@ -455,7 +457,7 @@ export default function GameMonitorPage() {
             setTimeLeft(remaining);
           }
 
-          const { data: pData } = await supabase
+          const { data: pData } = await supabaseGame
             .from("participants")
             .select("*")
             .eq("session_id", sessionData.id);
@@ -473,7 +475,7 @@ export default function GameMonitorPage() {
   useEffect(() => {
     if (!sessionId) return;
 
-    const channel = supabase
+    const channel = supabaseGame
       .channel(`host_monitor_${roomCode?.toUpperCase()}`)
       .on(
         "postgres_changes",
@@ -509,7 +511,7 @@ export default function GameMonitorPage() {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { supabaseGame.removeChannel(channel); };
   }, [sessionId]);
 
   // Timer akurat berbasis realtime seperti Axiom
@@ -565,7 +567,7 @@ export default function GameMonitorPage() {
           setParticipants(prev => prev.map(p => String(p.id) === String(bot.id) ? { ...p, ...updates } : p));
 
           try {
-            await supabase.from("participants").update(updates).eq("id", bot.id);
+            await supabaseGame.from("participants").update(updates).eq("id", bot.id);
           } catch (e) { console.error("Bot error:", e); }
         }
       });
@@ -581,7 +583,7 @@ export default function GameMonitorPage() {
 
   const syncResultsToMainSupabase = async (activeSessionId: string) => {
     try {
-      const { data: sess } = await supabase
+      const { data: sess } = await supabaseGame
         .from("sessions")
         .select("id, host_id, quiz_id, question_limit, total_time_minutes, current_questions, started_at, ended_at")
         .eq("id", activeSessionId)
@@ -591,7 +593,7 @@ export default function GameMonitorPage() {
 
       const totalQuestionsLimit = sess.question_limit || (sess.current_questions || []).length;
 
-      const { data: participantsData } = await supabase
+      const { data: participantsData } = await supabaseGame
         .from("participants")
         .select("id, user_id, nickname, car_character, score, correct, answers, duration, eliminated, current_question, finished_at")
         .eq("session_id", activeSessionId);
@@ -653,10 +655,10 @@ export default function GameMonitorPage() {
     setIsEnding(true);
     try {
       const now = new Date().toISOString();
-      await supabase.from("sessions").update({ status: "finished", ended_at: now }).eq("id", sessionId);
+      await supabaseGame.from("sessions").update({ status: "finished", ended_at: now }).eq("id", sessionId);
 
       // Force semua participant yang belum selesai jadi finished DAN eliminated
-      await supabase
+      await supabaseGame
         .from("participants")
         .update({
           finished_at: now,

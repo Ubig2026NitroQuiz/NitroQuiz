@@ -300,5 +300,12 @@
     "nos": "NOS",
     "lap": "PUTARAN",
     "pov_hint": "POV (T)"
+  },
+  "pwa": {
+    "installTitle": "Instal NitroQuiz!",
+    "install": "Instal",
+    "later": "Nanti",
+    "appInstalled": "Aplikasi Terpasang",
+    "installApp": "Instal Aplikasi"
   }
 }
