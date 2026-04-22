@@ -20,6 +20,19 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   // ✅ FIX: Read saved language from cookie (survives localStorage.clear on logout)
   useEffect(() => {
     setIsClient(true);
+
+    // ✅ Register Service Worker for PWA support (Next.js 15+ Turbopack compatible)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          console.log('[NitroQuiz] Service Worker registered:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[NitroQuiz] Service Worker registration failed:', err);
+        });
+    }
+
     // Read i18next cookie
     const cookies = document.cookie.split(';');
     const i18nextCookie = cookies.find(c => c.trim().startsWith('i18next='));
