@@ -517,7 +517,7 @@ export default function LeaderboardPage() {
                             custom={2}
                             variants={rpmGaugeVariants}
                             cx="50%" cy="50%" r="44%" fill="none" stroke="#94a3b8" strokeWidth="6"
-                            strokeLinecap="butt" strokeDasharray="246" strokeDashoffset="246"
+                            strokeLinecap="round"
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center p-2">
@@ -599,7 +599,7 @@ export default function LeaderboardPage() {
                             custom={3}
                             variants={rpmGaugeVariants}
                             cx="50%" cy="50%" r="44%" fill="none" stroke="#facc15" strokeWidth="7"
-                            strokeLinecap="butt" strokeDasharray="270" strokeDashoffset="270"
+                            strokeLinecap="round"
                           />
                         </svg>
                         {/* Rotating nitro ring */}
@@ -681,7 +681,7 @@ export default function LeaderboardPage() {
                             custom={1}
                             variants={rpmGaugeVariants}
                             cx="50%" cy="50%" r="44%" fill="none" stroke="#ea580c" strokeWidth="5"
-                            strokeLinecap="butt" strokeDasharray="201" strokeDashoffset="201"
+                            strokeLinecap="round"
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center p-1.5 sm:p-2">
@@ -720,7 +720,7 @@ export default function LeaderboardPage() {
               stiffness: 100,
               damping: 14,
             }}
-            className="bg-[#111729]/80 backdrop-blur-xl border border-white/5 p-0 shadow-[0_15px_40px_rgba(0,0,0,0.6)] relative overflow-hidden group"
+            className="bg-[#111729]/80 backdrop-blur-xl border border-white/5 p-0 shadow-[0_15px_40px_rgba(0,0,0,0.6)] relative overflow-hidden group md:max-w-xl lg:max-w-3xl xl:max-w-5xl w-full mx-auto"
             style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%)' }}
           >
             {/* Top laser accent */}
@@ -731,101 +731,101 @@ export default function LeaderboardPage() {
 
             <div className="p-4 sm:p-6">
 
-            <div className="overflow-x-auto w-full custom-scrollbar max-h-[470px] overflow-y-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#2d6af2]/20 text-gray-400 font-display text-[10px] sm:text-xs tracking-wider">
-                    <th className="px-2 sm:px-4 py-3 w-12 sm:w-16 text-center">
-                      {t("host_leaderboard.rank")}
-                    </th>
-                    <th className="px-2 sm:px-4 py-3 text-left rtl:text-right">{t("host_leaderboard.player")}</th>
-                    <th className="px-2 sm:px-4 py-3 text-right">{t("host_leaderboard.score")}</th>
-                    <th className="px-2 sm:px-4 py-3 text-center">{t("host_leaderboard.time")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <AnimatePresence>
-                    {rankedPlayers.map((player, index) => {
-                      const isTop3 = index < 3;
-                      return (
-                        <motion.tr
-                          key={player.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 2.5 + index * 0.1 }}
-                          className={`border-b border-white/[0.03] transition-colors ${isTop3
-                            ? index === 0
-                              ? "bg-yellow-500/5 hover:bg-yellow-500/10"
-                              : index === 1
-                                ? "bg-slate-300/5 hover:bg-slate-300/10"
-                                : "bg-orange-600/5 hover:bg-orange-600/10"
-                            : "hover:bg-white/[0.02]"
-                            }`}
-                        >
-                          <td className="px-2 sm:px-4 py-3 text-center">
-                            <div
-                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto font-display text-xs sm:text-sm
+              <div className="overflow-x-auto w-full custom-scrollbar max-h-[470px] overflow-y-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#2d6af2]/20 text-gray-400 font-display text-[10px] sm:text-xs tracking-wider">
+                      <th className="px-2 sm:px-4 py-3 w-12 sm:w-16 text-center">
+                        {t("host_leaderboard.rank")}
+                      </th>
+                      <th className="px-2 sm:px-4 py-3 text-left rtl:text-right">{t("host_leaderboard.player")}</th>
+                      <th className="px-2 sm:px-4 py-3 text-right">{t("host_leaderboard.score")}</th>
+                      <th className="px-2 sm:px-4 py-3 text-center">{t("host_leaderboard.time")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <AnimatePresence>
+                      {rankedPlayers.map((player, index) => {
+                        const isTop3 = index < 3;
+                        return (
+                          <motion.tr
+                            key={player.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 2.5 + index * 0.1 }}
+                            className={`border-b border-white/[0.03] transition-colors ${isTop3
+                              ? index === 0
+                                ? "bg-yellow-500/5 hover:bg-yellow-500/10"
+                                : index === 1
+                                  ? "bg-slate-300/5 hover:bg-slate-300/10"
+                                  : "bg-orange-600/5 hover:bg-orange-600/10"
+                              : "hover:bg-white/[0.02]"
+                              }`}
+                          >
+                            <td className="px-2 sm:px-4 py-3 text-center">
+                              <div
+                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto font-display text-xs sm:text-sm
                                                             ${index === 0
-                                  ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/50"
-                                  : index === 1
-                                    ? "bg-slate-300/20 text-slate-300 border border-slate-300/50"
-                                    : index === 2
-                                      ? "bg-orange-600/20 text-orange-400 border border-orange-600/50"
-                                      : "bg-white/5 text-gray-500"
-                                }`}
-                            >
-                              {index + 1}
-                            </div>
-                          </td>
-                          <td className="px-2 sm:px-4 py-3">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-lg shadow-inner overflow-hidden flex-shrink-0">
-                                {player.avatar_url ? (
-                                  <img
-                                    src={player.avatar_url}
-                                    alt="Avatar"
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <InitialsAvatar name={player.nickname} size="sm" />
-                                )}
-                              </div>
-                              <p
-                                className={`font-display tracking-wider text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"}`}
-                                title={player.nickname}
+                                    ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/50"
+                                    : index === 1
+                                      ? "bg-slate-300/20 text-slate-300 border border-slate-300/50"
+                                      : index === 2
+                                        ? "bg-orange-600/20 text-orange-400 border border-orange-600/50"
+                                        : "bg-white/5 text-gray-500"
+                                  }`}
                               >
-                                {player.nickname}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-2 sm:px-4 py-3 text-right">
-                            <span
-                              className={`font-mono font-bold text-sm sm:text-base ${index === 0 ? "text-yellow-400" : "text-[#00ff9d]"}`}
-                            >
-                              {player.score.toLocaleString()}
-                            </span>
-                          </td>
-                          <td className="px-2 sm:px-4 py-3 text-center">
-                            <span className="text-cyan-400 font-mono text-xs sm:text-sm">
-                              {formatDuration(player.duration)}
-                            </span>
-                          </td>
-                        </motion.tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            </div>
+                                {index + 1}
+                              </div>
+                            </td>
+                            <td className="px-2 sm:px-4 py-3">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/50 border border-white/10 flex items-center justify-center text-lg shadow-inner overflow-hidden flex-shrink-0">
+                                  {player.avatar_url ? (
+                                    <img
+                                      src={player.avatar_url}
+                                      alt="Avatar"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <InitialsAvatar name={player.nickname} size="sm" />
+                                  )}
+                                </div>
+                                <p
+                                  className={`font-display tracking-wider text-xs sm:text-sm truncate ${isTop3 ? "text-white" : "text-gray-300"} ${index === 0 && "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"}`}
+                                  title={player.nickname}
+                                >
+                                  {player.nickname}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-2 sm:px-4 py-3 text-right">
+                              <span
+                                className={`font-mono font-bold text-sm sm:text-base ${index === 0 ? "text-yellow-400" : "text-[#00ff9d]"}`}
+                              >
+                                {player.score.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="px-2 sm:px-4 py-3 text-center">
+                              <span className="text-cyan-400 font-mono text-xs sm:text-sm">
+                                {formatDuration(player.duration)}
+                              </span>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </motion.div>
         )}
         {/* Actions Mobile (sm ke bawah) */}
-        <div className="md:hidden bg-[#111729]/95 backdrop-blur-xl w-full text-center py-4 fixed bottom-0 left-0 z-50 flex items-center justify-center space-x-3 border-t border-white/10 px-4 shadow-[0_-15px_40px_rgba(0,0,0,0.6)]">
+        <div className="md:hidden bg-[#04060f]/90 backdrop-blur-xl w-full text-center py-5 fixed bottom-0 left-0 z-50 flex items-center justify-center space-x-3 border-t border-white/10 px-4 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           {/* Tombol Home */}
           <button
             onClick={() => router.push("/")}
-            className="flex-1 bg-white/5 border border-white/10 rounded-sm text-white/70 py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg]"
+            className="flex-1 bg-[#0d1a3a]/60 border-2 border-[#2d6af2] shadow-[0_0_15px_rgba(45,106,242,0.3)] rounded-sm text-[#60a5fa] py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-[#2d6af2]/20 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg]"
           >
             <div className="transform skew-x-[15deg] flex items-center gap-1.5">
               <House size={14} />
@@ -837,11 +837,11 @@ export default function LeaderboardPage() {
           <button
             onClick={handleRestart}
             disabled={isRestarting}
-            className={`flex-1 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-[#2d6af2]/50 rounded-sm text-white py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(45,106,242,0.3)] transform -skew-x-[15deg] ${isRestarting ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`flex-1 bg-[#0a2a1f]/60 border-2 border-[#00ff9d] shadow-[0_0_15px_rgba(0,255,157,0.3)] rounded-sm text-[#00ff9d] py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-[#00ff9d]/20 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg] ${isRestarting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className="transform skew-x-[15deg] flex items-center gap-1.5">
               <RotateCw size={14} className={isRestarting ? 'animate-spin' : ''} />
-              {isRestarting ? "Restarting..." : t("host_leaderboard.play_again_tooltip")}
+              {isRestarting ? "WAIT..." : t("host_leaderboard.play_again_tooltip")}
             </div>
           </button>
 
@@ -854,7 +854,7 @@ export default function LeaderboardPage() {
                 "_blank",
               )
             }
-            className="flex-1 bg-white/5 border border-white/10 rounded-sm text-white/70 py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg]"
+            className="flex-1 bg-[#2a1a00]/60 border-2 border-[#f59e0b] shadow-[0_0_15px_rgba(245,158,11,0.3)] rounded-sm text-[#fbbf24] py-3.5 text-[10px] font-display font-bold tracking-[0.15em] uppercase hover:bg-[#f59e0b]/20 transition-all flex items-center justify-center gap-2 transform -skew-x-[15deg]"
           >
             <div className="transform skew-x-[15deg] flex items-center gap-1.5">
               <BarChart2 size={14} />

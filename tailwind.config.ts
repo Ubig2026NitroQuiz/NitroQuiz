@@ -69,7 +69,7 @@ const config: Config = {
             },
             fontFamily: {
                 display: ['"Press Start 2P"', 'var(--font-press-start-2p)', 'cursive'],
-                body: ['"Rajdhani"', 'var(--font-rajdhani)', 'sans-serif'],
+                body: ['var(--font-lpmq)', '"Rajdhani"', 'var(--font-rajdhani)', 'sans-serif'],
                 arabic: ['var(--font-lpmq)', 'sans-serif'],
             },
             boxShadow: {

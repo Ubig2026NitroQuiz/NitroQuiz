@@ -109,14 +109,14 @@ const OFF_ROAD_LIMIT = MAX_SPEED / 4;
 // --- Difficulty-based config helper ---
 function getDifficultyConfig(difficulty: string) {
     if (difficulty === 'hard') {
-        // Hard: high camera (top-down drone feel), more NPCs, all obstacles
+        // Hard: more NPCs, all obstacles, LONGER unique track
         return {
-            fieldOfView: 85,
-            cameraHeight: 1000,
+            fieldOfView: 100,
+            cameraHeight: 500,
             fogDensity: 3,
-            npcCount: 30,
-            obstacleCount: 25,
-            trackType: 'complex', // twisty S-curves + bumps like medium
+            npcCount: 40,
+            obstacleCount: 35,
+            trackType: 'hard',
         };
     } else if (difficulty === 'normal' || difficulty === 'medium') {
         // Normal/Medium: standard camera, twisty track, obstacles
@@ -124,8 +124,8 @@ function getDifficultyConfig(difficulty: string) {
             fieldOfView: 100,
             cameraHeight: 500,
             fogDensity: 5,
-            npcCount: 20,
-            obstacleCount: 25,
+            npcCount: 30,
+            obstacleCount: 20,
             trackType: 'complex',
         };
     } else {
@@ -168,6 +168,9 @@ export default function GameSpeedPage() {
         }
     }, []);
     const [stats, setStats] = useState({ speed: 0, nos: 100, lap: 1, totalLaps: 1 });
+    // isFinishingRef: used inside the game loop (no stale closure). isFinishingOverlay: triggers React re-render.
+    const isFinishingRef = useRef(false);
+    const [isFinishingOverlay, setIsFinishingOverlay] = useState(false);
 
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const [globalTimeLeft, setGlobalTimeLeft] = useState<number | null>(null);
@@ -547,21 +550,45 @@ export default function GameSpeedPage() {
         state.current.segments = [];
         (state.current as any).hasFinishedLine = false;
 
-        if (diffConfig.trackType === 'complex') {
-            // --- MEDIUM / HARD: Twisty track with S-Curves and Bumps ---
-            addStraight(ROAD_CONF.LENGTH.SHORT);
-            addCurve(ROAD_CONF.LENGTH.MEDIUM, ROAD_CONF.CURVE.EASY, ROAD_CONF.HILL.NONE);
-            addStraight(ROAD_CONF.LENGTH.SHORT);
-            addSCurves();
-            addBumps();
-            addCurve(ROAD_CONF.LENGTH.LONG, -ROAD_CONF.CURVE.MEDIUM, ROAD_CONF.HILL.MEDIUM);
+        if (diffConfig.trackType === 'hard') {
+            // --- HARD: 'Grand Hard' - Smooth, Flowing & 1.5x Medium Length (~1400 seg) ---
+            // 1. Forest Entrance (200 segments)
             addStraight(ROAD_CONF.LENGTH.MEDIUM);
+            addCurve(ROAD_CONF.LENGTH.LONG, ROAD_CONF.CURVE.MEDIUM, ROAD_CONF.HILL.NONE);
+            addStraight(ROAD_CONF.LENGTH.MEDIUM);
+
+            // 2. The Great Mountain Pass (400 segments)
+            addCurve(ROAD_CONF.LENGTH.LONG, -ROAD_CONF.CURVE.MEDIUM, ROAD_CONF.HILL.MEDIUM);
+            addCurve(ROAD_CONF.LENGTH.LONG, ROAD_CONF.CURVE.HARD, ROAD_CONF.HILL.HIGH);
+            addCurve(ROAD_CONF.LENGTH.LONG, -ROAD_CONF.CURVE.HARD, ROAD_CONF.HILL.MEDIUM);
+            addStraight(ROAD_CONF.LENGTH.LONG);
+
+            // 3. High-Altitude Ridge (300 segments)
+            addCurve(ROAD_CONF.LENGTH.LONG, ROAD_CONF.CURVE.MEDIUM, ROAD_CONF.HILL.NONE);
+            addBumps();
+            addCurve(ROAD_CONF.LENGTH.LONG, -ROAD_CONF.CURVE.MEDIUM, ROAD_CONF.HILL.NONE);
+            addStraight(ROAD_CONF.LENGTH.LONG);
+
+            // 4. Alpine Descent (300 segments)
+            addCurve(ROAD_CONF.LENGTH.LONG, ROAD_CONF.CURVE.HARD, -ROAD_CONF.HILL.HIGH);
+            addCurve(ROAD_CONF.LENGTH.LONG, -ROAD_CONF.CURVE.MEDIUM, -ROAD_CONF.HILL.MEDIUM);
+            addCurve(ROAD_CONF.LENGTH.LONG, ROAD_CONF.CURVE.EASY, -ROAD_CONF.HILL.LOW);
+
+            // 5. Final Grand Dash (200 segments)
             addSCurves();
+            addDownhillToEnd(250);
+        } else if (diffConfig.trackType === 'complex') {
+            // --- MEDIUM: Twisty track with S-Curves and Bumps ---
+            addStraight(ROAD_CONF.LENGTH.SHORT);
+            addSCurves();
+            addCurve(ROAD_CONF.LENGTH.MEDIUM, ROAD_CONF.CURVE.EASY, ROAD_CONF.HILL.NONE);
+            addBumps();
             addCurve(ROAD_CONF.LENGTH.LONG, ROAD_CONF.CURVE.HARD, -ROAD_CONF.HILL.MEDIUM);
+            addStraight(ROAD_CONF.LENGTH.SHORT);
             addCurve(ROAD_CONF.LENGTH.LONG, -ROAD_CONF.CURVE.HARD, ROAD_CONF.HILL.HIGH);
             addBumps();
             addStraight(ROAD_CONF.LENGTH.MEDIUM);
-            addDownhillToEnd(250);
+            addDownhillToEnd(150);
         } else {
             // --- EASY: Simple track ---
             addStraight(ROAD_CONF.LENGTH.SHORT);
@@ -573,7 +600,7 @@ export default function GameSpeedPage() {
             addStraight(ROAD_CONF.LENGTH.LONG);
             addCurve(ROAD_CONF.LENGTH.MEDIUM, ROAD_CONF.CURVE.MEDIUM, -ROAD_CONF.HILL.LOW);
             addStraight(ROAD_CONF.LENGTH.SHORT);
-            addDownhillToEnd(200);
+            addDownhillToEnd(100);
         }
 
         const len = state.current.segments.length;
@@ -581,6 +608,7 @@ export default function GameSpeedPage() {
         // --- HYBRID ASSET PLACEMENT ---
         const occupied: { [key: string]: boolean } = {};
 
+        // Place base TRACK_ASSETS
         TRACK_ASSETS.forEach(item => {
             const segIdx = item.z;
             if (segIdx < len) {
@@ -603,6 +631,33 @@ export default function GameSpeedPage() {
                 }
             }
         });
+
+        // For hard mode: cycle existing assets into the extended section
+        if (diffConfig.trackType === 'hard') {
+            const maxAssetZ = Math.max(...TRACK_ASSETS.map(a => a.z));
+            const assetOffset = maxAssetZ + 50;
+            // Only fill if the track is longer than the existing assets
+            if (len > assetOffset) {
+                TRACK_ASSETS.forEach(item => {
+                    const segIdx = item.z + assetOffset;
+                    if (segIdx < len) {
+                        if (item.src) {
+                            let sprite = state.current.sprites[item.src];
+                            if (sprite) {
+                                const key = `${segIdx}_${item.side}`;
+                                if (!occupied[key]) {
+                                    const offset = item.offset !== undefined ? item.offset : getAssetOffset(item.side, item.src);
+                                    state.current.segments[segIdx].sprites.push({ source: sprite, offset: offset, offsetY: -1 });
+                                    occupied[key] = true;
+                                    occupied[`${segIdx + 1}_${item.side}`] = true;
+                                    occupied[`${segIdx + 2}_${item.side}`] = true;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         state.current.trackLength = len * SEGMENT_LENGTH;
 
@@ -1411,6 +1466,8 @@ export default function GameSpeedPage() {
             }
 
             (state.current as any).hasFinishedLine = true;
+            isFinishingRef.current = true;    // stops loop immediately (no stale closure)
+            setIsFinishingOverlay(true);       // shows overlay via React re-render
             state.current.speed = 0;
 
             if (hasQuizRemaining) {
@@ -1640,7 +1697,9 @@ export default function GameSpeedPage() {
         let miniMapUpdateTime = 0;
 
         const loop = (time: number) => {
-            if (gameState === 'playing') {
+            // isFinishingRef is used here (not gameState) because gameState is a stale
+            // closure – it always reads 'playing' inside this effect callback.
+            if (gameState === 'playing' && !isFinishingRef.current) {
                 const dt = Math.min(1, (time - lastTime) / 1000);
                 update(dt);
             }
@@ -2912,20 +2971,54 @@ export default function GameSpeedPage() {
                 </div>
             )}
 
-            {/* Transitioning to Quiz or Results Overlay */}
-            {gameState === 'finished' && (
+            {/* Finish / redirect overlay — shows instantly when finish line is crossed */}
+            {(isFinishingOverlay || gameState === 'finished' || gameState === 'gameover') && (
                 <div style={{
                     position: 'fixed', inset: 0, zIndex: 9999,
-                    backgroundColor: '#020617', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', color: '#00ff9d',
+                    backgroundColor: 'rgba(2, 6, 23, 0.95)',
+                    backdropFilter: 'blur(12px)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
                     fontFamily: 'var(--font-rajdhani)', textAlign: 'center'
                 }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}>
-                        {t('player_game.race_finished')}
+                    <div style={{
+                        fontSize: isMobile ? '2.5rem' : '3.5rem',
+                        fontWeight: 900,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.25em',
+                        color: '#00ff9d',
+                        textShadow: '0 0 30px rgba(0,255,157,0.6), 0 0 60px rgba(0,255,157,0.3)',
+                        marginBottom: '1.5rem',
+                        animation: 'finish-glow 0.6s ease-in-out infinite alternate'
+                    }}>
+                        {gameState === 'gameover' ? '⏱ TIME UP' : t('player_game.race_finished')}
                     </div>
-                    <div style={{ fontSize: '1rem', color: '#94a3b8', maxWidth: '300px' }}>
-                        {t('player_game.redirecting')}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                            width: '20px', height: '20px',
+                            border: '3px solid rgba(0,255,157,0.2)',
+                            borderTopColor: '#00ff9d',
+                            borderRadius: '50%',
+                            animation: 'spin 0.8s linear infinite'
+                        }} />
+                        <span style={{
+                            fontSize: '0.9rem',
+                            color: '#64748b',
+                            fontWeight: 700,
+                            letterSpacing: '0.2em',
+                            textTransform: 'uppercase'
+                        }}>
+                            {t('player_game.redirecting')}...
+                        </span>
                     </div>
+
+                    <style>{`
+                        @keyframes finish-glow {
+                            from { opacity: 1; text-shadow: 0 0 30px rgba(0,255,157,0.6); }
+                            to   { opacity: 0.75; text-shadow: 0 0 60px rgba(0,255,157,0.9); }
+                        }
+                    `}</style>
                 </div>
             )}
             <style>{`@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }`}</style>
