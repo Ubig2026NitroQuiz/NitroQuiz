@@ -102,7 +102,7 @@ export default async function SelectQuizPage() {
             .or(orQuery);
 
         if (catData) {
-            const uniqueCats = ['All', ...new Set(catData.map((q: any) => q.category).filter(Boolean))];
+            const uniqueCats = ['All', ...new Set(catData.map((q: any) => q.category).filter(Boolean))] as string[];
             initialCategories = uniqueCats;
         }
     } catch (err) {
