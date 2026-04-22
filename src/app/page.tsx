@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     openGraph: {
         title: "NitroQuiz — Race. Learn. Dominate.",
         description: "The ultimate high-speed multiplayer quiz game. Host live quiz battles and race to the top!",
-        images: [{ url: "/assets/logo/faviconR.webp", width: 1200, height: 630, alt: "NitroQuiz" }],
+        images: [{ url: "/assets/logo/logo192.webp", width: 192, height: 192, alt: "NitroQuiz" }],
     },
     twitter: {
         card: "summary_large_image",
         title: "NitroQuiz — Race. Learn. Dominate.",
         description: "The ultimate high-speed multiplayer quiz game. Host live quiz battles and race to the top!",
-        images: ["/assets/logo/faviconR.webp"],
+        images: ["/assets/logo/logo192.webp"],
     },
 };
 

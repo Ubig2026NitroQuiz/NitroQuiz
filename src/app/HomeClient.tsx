@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseCentral } from "@/lib/supabase";
 import { User } from "@/types";
 import {
     Menu,
@@ -32,8 +31,12 @@ import { useTranslation } from "react-i18next";
 import { getI18nInstance } from "@/lib/i18n";
 import { Logo } from "@/components/ui/logo";
 import Image from "next/image";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
+import PWAInstallBanner from "@/components/PWAInstallBanner";
+import { usePWAInstall } from "@/contexts/PWAContext";
 
 export default function HomeClient() {
+    const supabase = createGFSClient();
     const router = useRouter();
     const { profile, loading: authLoading } = useAuth();
     const { isMuted, toggleMute } = useBgm();
@@ -54,6 +57,8 @@ export default function HomeClient() {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const { installPrompt, handleInstall: handlePWAInstall } = usePWAInstall();
+    const [isBannerVisible, setBannerVisible] = useState(false);
 
     const speedLines = useMemo(() => {
         return Array.from({ length: 5 }, (_, i) => ({
@@ -129,7 +134,7 @@ export default function HomeClient() {
     };
 
     const performLogout = async () => {
-        await supabaseCentral.auth.signOut();
+        await supabase.auth.signOut();
         router.push("/login");
     };
 
@@ -145,6 +150,27 @@ export default function HomeClient() {
             router.push(`/join/${roomCode.trim()}`);
         }
     };
+
+    const isInstalled =
+        typeof window !== "undefined" &&
+        (window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as any).standalone === true);
+
+
+    useEffect(() => {
+        const dismissed = localStorage.getItem("pwaBannerDismissed") === "true";
+        if (installPrompt && !dismissed && !isInstalled) {
+            setBannerVisible(true);
+        }
+    }, [installPrompt, isInstalled]);
+
+    const handleDismissBanner = () => {
+        localStorage.setItem("pwaBannerDismissed", "true");
+        setBannerVisible(false);
+    };
+
+
+
 
     if (authLoading || isHosting || isRedirecting) {
         return (
@@ -209,6 +235,17 @@ export default function HomeClient() {
                     />
                 </div>
             </div>
+
+            {isBannerVisible && (
+                <PWAInstallBanner
+                    onInstall={() => {
+                        handlePWAInstall();
+                        setBannerVisible(false);
+                    }}
+                    onDismiss={handleDismissBanner}
+                />
+            )}
+
 
             {/* Top Right Dropdown Menu */}
             {user && (
@@ -310,12 +347,25 @@ export default function HomeClient() {
                                         </span>
                                     </button>
 
-                                    <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-white/50 hover:text-white transition-all group opacity-40 cursor-not-allowed">
-                                        <div className="p-1.5 rounded-lg bg-white/[0.04] transition-colors">
+                                    <button
+                                        className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all group ${
+                                            (isInstalled || !installPrompt) 
+                                                ? "opacity-40 cursor-not-allowed text-white/30" 
+                                                : "hover:bg-white/[0.04] text-white/50 hover:text-white"
+                                        }`}
+                                        disabled={isInstalled || !installPrompt}
+                                        onClick={() => {
+                                            handlePWAInstall();
+                                            setIsDropdownOpen(false);
+                                        }}
+                                    >
+                                        <div className={`p-1.5 rounded-lg bg-white/[0.04] transition-colors ${!(isInstalled || !installPrompt) && "group-hover:bg-white/[0.08]"}`}>
                                             <DownloadIcon className="w-3.5 h-3.5 text-white/70" />
                                         </div>
                                         <span className="text-sm font-medium">
-                                            {t('homepage.menu.install_app')}
+                                            {isInstalled
+                                                ? t("pwa.appInstalled")
+                                                : t("pwa.installApp")}
                                         </span>
                                     </button>
 

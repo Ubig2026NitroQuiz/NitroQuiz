@@ -55,6 +55,7 @@ export const metadata: Metadata = {
     "online quiz", "multiplayer quiz", "edtech", "educational racing game"
   ],
   authors: [{ name: "NitroQuiz Team" }],
+  manifest: "/manifest.json",
   creator: "NitroQuiz Studio",
   publisher: "NitroQuiz Studio",
   formatDetection: {
@@ -63,9 +64,9 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/assets/logo/faviconR.webp",
-    shortcut: "/assets/logo/faviconR.webp",
-    apple: "/assets/logo/faviconR.webp",
+    icon: "/assets/logo/logo192.webp",
+    shortcut: "/assets/logo/logo192.webp",
+    apple: "/assets/logo/logo192.webp",
   },
   openGraph: {
     title: "NitroQuiz",
@@ -74,9 +75,9 @@ export const metadata: Metadata = {
     siteName: "NitroQuiz",
     images: [
       {
-        url: "/assets/logo/faviconR.web",
-        width: 1200,
-        height: 630,
+        url: "/assets/logo/logo192.webp",
+        width: 192,
+        height: 192,
         alt: "NitroQuiz Logo",
       },
     ],
@@ -87,7 +88,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "NitroQuiz",
     description: "Test your knowledge in NitroQuiz! A thrilling and competitive racing-themed multiplayer quiz game.",
-    images: ["/assets/logo/faviconR.webp"],
+    images: ["/assets/logo/logo192.webp"],
     creator: "@nitroquiz",
   },
   robots: {
@@ -110,9 +111,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <head>
-        {/* Fonts are loaded via next/font/google - no CDN links needed */}
-      </head>
       <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} ${pressStart2P.variable} ${lpmq.variable}`}>
         <ClientLayout>
         <NextTopLoader

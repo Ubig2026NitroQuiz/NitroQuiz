@@ -4,13 +4,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from 'next/navigation';
-import { supabaseCentral } from '@/lib/supabase';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Eye, EyeOff, Loader2, Zap, Flag, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 import { useTranslation } from "react-i18next";
+import { createGFSClient } from "@/lib/supabase/gfs-client";
 
 const loginSchema = z.object({
   identifier: z.string().min(3, "login.form.identifier_error_min"),
@@ -175,6 +175,7 @@ function NightCircuit() {
 }
 
 export default function LoginPage() {
+  const supabase = createGFSClient();
   const router = useRouter();
   const { t } = useTranslation();
   const { user, profile, loading } = useAuth();
@@ -244,7 +245,7 @@ export default function LoginPage() {
 
   const resolveEmail = async (input: string) => {
     if (input.includes("@")) return input.toLowerCase();
-    const { data, error } = await supabaseCentral
+    const { data, error } = await supabase
       .from("profiles")
       .select("email")
       .eq("username", input)
@@ -259,7 +260,7 @@ export default function LoginPage() {
     setNitroCount(c => c + 1);
     try {
       const resolvedEmail = await resolveEmail(data.identifier.trim());
-      const { error } = await supabaseCentral.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: resolvedEmail,
         password: data.password,
       });
@@ -273,7 +274,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     setNitroCount(c => c + 1);
     try {
-      const { error } = await supabaseCentral.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}` },
       });

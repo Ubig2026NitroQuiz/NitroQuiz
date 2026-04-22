@@ -1,266 +1,189 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { supabaseCentral, syncSessionCookie, getSessionFromCookie } from "@/lib/supabase"
+import { createGFSClient } from "@/lib/supabase/gfs-client";
 
 interface Profile {
-  id: string
-  username: string
-  email: string
-  nickname?: string
-  fullname?: string
-  avatar_url?: string
-  auth_user_id: string
-  role?: string
+    id: string
+    username: string
+    email: string
+    nickname?: string
+    fullname?: string
+    avatar_url?: string
+    auth_user_id: string
+    role?: string
 }
 
 interface AuthContextType {
-  user: any | null
-  profile: Profile | null
-  loading: boolean
+    user: any | null
+    profile: Profile | null
+    loading: boolean
 }
 
+const supabase = createGFSClient();
 const AuthContext = createContext<AuthContextType | null>(null)
 
 // Retry helper dengan exponential backoff
 async function ensureProfileWithRetry(
-  currentUser: any,
-  onSuccess: (profile: Profile) => void,
-  onFallback: (profile: Profile) => void,
-  maxRetries = 3
+    currentUser: any,
+    onSuccess: (profile: Profile) => void,
+    onFallback: (profile: Profile) => void,
+    maxRetries = 3
 ) {
-  let retryCount = 0
-  const baseDelay = 500 // 500ms
+    let retryCount = 0
+    const baseDelay = 500 // 500ms
 
-  const attempt = async (): Promise<void> => {
-    try {
-      // First, check if exists (quick select)
-      const { data: existing, error: selectError } = await supabaseCentral
-        .from('profiles')
-        .select('*')
-        .eq('auth_user_id', currentUser.id)
-        .single()
+    const attempt = async (): Promise<void> => {
+        try {
+            // First, check if exists (quick select)
+            const { data: existing, error: selectError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('auth_user_id', currentUser.id)
+                .single()
 
-      if (selectError && selectError.code !== 'PGRST116') {
-        // PGRST116 = not found, yang normal. Error lain = retry
-        throw selectError
-      }
+            if (selectError && selectError.code !== 'PGRST116') {
+                // PGRST116 = not found, yang normal. Error lain = retry
+                throw selectError
+            }
 
-      if (existing) {
-        onSuccess(existing)
-        return // Done
-      }
+            if (existing) {
+                onSuccess(existing)
+                return // Done
+            }
 
-      // Create new if not exists
-      const profileData = {
-        auth_user_id: currentUser.id,
-        username: currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'user',
-        email: currentUser.email || '',
-        fullname: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '',
-        avatar_url: currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || '',
-        updated_at: new Date().toISOString()
-      }
+            // Create new if not exists
+            const profileData = {
+                auth_user_id: currentUser.id,
+                username: currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'user',
+                email: currentUser.email || '',
+                fullname: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '',
+                avatar_url: currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || '',
+                updated_at: new Date().toISOString()
+            }
 
-      const { data, error: insertError } = await supabaseCentral
-        .from('profiles')
-        .insert(profileData)
-        .select()
-        .single()
+            const { data, error: insertError } = await supabase
+                .from('profiles')
+                .insert(profileData)
+                .select()
+                .single()
 
-      if (insertError) throw insertError
+            if (insertError) throw insertError
 
-      onSuccess(data)
-    } catch (error: any) {
-      retryCount++
+            onSuccess(data)
+        } catch (error: any) {
+            retryCount++
 
-      // Jika masih ada retry tersisa, tunggu dan coba lagi
-      if (retryCount < maxRetries) {
-        const delay = baseDelay * Math.pow(2, retryCount - 1) // 500ms, 1s, 2s
-        console.warn(
-          `⚠️ Profile fetch attempt ${retryCount} failed, retrying in ${delay}ms...`,
-          error.message
-        )
-        await new Promise(resolve => setTimeout(resolve, delay))
-        return attempt() // Recursive retry
-      }
+            // Jika masih ada retry tersisa, tunggu dan coba lagi
+            if (retryCount < maxRetries) {
+                const delay = baseDelay * Math.pow(2, retryCount - 1) // 500ms, 1s, 2s
+                console.warn(
+                    `⚠️ Profile fetch attempt ${retryCount} failed, retrying in ${delay}ms...`,
+                    error.message
+                )
+                await new Promise(resolve => setTimeout(resolve, delay))
+                return attempt() // Recursive retry
+            }
 
-      // Semua retry gagal, gunakan fallback
-      console.error('❌ Profile fetch failed after retries, using fallback:', error)
-      onFallback({
-        id: 'fallback-' + currentUser.id,
-        username: currentUser.email?.split('@')[0] || 'user',
-        email: currentUser.email || '',
-        nickname: '',
-        fullname: '',
-        avatar_url: '',
-        auth_user_id: currentUser.id
-      })
+            // Semua retry gagal, gunakan fallback
+            console.error('❌ Profile fetch failed after retries, using fallback:', error)
+            onFallback({
+                id: 'fallback-' + currentUser.id,
+                username: currentUser.email?.split('@')[0] || 'user',
+                email: currentUser.email || '',
+                nickname: '',
+                fullname: '',
+                avatar_url: '',
+                auth_user_id: currentUser.id
+            })
+        }
     }
-  }
 
-  return attempt()
+    return attempt()
 }
 
 // Helper: fetch profile lalu set state
 async function loadProfile(
-  currentUser: any,
-  setProfile: (p: Profile | null) => void,
-  setIsProfileFetching: (v: boolean) => void,
-  setLoading?: (v: boolean) => void
+    currentUser: any,
+    setProfile: (p: Profile | null) => void,
+    setIsProfileFetching: (v: boolean) => void,
+    setLoading?: (v: boolean) => void
 ) {
-  setIsProfileFetching(true)
-  await ensureProfileWithRetry(
-    currentUser,
-    (profile) => {
-      setProfile(profile)
-      setIsProfileFetching(false)
-      if (setLoading) setLoading(false)
-    },
-    (fallbackProfile) => {
-      setProfile(fallbackProfile)
-      setIsProfileFetching(false)
-      if (setLoading) setLoading(false)
-    }
-  )
+    setIsProfileFetching(true)
+    await ensureProfileWithRetry(
+        currentUser,
+        (profile) => {
+            setProfile(profile)
+            setIsProfileFetching(false)
+            if (setLoading) setLoading(false)
+        },
+        (fallbackProfile) => {
+            setProfile(fallbackProfile)
+            setIsProfileFetching(false)
+            if (setLoading) setLoading(false)
+        }
+    )
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isProfileFetching, setIsProfileFetching] = useState(false)
+    const [user, setUser] = useState<any>(null)
+    const [profile, setProfile] = useState<Profile | null>(null)
+    const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        // 1. Coba ambil sesi dari localStorage (cara normal)
-        let { data: { session } } = await supabaseCentral.auth.getSession()
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                const currentUser = session?.user ?? null
+                setUser(currentUser)
 
-        // 2. Jika tidak ada sesi di localStorage, coba pulihkan dari shared cookie
-        //    Ini terjadi saat user buka subdomain baru yang belum pernah login
-        //    tapi sudah login di subdomain lain (SSO)
-        if (!session) {
-          const cookieSession = getSessionFromCookie()
-          if (cookieSession) {
-            console.log('[SSO] Mencoba pulihkan sesi dari shared cookie (setSession)...')
-            // PENTING: Pakai setSession(), BUKAN refreshSession()!
-            // setSession() tidak merotasi token → semua app tetap sinkron
-            const { data, error } = await supabaseCentral.auth.setSession(cookieSession)
-            if (!error && data.session) {
-              session = data.session
-              console.log('[SSO] Sesi berhasil dipulihkan!')
-            } else {
-              // Token sudah expired/invalid, hapus cookie
-              console.warn('[SSO] Token expired, menghapus cookie')
-              syncSessionCookie(null)
+                if (currentUser) {
+                    // Jangan pakai 'await' di sini agar loading state bisa segera selesai
+                    loadProfile(currentUser, setProfile, () => {}, setLoading)
+                } else {
+                    setLoading(false)
+                }
+            } catch (err) {
+                console.error("Auth init error:", err)
+                setLoading(false)
             }
-          }
         }
 
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
+        init()
 
-        if (currentUser && session) {
-          // Sync tokens ke shared cookie
-          syncSessionCookie({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token
-          })
-          await loadProfile(currentUser, setProfile, setIsProfileFetching, setLoading)
-        } else {
-          setProfile(null)
-          setLoading(false)
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            async (_event, session) => {
+                const currentUser = session?.user ?? null
+                setUser(currentUser)
+
+                if (currentUser) {
+                    // Non-blocking load profile
+                    loadProfile(currentUser, setProfile, () => {
+                        setLoading(false)
+                    })
+                } else {
+                    setProfile(null)
+                    setLoading(false)
+                }
+            }
+        )
+
+        return () => {
+            listener.subscription.unsubscribe()
         }
-      } catch (error) {
-        console.error('Session error:', error)
-        setUser(null)
-        setProfile(null)
-        setLoading(false)
-      }
-    }
-    getUser()
+    }, [])
 
-    const { data: listener } = supabaseCentral.auth.onAuthStateChange(
-      async (event, session) => {
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-
-        if (event === 'SIGNED_IN' && currentUser && session) {
-          // Sync tokens ke shared cookie saat login berhasil
-          syncSessionCookie({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token
-          })
-          loadProfile(currentUser, setProfile, setIsProfileFetching).catch(console.error)
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          // Update cookie saat token di-refresh (token baru untuk semua app)
-          syncSessionCookie({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token
-          })
-        } else if (!currentUser) {
-          // Hapus shared cookie saat logout → semua app ikut logout
-          syncSessionCookie(null)
-          setProfile(null)
-          setIsProfileFetching(false)
-        }
-      }
+    return (
+        <AuthContext.Provider value={{ user, profile, loading }}>
+            {children}
+        </AuthContext.Provider>
     )
-
-    // SINKRONISASI ANTAR-TAB: Cek cookie saat user kembali ke tab ini
-    const syncFromCookie = async () => {
-      const cookieSession = getSessionFromCookie()
-
-      // Logout sync: cookie kosong tapi kita masih login
-      if (!cookieSession) {
-        const { data: { session: localSession } } = await supabaseCentral.auth.getSession()
-        if (localSession) {
-          console.log('[SSO] Logout terdeteksi di app lain, sinkronisasi...')
-          await supabaseCentral.auth.signOut()
-          window.location.reload()
-        }
-        return
-      }
-
-      // Token sync: cookie ada dan berbeda dari lokal kita
-      const { data: { session: localSession } } = await supabaseCentral.auth.getSession()
-      if (!localSession) {
-        // Kita belum login tapi cookie ada → login sync
-        console.log('[SSO] Login terdeteksi di app lain, sinkronisasi...')
-        await supabaseCentral.auth.setSession(cookieSession)
-        window.location.reload()
-      } else if (localSession.access_token !== cookieSession.access_token) {
-        // Token berbeda → update tanpa reload
-        console.log('[SSO] Token baru terdeteksi, mengupdate session lokal...')
-        await supabaseCentral.auth.setSession(cookieSession)
-      }
-    }
-
-    // Event-based: langsung sinkron saat user kembali ke tab
-    window.addEventListener('focus', syncFromCookie)
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') syncFromCookie()
-    }
-    window.addEventListener('visibilitychange', onVisibilityChange)
-
-    return () => {
-      listener.subscription.unsubscribe()
-      window.removeEventListener('focus', syncFromCookie)
-      window.removeEventListener('visibilitychange', onVisibilityChange)
-    }
-  }, [])
-
-  return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
-      {children}
-    </AuthContext.Provider>
-  )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+    const context = useContext(AuthContext)
+    if (context === null) {
+        throw new Error('useAuth must be used within an AuthProvider')
+    }
+    return context
 }
