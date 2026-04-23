@@ -236,15 +236,17 @@ export default function HomeClient() {
                 </div>
             </div>
 
-            {isBannerVisible && (
-                <PWAInstallBanner
-                    onInstall={() => {
-                        handlePWAInstall();
-                        setBannerVisible(false);
-                    }}
-                    onDismiss={handleDismissBanner}
-                />
-            )}
+            <AnimatePresence>
+                {isBannerVisible && (
+                    <PWAInstallBanner
+                        onInstall={() => {
+                            handlePWAInstall();
+                            setBannerVisible(false);
+                        }}
+                        onDismiss={handleDismissBanner}
+                    />
+                )}
+            </AnimatePresence>
 
 
             {/* Top Right Dropdown Menu */}
