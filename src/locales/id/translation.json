@@ -307,5 +307,8 @@
     "later": "Nanti",
     "appInstalled": "Aplikasi Terpasang",
     "installApp": "Instal Aplikasi"
+  },
+  "host": {
+    "verify": "Memverifikasi Akses..."
   }
 }

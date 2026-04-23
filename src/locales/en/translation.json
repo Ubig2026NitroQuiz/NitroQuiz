@@ -307,5 +307,8 @@
     "later": "Later",
     "appInstalled": "App Installed",
     "installApp": "Install App"
+  },
+  "host": {
+    "verify": "Verifying Access..."
   }
 }

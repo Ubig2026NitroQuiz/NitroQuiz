@@ -232,11 +232,13 @@ export default function LoginPage() {
   const passwordVal = watch("password", "");
 
   useEffect(() => {
-    if ((user || profile) && !loading) {
+    if (!loading && (user || profile)) {
       const pendingCode = localStorage.getItem("nitroquiz_pendingRoomCode");
       if (pendingCode) {
+        // Clear it first to prevent loops
         localStorage.removeItem("nitroquiz_pendingRoomCode");
-        router.replace(`/join/${pendingCode}`);
+        console.log("[NitroQuiz] Redirecting to pending room:", pendingCode);
+        router.replace(`/join/${pendingCode.toUpperCase()}`);
       } else {
         router.replace('/');
       }
@@ -276,7 +278,9 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}` },
+        options: { 
+          redirectTo: window.location.origin + window.location.pathname 
+        },
       });
       if (error) throw error;
     } catch (err: any) {

@@ -158,9 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 if (currentUser) {
                     // Non-blocking load profile
-                    loadProfile(currentUser, setProfile, () => {
-                        setLoading(false)
-                    })
+                    loadProfile(currentUser, setProfile, () => {}, setLoading)
                 } else {
                     setProfile(null)
                     setLoading(false)
