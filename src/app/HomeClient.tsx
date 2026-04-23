@@ -23,6 +23,7 @@ import {
     LogIn,
     Volume2,
     VolumeX,
+    QrCode,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +35,9 @@ import Image from "next/image";
 import { createGFSClient } from "@/lib/supabase/gfs-client";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import { usePWAInstall } from "@/contexts/PWAContext";
+import dynamic from 'next/dynamic';
+
+const Scanner = dynamic(() => import('@yudiel/react-qr-scanner').then((mod) => mod.Scanner), { ssr: false });
 
 export default function HomeClient() {
     const supabase = createGFSClient();
@@ -56,6 +60,7 @@ export default function HomeClient() {
     const [showHowToPlay, setShowHowToPlay] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+    const [isScanOpen, setIsScanOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { installPrompt, handleInstall: handlePWAInstall } = usePWAInstall();
     const [isBannerVisible, setBannerVisible] = useState(false);
@@ -671,9 +676,9 @@ export default function HomeClient() {
                             </div>
 
                             <div className="flex items-end gap-4">
-                                <div className="flex-1 relative">
+                                <div className="flex-1 relative h-[50px] transform -skew-x-[15deg] bg-white/[0.03] border border-white/20 focus-within:border-[#2d6af2] focus-within:bg-[#2d6af2]/10 transition-all duration-300 flex items-center mb-0.5 rounded-sm">
                                     <input
-                                        className="w-full bg-white/[0.03] border-b border-white/10 text-white font-bold text-lg py-2 focus:outline-none focus:border-[#2d6af2] transition-colors placeholder:text-[10px] placeholder:font-bold uppercase tracking-[0.3em] placeholder:text-white/20 text-center"
+                                        className="w-full h-full bg-transparent text-white font-bold text-lg px-6 focus:outline-none placeholder:text-[10px] placeholder:font-bold uppercase tracking-[0.3em] placeholder:text-white/20 text-center transform skew-x-[15deg]"
                                         maxLength={6}
                                         placeholder={t('homepage.join.placeholder')}
                                         type="text"
@@ -681,6 +686,18 @@ export default function HomeClient() {
                                         onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                                         onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                                     />
+                                    {/* Scan QR Button inside input */}
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 transform skew-x-[15deg]">
+                                        <button
+                                            onClick={() => setIsScanOpen(true)}
+                                            className="p-1.5 px-3 bg-[#2d6af2]/15 border border-[#2d6af2]/30 text-[#5a9cff] hover:bg-[#2d6af2]/30 hover:border-[#2d6af2]/60 hover:text-white rounded-sm transition-all duration-300 group flex items-center justify-center transform -skew-x-[15deg] shadow-[0_0_10px_rgba(45,106,242,0.15)] hover:shadow-[0_0_15px_rgba(45,106,242,0.3)]"
+                                            title="Scan QR Code"
+                                        >
+                                            <div className="transform skew-x-[15deg]">
+                                                <QrCode className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </div>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <motion.button
@@ -691,7 +708,7 @@ export default function HomeClient() {
                                         boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                                     }}
                                     onClick={handleJoin}
-                                    className="px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap"
+                                    className="px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap h-[50px] mb-0.5"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
                                     <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
@@ -756,6 +773,86 @@ export default function HomeClient() {
                                         </span>
                                     </button>
                                 </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Scan QR Modal */}
+            <AnimatePresence>
+                {isScanOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+                        onClick={() => setIsScanOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.3, type: "spring", stiffness: 150 }}
+                            className="w-full max-w-sm bg-[#0c1020]/98 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="h-[2px] bg-gradient-to-r from-transparent via-[#2d6af2] to-transparent"></div>
+                            <div className="p-4 flex items-center justify-between border-b border-white/[0.05]">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-[#2d6af2]/10 border border-[#2d6af2]/20">
+                                        <QrCode className="w-4 h-4 text-[#5a9cff]" />
+                                    </div>
+                                    <h2 className="text-lg font-bold uppercase tracking-wider text-white">
+                                        Scan QR Code
+                                    </h2>
+                                </div>
+                                <button
+                                    onClick={() => setIsScanOpen(false)}
+                                    className="p-2 rounded-lg hover:bg-white/[0.05] text-white/40 hover:text-white transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 flex justify-center bg-black/50">
+                                <div className="w-full aspect-square max-w-[300px] overflow-hidden rounded-xl border border-white/10 relative">
+                                    <Scanner
+                                        onScan={(result) => {
+                                            if (result && result.length > 0) {
+                                                const scannedText = result[0].rawValue;
+                                                try {
+                                                    const url = new URL(scannedText);
+                                                    const pathParts = url.pathname.split('/');
+                                                    if (pathParts.includes('join')) {
+                                                        const code = pathParts[pathParts.length - 1];
+                                                        setRoomCode(code.toUpperCase().slice(0, 6));
+                                                    } else {
+                                                        setRoomCode(scannedText.toUpperCase().slice(0, 6));
+                                                    }
+                                                } catch(e) {
+                                                    setRoomCode(scannedText.toUpperCase().slice(0, 6));
+                                                }
+                                                setIsScanOpen(false);
+                                            }
+                                        }}
+                                        onError={(error) => console.log(error)}
+                                        components={{ audio: false, finder: false } as any}
+                                    />
+                                    {/* Scanner Target Overlay */}
+                                    <div className="absolute inset-0 pointer-events-none border-[3px] border-[#2d6af2]/50 m-8 rounded-lg z-10 flex items-center justify-center">
+                                        <div className="w-full h-full relative">
+                                            <div className="absolute top-0 left-0 w-4 h-4 border-t-[3px] border-l-[3px] border-[#5a9cff] -mt-[3px] -ml-[3px]" />
+                                            <div className="absolute top-0 right-0 w-4 h-4 border-t-[3px] border-r-[3px] border-[#5a9cff] -mt-[3px] -mr-[3px]" />
+                                            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-[3px] border-l-[3px] border-[#5a9cff] -mb-[3px] -ml-[3px]" />
+                                            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-[3px] border-r-[3px] border-[#5a9cff] -mb-[3px] -mr-[3px]" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 text-center text-white/50 text-xs font-medium tracking-widest uppercase border-t border-white/[0.05]">
+                                {t('homepage.scan_qr_hint', 'Point camera at the QR Code')}
                             </div>
                         </motion.div>
                     </motion.div>
