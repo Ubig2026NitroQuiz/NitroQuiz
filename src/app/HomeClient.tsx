@@ -658,12 +658,12 @@ export default function HomeClient() {
                         <div className="checkered-tag"></div>
 
                         <div className="relative z-10 flex flex-col">
-                            <div className="mb-6">
+                            <div className="mb-2 sm:mb-6">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="w-10 h-10 flex items-center justify-center bg-[#2d6af2]/10 text-[#5a9cff] border border-[#2d6af2]/20">
                                         <PlayCircle className="w-5 h-5" />
                                     </div>
-                                    <div className="flex items-baseline gap-4">
+                                    <div className="flex items-baseline gap-4 flex-1">
                                         <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
                                             {t('homepage.join.title')}
                                         </h2>
@@ -671,12 +671,20 @@ export default function HomeClient() {
                                             {t('homepage.join.subtitle')}
                                         </p>
                                     </div>
+                                    {/* QR Button mobile - pojok kanan atas */}
+                                    <button
+                                        onClick={() => setIsScanOpen(true)}
+                                        className="sm:hidden p-2 px-3 bg-[#2d6af2]/15 border border-[#2d6af2]/30 text-[#5a9cff] hover:bg-[#2d6af2]/30 hover:border-[#2d6af2]/60 hover:text-white rounded-sm transition-all duration-300 flex items-center justify-center shadow-[0_0_10px_rgba(45,106,242,0.15)]"
+                                        title="Scan QR Code"
+                                    >
+                                        <QrCode className="w-5 h-5" />
+                                    </button>
                                 </div>
                                 <div className="mt-1 h-0.5 w-12 bg-[#2d6af2] group-hover:w-20 transition-all duration-500"></div>
                             </div>
 
-                            <div className="flex items-end gap-4">
-                                <div className="flex-1 relative h-[50px] transform -skew-x-[15deg] bg-white/[0.03] border border-white/20 focus-within:border-[#2d6af2] focus-within:bg-[#2d6af2]/10 transition-all duration-300 flex items-center mb-0.5 rounded-sm">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 sm:gap-4">
+                                <div className="flex-1 relative h-[72px] sm:h-[58px] transform -skew-x-[15deg] bg-white/[0.03] border border-white/20 focus-within:border-[#2d6af2] focus-within:bg-[#2d6af2]/10 transition-all duration-300 flex items-center mb-0.5 rounded-sm">
                                     <input
                                         className="w-full h-full bg-transparent text-white font-bold text-lg px-6 focus:outline-none placeholder:text-[10px] placeholder:font-bold uppercase tracking-[0.3em] placeholder:text-white/20 text-center transform skew-x-[15deg]"
                                         maxLength={6}
@@ -686,8 +694,8 @@ export default function HomeClient() {
                                         onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                                         onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                                     />
-                                    {/* Scan QR Button inside input */}
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 transform skew-x-[15deg]">
+                                    {/* Scan QR Button inside input - desktop only */}
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 transform skew-x-[15deg] hidden sm:block">
                                         <button
                                             onClick={() => setIsScanOpen(true)}
                                             className="p-1.5 px-3 bg-[#2d6af2]/15 border border-[#2d6af2]/30 text-[#5a9cff] hover:bg-[#2d6af2]/30 hover:border-[#2d6af2]/60 hover:text-white rounded-sm transition-all duration-300 group flex items-center justify-center transform -skew-x-[15deg] shadow-[0_0_10px_rgba(45,106,242,0.15)] hover:shadow-[0_0_15px_rgba(45,106,242,0.3)]"
@@ -708,7 +716,7 @@ export default function HomeClient() {
                                         boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                                     }}
                                     onClick={handleJoin}
-                                    className="px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap h-[50px] mb-0.5"
+                                    className="w-full sm:w-auto px-10 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap h-[58px] mb-0.5"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
                                     <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
