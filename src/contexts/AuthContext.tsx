@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { createGFSClient } from "@/lib/supabase/gfs-client";
-import { syncSessionCookie, getSessionFromCookie } from "@/lib/supabase";
 
 interface Profile {
     id: string
@@ -134,32 +133,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const init = async () => {
             try {
+                const { data: { user: currentUser } } = await supabase.auth.getUser()
                 const { data: { session } } = await supabase.auth.getSession()
-                
-                // If no local session, try to get from shared cookie (SSO)
-                if (!session) {
-                    const cookieSession = getSessionFromCookie()
-                    if (cookieSession) {
-                        const { data: { session: newSession } } = await supabase.auth.setSession(cookieSession)
-                        if (newSession) {
-                            setUser(newSession.user)
-                            loadProfile(newSession.user, setProfile, () => {}, setLoading)
-                            return
-                        }
-                    }
-                }
 
-                const currentUser = session?.user ?? null
                 setUser(currentUser)
 
-                if (currentUser) {
-                    // Ensure shared cookie is synced
-                    syncSessionCookie({
-                        access_token: session!.access_token,
-                        refresh_token: session!.refresh_token
-                    })
-                    // Jangan pakai 'await' di sini agar loading state bisa segera selesai
-                    loadProfile(currentUser, setProfile, () => {}, setLoading)
+                if (currentUser && session) {
+                    // Don't 'await' here to allow loading state to finish quickly
+                    loadProfile(currentUser, setProfile, () => { }, setLoading)
                 } else {
                     setLoading(false)
                 }
@@ -176,27 +157,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible') {
                 try {
-                    const { data: { session } } = await supabase.auth.getSession()
-                    const currentUser = session?.user ?? null
-                    
-                    // Sync cookie if session exists
-                    if (session) {
-                        syncSessionCookie({
-                            access_token: session.access_token,
-                            refresh_token: session.refresh_token
-                        })
-                    } else {
-                        // If session is gone, check cookie too
-                        const cookieSession = getSessionFromCookie()
-                        if (!cookieSession) {
-                            syncSessionCookie(null)
-                        }
-                    }
+                    // Use getUser() to force re-validation of the native cookie
+                    const { data: { user: currentUser } } = await supabase.auth.getUser()
 
                     setUser((prevUser: any) => {
+                        // If user changed (login or logout in another tab)
                         if (currentUser?.id !== prevUser?.id) {
                             if (currentUser) {
-                                loadProfile(currentUser, setProfile, () => {})
+                                loadProfile(currentUser, setProfile, () => { })
                             } else {
                                 setProfile(null)
                             }
@@ -216,18 +184,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: listener } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 const currentUser = session?.user ?? null
-                
-                // Sync shared cookie for SSO on important events
-                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                    if (session) {
-                        syncSessionCookie({
-                            access_token: session.access_token,
-                            refresh_token: session.refresh_token
-                        })
-                    }
-                } else if (event === 'SIGNED_OUT') {
-                    syncSessionCookie(null)
-                }
 
                 setUser(currentUser)
 

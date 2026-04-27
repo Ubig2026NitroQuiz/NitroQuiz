@@ -23,7 +23,6 @@
  * =============================================================
  */
 
-import { createSupabaseCentralServer } from "@/lib/supabase-server";
 import SelectQuizClient, { type QuizView } from "./SelectQuizClient";
 import { createGFSServerClient } from "@/lib/supabase/gfs-server";
 

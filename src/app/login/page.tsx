@@ -25,7 +25,7 @@ function Speedometer({ active }: { active: boolean }) {
     <div className="relative w-20 h-10 overflow-hidden">
       {/* Arc track */}
       <svg viewBox="0 0 80 40" className="w-full h-full" fill="none">
-        <path d="M4 40 A36 36 0 0 1 76 40" stroke="rgba(255,255,255,0.06)" strokeWidth="6" strokeLinecap="round"/>
+        <path d="M4 40 A36 36 0 0 1 76 40" stroke="rgba(255,255,255,0.06)" strokeWidth="6" strokeLinecap="round" />
         <motion.path
           d="M4 40 A36 36 0 0 1 76 40"
           stroke="url(#speedGrad)"
@@ -37,9 +37,9 @@ function Speedometer({ active }: { active: boolean }) {
         />
         <defs>
           <linearGradient id="speedGrad" x1="0" y1="0" x2="80" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#7C3AED"/>
-            <stop offset="50%" stopColor="#2d6af2"/>
-            <stop offset="100%" stopColor="#00ff9d"/>
+            <stop offset="0%" stopColor="#7C3AED" />
+            <stop offset="50%" stopColor="#2d6af2" />
+            <stop offset="100%" stopColor="#00ff9d" />
           </linearGradient>
         </defs>
         {/* Needle */}
@@ -119,11 +119,11 @@ function RpmBar({ active }: { active: boolean }) {
 function NightCircuit() {
   return (
     <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-[#02040a]">
-      
+
       {/* ── 1. MAIN CIRCUIT CANVAS (Static Horizon) ── */}
-      <div 
+      <div
         className="absolute inset-0 opacity-60"
-        style={{ 
+        style={{
           backgroundImage: 'url("/assets/backgorund/homepage_bg.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -132,9 +132,9 @@ function NightCircuit() {
       />
 
       {/* ── 2. STATIC TELEMETRY GRID (Subtle Tech Feel) ── */}
-      <div 
+      <div
         className="absolute inset-0 opacity-10"
-        style={{ 
+        style={{
           backgroundImage: `
             linear-gradient(rgba(124,58,237,0.2) 1px, transparent 1px),
             linear-gradient(90deg, rgba(124,58,237,0.2) 1px, transparent 1px)
@@ -167,7 +167,7 @@ function NightCircuit() {
 
       {/* ── 6. VIGNETTE OVERLAY ── */}
       <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#02040a]/40 to-[#02040a] opacity-90" />
-      
+
       {/* Bottom perspective line (Ghost of a track) */}
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
     </div>
@@ -194,7 +194,7 @@ export default function LoginPage() {
       color: i % 5 === 0 ? "#00ff9d" : i % 5 === 1 ? "#2d6af2" : i % 5 === 2 ? "#7C3AED" : i % 5 === 3 ? "#E10600" : "#f59e0b",
       dur: 5 + Math.random() * 4,
     }))
-  , []);
+    , []);
 
   const tyreMarks = useMemo(() =>
     Array.from({ length: 6 }, (_, i) => ({
@@ -204,14 +204,14 @@ export default function LoginPage() {
       len: 60 + Math.random() * 120,
       delay: i * 0.6,
     }))
-  , []);
+    , []);
 
   const streetLights = useMemo(() =>
     Array.from({ length: 6 }, (_, i) => ({
       delay: i * 0.15,
       duration: 0.4,
     }))
-  , []);
+    , []);
 
   const registerUrl =
     typeof window !== "undefined" &&
@@ -278,8 +278,8 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { 
-          redirectTo: window.location.origin + window.location.pathname 
+        options: {
+          redirectTo: window.location.origin + window.location.pathname
         },
       });
       if (error) throw error;
@@ -380,7 +380,7 @@ export default function LoginPage() {
       <NightCircuit />
 
       {/* ── G. NOISE OVERLAY (Premium Detail) ── */}
-      <div 
+      <div
         className="absolute inset-0 z-[1] pointer-events-none opacity-[0.035]"
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
@@ -503,7 +503,7 @@ export default function LoginPage() {
               >
                 {/* Shimmer */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000" />
-                
+
                 <div className="relative z-10 flex items-center justify-center gap-2.5 transform skew-x-[12deg]">
                   {isGoogleLoading
                     ? <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
@@ -561,10 +561,9 @@ export default function LoginPage() {
                       placeholder={t('login.form.identifier_placeholder')}
                       autoComplete="username"
                       disabled={isSubmitting}
-                      className={`relative z-10 w-full h-11 bg-white/[0.03] border ${
-                        errors.identifier ? 'border-[#E10600]/40' :
-                        identifierVal ? 'border-[#00ff9d]/25' : 'border-white/[0.07]'
-                      } text-white text-sm px-4 rounded-xl outline-none transition-all duration-200
+                      className={`relative z-10 w-full h-11 bg-white/[0.03] border ${errors.identifier ? 'border-[#E10600]/40' :
+                          identifierVal ? 'border-[#00ff9d]/25' : 'border-white/[0.07]'
+                        } text-white text-sm px-4 rounded-xl outline-none transition-all duration-200
                         placeholder:text-gray-700 focus:border-[#7C3AED]/60 focus:bg-white/[0.05]
                         focus:shadow-[0_0_0_3px_rgba(124,58,237,0.1)] font-mono tracking-wide`}
                       {...register("identifier")}
@@ -600,9 +599,8 @@ export default function LoginPage() {
                       placeholder={t('login.form.password_placeholder')}
                       autoComplete="current-password"
                       disabled={isSubmitting}
-                      className={`relative z-10 w-full h-11 bg-white/[0.03] border ${
-                        errors.password ? 'border-[#E10600]/40' : 'border-white/[0.07]'
-                      } text-white text-sm ps-4 pe-11 rounded-xl outline-none transition-all duration-200
+                      className={`relative z-10 w-full h-11 bg-white/[0.03] border ${errors.password ? 'border-[#E10600]/40' : 'border-white/[0.07]'
+                        } text-white text-sm ps-4 pe-11 rounded-xl outline-none transition-all duration-200
                         placeholder:text-gray-700 focus:border-[#2d6af2]/60 focus:bg-white/[0.05]
                         focus:shadow-[0_0_0_3px_rgba(45,106,242,0.1)] font-mono`}
                       {...register("password")}
@@ -633,10 +631,10 @@ export default function LoginPage() {
                 >
                   {/* High-Octane Gradient Base */}
                   <div className="absolute inset-0 bg-gradient-to-r from-[#5b21b6] via-[#7C3AED] to-[#2d6af2] group-hover:from-[#6d28d9] group-hover:to-[#3b82f6] transition-colors duration-500" />
-                  
+
                   {/* Glossy Glass Layer */}
                   <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent opacity-60" />
-                  
+
                   {/* Aerodynamic Texture */}
                   <div className="absolute inset-0 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity"
                     style={{
@@ -646,7 +644,7 @@ export default function LoginPage() {
 
                   {/* Left "Live" Neon Accent */}
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00ff9d] shadow-[0_0_15px_#00ff9d,0_0_5px_#00ff9d] z-20" />
-                  
+
                   {/* Shimmer Effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
 
