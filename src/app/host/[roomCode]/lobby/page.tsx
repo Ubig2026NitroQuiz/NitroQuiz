@@ -109,8 +109,8 @@ export default function HostLobby() {
         }
 
         // Mutual = intersection (users I follow AND who follow me back)
-        const iFollowIds = new Set((iFollow || []).map(f => f.addressee_id));
-        const followMeIds = new Set((followMe || []).map(f => f.requester_id));
+        const iFollowIds = new Set((iFollow || []).map((f: any) => f.addressee_id));
+        const followMeIds = new Set((followMe || []).map((f: any) => f.requester_id));
         const mutualIds = [...iFollowIds].filter(id => followMeIds.has(id));
 
         if (mutualIds.length === 0) {

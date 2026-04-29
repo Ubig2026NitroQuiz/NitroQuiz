@@ -169,7 +169,7 @@ export default function SelectQuizClient({
                 .is("deleted_at", null)
                 .or(orQuery);
             if (data) {
-                const uniqueCats = ['All', ...new Set(data.map((q: any) => q.category).filter(Boolean))];
+                const uniqueCats = ['All', ...new Set(data.map((q: any) => q.category).filter(Boolean))] as string[];
                 setCategories(uniqueCats);
             }
         };
