@@ -8,10 +8,9 @@ export async function createGFSServerClient() {
     // Environment Checks
     const isProdDomain = host.endsWith("gameforsmart.com");
     const isVercel = host.endsWith(".vercel.app");
-    const isNgrok = host.includes("ngrok-free.app") || host.includes("ngrok.io");
-    
+
     // Cookie secure only on HTTPS domains
-    const isSecureContext = isProdDomain || isVercel || isNgrok;
+    const isSecureContext = isProdDomain || isVercel;
 
     return createServerClient(
         process.env.NEXT_PUBLIC_CENTRAL_SUPABASE_URL!,
@@ -20,16 +19,20 @@ export async function createGFSServerClient() {
             cookies: {
                 getAll: () => cookieStore.getAll(),
                 setAll: (cookiesToSet) => {
-                    cookiesToSet.forEach(({ name, value, options }) => {
-                        const cookieOptions = {
-                            ...options,
-                            secure: isSecureContext,
-                            sameSite: "lax" as const,
-                            ...(isProdDomain && { domain: ".gameforsmart.com" })
-                        };
+                    try {
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            const cookieOptions = {
+                                ...options,
+                                secure: isSecureContext,
+                                sameSite: "lax" as const,
+                                ...(isProdDomain && { domain: ".gameforsmart.com" })
+                            };
 
-                        cookieStore.set(name, value, cookieOptions);
-                    });
+                            cookieStore.set(name, value, cookieOptions);
+                        });
+                    } catch (e) {
+                        //Ignore
+                    }
                 },
             },
         }
