@@ -300,7 +300,7 @@ function PlayerCard({
 
         {/* Score + Status row */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
+          {/* <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -334,7 +334,7 @@ function PlayerCard({
             >
               {player.score.toLocaleString()}
             </span>
-          </div>
+          </div> */}
 
           {/* Status badge */}
           <div
