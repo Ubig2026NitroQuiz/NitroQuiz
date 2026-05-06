@@ -431,7 +431,9 @@ export default function GameMonitorPage() {
   }, [participants]);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
+    let channel: ReturnType<typeof supabaseGame.channel> | null = null;
+
+    const fetchAndSubscribe = async () => {
       try {
         await syncServerTime(); // Force sync first
         const { data: sessionData, error: sessionError } = await supabaseGame
@@ -440,79 +442,84 @@ export default function GameMonitorPage() {
           .eq("game_pin", roomCode)
           .single();
 
-        if (sessionError) return;
+        if (sessionError || !sessionData) return;
 
-        if (sessionData) {
-          setSessionId(sessionData.id);
-          setSession(sessionData);
-          setTotalQuestions(sessionData.question_limit || 5);
+        const fetchedSessionId = sessionData.id;
 
-          // Initial calculation for immediate display
-          if (sessionData.started_at) {
-            const start = new Date(sessionData.started_at).getTime();
-            const now = getSyncedServerTime();
-            const elapsedSeconds = Math.floor((now - start) / 1000);
-            const totalSeconds = (sessionData.total_time_minutes || 5) * 60;
-            const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
-            setTimeLeft(remaining);
-          }
+        setSessionId(fetchedSessionId);
+        setSession(sessionData);
+        setTotalQuestions(sessionData.question_limit || 5);
 
-          const { data: pData } = await supabaseGame
-            .from("participants")
-            .select("*")
-            .eq("session_id", sessionData.id);
-
-          if (pData) setParticipants(pData as Participant[]);
+        // Initial calculation for immediate display
+        if (sessionData.started_at) {
+          const start = new Date(sessionData.started_at).getTime();
+          const now = getSyncedServerTime();
+          const elapsedSeconds = Math.floor((now - start) / 1000);
+          const totalSeconds = (sessionData.total_time_minutes || 5) * 60;
+          const remaining = Math.max(0, Math.min(totalSeconds, totalSeconds - elapsedSeconds));
+          setTimeLeft(remaining);
         }
+
+        const { data: pData } = await supabaseGame
+          .from("participants")
+          .select("*")
+          .eq("session_id", fetchedSessionId);
+
+        if (pData) setParticipants(pData as Participant[]);
+
+        // Subscribe to Realtime immediately — no extra render cycle needed
+        channel = supabaseGame
+          .channel(`host_monitor_${roomCode?.toUpperCase()}_${fetchedSessionId}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${fetchedSessionId}` },
+            (payload) => {
+              if (payload.eventType === "UPDATE") {
+                const updated = payload.new as Participant;
+                setParticipants((prev) => prev.map((p) => (String(p.id) === String(updated.id) ? { ...p, ...updated } : p)));
+              } else if (payload.eventType === "INSERT") {
+                const inserted = payload.new as Participant;
+                if (inserted.session_id !== fetchedSessionId) return;
+                setParticipants((prev) => {
+                  if (prev.some(p => String(p.id) === String(inserted.id))) return prev;
+                  return [...prev, inserted];
+                });
+              } else if (payload.eventType === "DELETE") {
+                const deleted = payload.old as { id: any };
+                setParticipants((prev) => prev.filter(p => String(p.id) !== String(deleted.id)));
+              }
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${fetchedSessionId}` },
+            (payload) => {
+              setSession((prev: any) => ({ ...prev, ...payload.new }));
+              if (payload.new.status === "finished" || payload.new.status === "completed") {
+                router.push(`/host/${roomCode}/leaderboard`);
+              } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
+                router.push(`/host/${roomCode}/lobby`);
+              }
+            }
+          )
+          .subscribe((status) => {
+            if (status === "CHANNEL_ERROR") {
+              console.error(`[Realtime] CHANNEL_ERROR on host_monitor_${roomCode}_${fetchedSessionId}`);
+            }
+          });
       } catch (err) {
         console.error("Initialization error:", err);
       }
     };
 
-    fetchInitialData();
+    fetchAndSubscribe();
+
+    return () => {
+      if (channel) {
+        supabaseGame.removeChannel(channel);
+      }
+    };
   }, [roomCode]);
-
-  useEffect(() => {
-    if (!sessionId) return;
-
-    const channel = supabaseGame
-      .channel(`host_monitor_${roomCode?.toUpperCase()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
-        (payload) => {
-          if (payload.eventType === "UPDATE") {
-            const updated = payload.new as Participant;
-            setParticipants((prev) => prev.map((p) => (String(p.id) === String(updated.id) ? { ...p, ...updated } : p)));
-          } else if (payload.eventType === "INSERT") {
-            const inserted = payload.new as Participant;
-            if (inserted.session_id !== sessionId) return;
-            setParticipants((prev) => {
-              if (prev.some(p => String(p.id) === String(inserted.id))) return prev;
-              return [...prev, inserted];
-            });
-          } else if (payload.eventType === "DELETE") {
-            const deleted = payload.old as { id: any };
-            setParticipants((prev) => prev.filter(p => String(p.id) !== String(deleted.id)));
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
-        (payload) => {
-          setSession((prev: any) => ({ ...prev, ...payload.new }));
-          if (payload.new.status === "finished" || payload.new.status === "completed") {
-            router.push(`/host/${roomCode}/leaderboard`);
-          } else if (payload.new.status === "waiting" || payload.new.status === "lobby") {
-            router.push(`/host/${roomCode}/lobby`);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => { supabaseGame.removeChannel(channel); };
-  }, [sessionId]);
 
   // Timer akurat berbasis realtime seperti Axiom
   useEffect(() => {
