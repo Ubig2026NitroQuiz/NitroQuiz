@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LogOut, Flag } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 const logoImageMap: Record<string, string> = {
   purple: "/assets/characters/rico/logo/logo1.png",
@@ -133,12 +134,7 @@ function PlayerCard({
   const isFinished =
     player.finished_at !== null || player.current_question >= totalQuestions;
 
-  const rankColors: Record<number, string> = {
-    0: "#f59e0b",
-    1: "#94a3b8",
-    2: "#b45309",
-  };
-  const rankColor = rankColors[rank] ?? "rgba(255,255,255,0.15)";
+  const rankColor = "rgba(255,255,255,0.15)";
 
   let statusLabel = t("host_monitor.racing");
   let statusBg = "rgba(255,255,255,0.05)";
@@ -262,24 +258,31 @@ function PlayerCard({
           minWidth: 0,
         }}
       >
-        {/* Name + Lap indicator */}
+        {/* Name row */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span
-            style={{
-              fontFamily: "Orbitron, monospace",
-              fontSize: "13px",
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              color: "rgba(255,255,255,0.92)",
-              textTransform: "uppercase",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            title={player.nickname}
-          >
-            {player.nickname}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                style={{
+                  fontFamily: "Orbitron, monospace",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  color: "rgba(255,255,255,0.92)",
+                  textTransform: "uppercase",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  cursor: "default"
+                }}
+              >
+                {player.nickname}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={8} className="bg-[#0c1020]/95 backdrop-blur-xl border border-[#7C3AED]/60 text-white font-display text-[10px] uppercase font-bold tracking-widest shadow-[0_0_25px_rgba(124,58,237,0.5)] z-[100] max-w-[280px]">
+                {player.nickname}
+            </TooltipContent>
+          </Tooltip>
           <span
             style={{
               fontFamily: "Orbitron, monospace",
@@ -298,45 +301,8 @@ function PlayerCard({
           </span>
         </div>
 
-        {/* Score + Status row */}
+        {/* Status badge */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "2px 8px",
-              borderRadius: "6px",
-              background: "rgba(59,130,246,0.12)",
-              border: "1px solid rgba(59,130,246,0.3)",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "Orbitron, monospace",
-                fontSize: "7px",
-                fontWeight: 700,
-                letterSpacing: "0.15em",
-                color: "rgba(147,197,253,0.6)",
-                textTransform: "uppercase",
-              }}
-            >
-              {t("host_monitor.score")}
-            </span>
-            <span
-              style={{
-                fontFamily: "Orbitron, monospace",
-                fontSize: "12px",
-                fontWeight: 900,
-                color: "#93c5fd",
-                lineHeight: 1,
-              }}
-            >
-              {player.score.toLocaleString()}
-            </span>
-          </div> */}
-
-          {/* Status badge */}
           <div
             style={{
               display: "flex",
@@ -369,37 +335,6 @@ function PlayerCard({
             {statusLabel}
           </div>
         </div>
-      </div>
-
-      {/* Position indicator (right side) */}
-      <div
-        style={{
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "10px 14px",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          minWidth: "80px",
-          gap: "4px",
-        }}
-      >
-        {/* No POS label as requested */}
-
-        <span
-          style={{
-            fontFamily: "Orbitron, monospace",
-            fontSize: "24px",
-            fontWeight: 900,
-            fontStyle: "italic",
-            color: rankColor,
-            textShadow: `0 0 12px ${rankColor}80`,
-            lineHeight: 1,
-          }}
-        >
-          #{rank + 1}
-        </span>
       </div>
     </div>
   );
@@ -685,15 +620,17 @@ export default function GameMonitorPage() {
   };
 
   const rankedParticipants = useMemo(() => {
-    return [...participants].sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      if (b.current_question !== a.current_question) return b.current_question - a.current_question;
-      return (b.lap_race || 0) - (a.lap_race || 0);
-    });
+    // return [...participants].sort((a, b) => {
+    //   if (b.score !== a.score) return b.score - a.score;
+    //   if (b.current_question !== a.current_question) return b.current_question - a.current_question;
+    //   return (b.lap_race || 0) - (a.lap_race || 0);
+    // });
+    return participants;
   }, [participants]);
 
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div
       style={{
         minHeight: "100vh",
@@ -794,7 +731,7 @@ export default function GameMonitorPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" style={{ maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" style={{ maxWidth: "1600px", margin: "0 auto", width: "100%" }}>
           <AnimatePresence>
             {rankedParticipants.map((player, index) => (
               <motion.div
@@ -886,7 +823,7 @@ export default function GameMonitorPage() {
         }
         @media (min-width: 1280px) {
           .leaderboard-grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
           }
         }
         .empty-grid-msg {
@@ -899,5 +836,6 @@ export default function GameMonitorPage() {
       `}</style>
       <FloatingHostActions />
     </div>
+    </TooltipProvider>
   );
 }

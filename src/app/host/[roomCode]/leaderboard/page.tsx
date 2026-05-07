@@ -110,6 +110,7 @@ interface Participant {
   duration: number;
   joined_at: string;
   avatar_url?: string | null;
+  eliminated?: boolean;
 }
 
 export default function LeaderboardPage() {
@@ -477,13 +478,22 @@ export default function LeaderboardPage() {
                     variants={nameplateVariants}
                     initial="hidden"
                     animate="visible"
-                    className="mb-2 z-30"
+                    className="mb-2 z-30 relative group cursor-pointer"
                   >
                     <div className="bg-[#0d1526]/90 border-l-4 border-slate-400 backdrop-blur-xl pl-3 pr-4 py-1 transform -skew-x-[10deg] shadow-[4px_4px_0px_rgba(148,163,184,0.2)] relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-r from-slate-400/10 to-transparent" />
                       <p className="font-display text-white text-xs sm:text-base font-black tracking-widest truncate max-w-[100px] sm:max-w-[130px] skew-x-[10deg]">
                         {secondPlace.nickname}
                       </p>
+                    </div>
+
+                    {/* Tooltip Player Name 2 */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50 flex flex-col items-center drop-shadow-xl translate-y-2 group-hover:translate-y-0">
+                      <div className="bg-slate-800 border-2 border-slate-400 text-slate-100 text-[10px] sm:text-xs font-display tracking-widest py-1 px-3 transform -skew-x-[15deg] shadow-[0_0_10px_rgba(148,163,184,0.5)]">
+                        <span className="transform skew-x-[15deg] block whitespace-nowrap">
+                          {secondPlace.nickname}
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
 
@@ -552,13 +562,22 @@ export default function LeaderboardPage() {
                     variants={nameplateVariants}
                     initial="hidden"
                     animate="visible"
-                    className="mb-2 z-30"
+                    className="mb-2 z-30 relative group cursor-pointer"
                   >
                     <div className="bg-yellow-500 border-l-4 border-yellow-200 pl-4 pr-5 py-1.5 transform -skew-x-[10deg] shadow-[4px_4px_0px_rgba(234,179,8,0.4),0_0_20px_rgba(234,179,8,0.3)] relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-r from-yellow-300/20 to-transparent" />
                       <p className="font-display text-white text-sm sm:text-2xl font-black tracking-widest uppercase truncate max-w-[160px] sm:max-w-[200px] skew-x-[10deg] drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
                         {firstPlace.nickname}
                       </p>
+                    </div>
+
+                    {/* Tooltip Player Name 1 */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50 flex flex-col items-center drop-shadow-xl translate-y-2 group-hover:translate-y-0">
+                      <div className="bg-yellow-900 border-2 border-yellow-400 text-yellow-300 text-xs sm:text-sm font-display tracking-widest py-1.5 px-4 transform -skew-x-[15deg] shadow-[0_0_15px_rgba(250,204,21,0.6)]">
+                        <span className="transform skew-x-[15deg] block whitespace-nowrap font-black">
+                          {firstPlace.nickname}
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
 
@@ -641,13 +660,22 @@ export default function LeaderboardPage() {
                     variants={nameplateVariants}
                     initial="hidden"
                     animate="visible"
-                    className="mb-2 z-30"
+                    className="mb-2 z-30 relative group cursor-pointer"
                   >
                     <div className="bg-[#0d1526]/90 border-l-4 border-orange-700 backdrop-blur-xl pl-3 pr-4 py-1 transform -skew-x-[10deg] shadow-[4px_4px_0px_rgba(194,65,12,0.2)] relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-r from-orange-700/10 to-transparent" />
                       <p className="font-display text-white text-xs sm:text-sm font-black tracking-widest truncate max-w-[90px] sm:max-w-[110px] skew-x-[10deg]">
                         {thirdPlace.nickname}
                       </p>
+                    </div>
+
+                    {/* Tooltip Player Name 3 */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50 flex flex-col items-center drop-shadow-xl translate-y-2 group-hover:translate-y-0">
+                      <div className="bg-[#1a0a05] border-2 border-orange-600 text-orange-400 text-[10px] sm:text-xs font-display tracking-widest py-1 px-3 transform -skew-x-[15deg] shadow-[0_0_10px_rgba(194,65,12,0.5)]">
+                        <span className="transform skew-x-[15deg] block whitespace-nowrap">
+                          {thirdPlace.nickname}
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
 
@@ -802,13 +830,29 @@ export default function LeaderboardPage() {
                             </td>
                             <td className="px-2 sm:px-4 py-3 text-right">
                               <span
-                                className={`font-mono font-bold text-sm sm:text-base ${index === 0 ? "text-yellow-400" : "text-[#00ff9d]"}`}
+                                className={`font-mono font-bold text-sm sm:text-base ${
+                                  player.eliminated
+                                    ? "text-red-500"
+                                    : player.finished_at
+                                    ? "text-[#00ff9d]"
+                                    : index === 0
+                                    ? "text-yellow-400"
+                                    : "text-[#00ff9d]"
+                                }`}
                               >
                                 {player.score.toLocaleString()}
                               </span>
                             </td>
                             <td className="px-2 sm:px-4 py-3 text-center">
-                              <span className="text-cyan-400 font-mono text-xs sm:text-sm">
+                              <span
+                                className={`font-mono text-xs sm:text-sm ${
+                                  player.eliminated
+                                    ? "text-red-500"
+                                    : player.finished_at
+                                    ? "text-[#00ff9d]"
+                                    : "text-cyan-400"
+                                }`}
+                              >
                                 {formatDuration(player.duration)}
                               </span>
                             </td>

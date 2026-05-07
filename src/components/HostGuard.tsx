@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabaseGame } from "@/lib/supabase/game-client";
@@ -17,9 +17,13 @@ export function HostGuard({ children }: HostGuardProps) {
     const roomCode = (params.roomCode as string)?.toUpperCase();
     const { profile, loading: authLoading } = useAuth();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+    const authorizedAsHost = useRef(false);
     const { t } = useTranslation()
 
     useEffect(() => {
+        // Once confirmed as host, never re-run checks (prevents AuthContext refresh race)
+        if (authorizedAsHost.current) return;
+
         if (authLoading || !roomCode) return;
 
         const checkAuthorization = async () => {
@@ -40,9 +44,14 @@ export function HostGuard({ children }: HostGuardProps) {
                 // 2. PRIORITY: Check if the current user is the host
                 // If they are the host, they SHOULD stay here, even if they are also a participant
                 if (profile && profile.id === session.host_id) {
+                    authorizedAsHost.current = true;
                     setIsAuthorized(true);
                     return;
                 }
+
+                // If profile is temporarily null (AuthContext refreshing), wait — don't
+                // fall through to participant checks that would incorrectly redirect a host
+                if (!profile) return;
 
                 // 3. If NOT host, check for participant status (Redirect to player waiting)
                 
