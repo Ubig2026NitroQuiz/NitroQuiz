@@ -25,6 +25,7 @@ import { useBgm } from "@/contexts/BgmContext";
 import { FloatingHostActions } from "@/components/FloatingHostActions";
 import { createGFSClient } from "@/lib/supabase/gfs-client";
 import { supabaseGame } from "@/lib/supabase/game-client";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 // Helper: Generate initials from a name
 const getInitials = (name: string): string => {
@@ -488,6 +489,7 @@ export default function HostLobby() {
   }
 
   return (
+    <TooltipProvider delayDuration={100}>
     <div className="min-h-screen bg-[#04060f] relative font-body text-white flex flex-col">
       {/* Racing Stripe at top */}
       <div className="racing-stripe z-0 pointer-events-none"></div>
@@ -716,7 +718,9 @@ export default function HostLobby() {
                 </div>
                 <div className="flex flex-row items-baseline gap-1.5 sm:gap-3">
                   <h2 className="font-display text-xl sm:text-3xl font-bold text-white leading-none">{participants.length}</h2>
-                  <p className="text-[#00ff9d] text-[9px] sm:text-[11px] font-bold uppercase font-display tracking-[0.2em]">{t('host_lobby.players')}</p>
+                  <p className="text-[#00ff9d] text-[9px] sm:text-[11px] font-bold uppercase font-display tracking-[0.2em]">
+                    {participants.length === 1 ? 'PLAYER' : t('host_lobby.players')}
+                  </p>
                 </div>
               </div>
 
@@ -792,7 +796,18 @@ export default function HostLobby() {
                           )}
                         </div>
                         <div className="bg-black/40 border border-white/5 rounded-md px-2 py-1 w-full text-center relative z-10 shadow-inner group-hover:bg-[#2d6af2]/10 transition-colors">
-                          <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{player.nickname}</p>
+                          {player.nickname.length > 12 ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] cursor-default">{player.nickname}</p>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={8} className="bg-[#0c1020]/95 backdrop-blur-xl border border-[#7C3AED]/60 text-white font-display text-[10px] uppercase font-bold tracking-widest shadow-[0_0_25px_rgba(124,58,237,0.5)] z-[100] max-w-[280px] transform -skew-x-[12deg] rounded-none px-3 py-1.5">
+                                <span className="block transform skew-x-[12deg] truncate">{player.nickname}</span>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{player.nickname}</p>
+                          )}
                         </div>
 
                         <button
@@ -1193,5 +1208,6 @@ export default function HostLobby() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
       `}</style>
     </div>
+    </TooltipProvider>
   );
 }
