@@ -36,6 +36,7 @@ import { createGFSClient } from "@/lib/supabase/gfs-client";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 import { usePWAInstall } from "@/contexts/PWAContext";
 import dynamic from 'next/dynamic';
+import { FloatingHostActions } from "@/components/FloatingHostActions";
 
 const Scanner = dynamic(() => import('@yudiel/react-qr-scanner').then((mod) => mod.Scanner), { ssr: false });
 
@@ -866,6 +867,8 @@ export default function HomeClient() {
                     </motion.div>
                 )}
             </AnimatePresence>
+            
+            <FloatingHostActions />
         </div>
     );
 }
