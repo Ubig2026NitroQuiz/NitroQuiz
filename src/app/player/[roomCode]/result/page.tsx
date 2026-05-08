@@ -379,11 +379,18 @@ export default function PlayerResultPage() {
             className="relative z-10 flex flex-col min-h-screen px-4 pt-8 pb-8"
           >
             <div className="flex justify-center mb-5 flex-shrink-0">
-              <img
-                src="/assets/logo/logo1.png"
-                alt="NitroQuiz"
-                className="h-14 object-contain drop-shadow-[0_0_30px_rgba(45,106,242,0.8)]"
-              />
+              <button
+                onClick={() => router.push("/")}
+                className="cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-200"
+                title="Ke Halaman Utama"
+                aria-label="Ke halaman utama"
+              >
+                <img
+                  src="/assets/logo/logo1.png"
+                  alt="NitroQuiz"
+                  className="h-14 object-contain drop-shadow-[0_0_30px_rgba(45,106,242,0.8)]"
+                />
+              </button>
             </div>
             <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -736,9 +743,16 @@ export default function PlayerResultPage() {
         <NitroBackground />
 
         {/* Floating Logos */}
-        <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-8 py-6 pointer-events-none">
-          <img src="/assets/logo/logo1.png" alt="Logo" className="h-14 object-contain" />
-          <img src="/assets/logo/logo2.png" alt="NitroQuiz" className="h-10 object-contain ml-auto opacity-90" />
+        <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-8 py-6">
+          <button
+            onClick={() => router.push("/")}
+            className="cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-200"
+            title="Ke Halaman Utama"
+            aria-label="Ke halaman utama"
+          >
+            <img src="/assets/logo/logo1.png" alt="Logo" className="h-14 object-contain" />
+          </button>
+          <img src="/assets/logo/logo2.png" alt="NitroQuiz" className="h-10 object-contain ml-auto opacity-90 pointer-events-none" />
         </div>
 
         {showResults && (

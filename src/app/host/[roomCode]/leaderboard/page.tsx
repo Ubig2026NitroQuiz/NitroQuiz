@@ -403,13 +403,20 @@ export default function LeaderboardPage() {
       {/* Top Bar: Logo1 left, Logo2 right */}
       <div className="w-full z-30 px-4 md:px-6 pt-2 flex items-center justify-between">
         <div className="flex items-center justify-center">
-          <img
-            src="/assets/logo/logo1.png"
-            alt="NitroQuiz Logo"
-            width={120}
-            height={36}
-            className="object-contain"
-          />
+          <button
+            onClick={() => router.push("/")}
+            className="cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-200"
+            title="Ke Halaman Utama"
+            aria-label="Ke halaman utama"
+          >
+            <img
+              src="/assets/logo/logo1.png"
+              alt="NitroQuiz Logo"
+              width={120}
+              height={36}
+              className="object-contain"
+            />
+          </button>
         </div>
         <img
           src="/assets/logo/logo2.png"
