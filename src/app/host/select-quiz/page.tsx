@@ -32,6 +32,10 @@ export const revalidate = 60;
 
 const ITEMS_PER_PAGE = 8;
 
+export const metadata = {
+    title: "Select Quiz",
+};
+
 export default async function SelectQuizPage() {
     const supabase = await createGFSServerClient();
 

@@ -169,7 +169,7 @@ function PlayerCard({
   return (
     <div
       style={{
-        position: "relative",
+        position: "relative", 
         display: "flex",
         alignItems: "stretch",
         borderRadius: "12px",
