@@ -337,7 +337,7 @@ export default function LeaderboardPage() {
         allow_join_after_start: false,
         participants: [],
         responses: [],
-        application: "nitroquiz",
+        application: "NitroQuiz",
       };
 
       // 4. Insert ke kedua database

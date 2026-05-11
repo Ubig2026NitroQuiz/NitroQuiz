@@ -316,7 +316,7 @@ export default function SelectQuizClient({
             allow_join_after_start: false,
             participants: [],
             responses: [],
-            application: 'nitroquiz'
+            application: 'NitroQuiz'
         };
 
         try {
