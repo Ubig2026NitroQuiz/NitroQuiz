@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Game Monitor",
+    title: "Monitor",
     description: "Monitor the live NitroQuiz game in progress — track players and questions.",
 };
 

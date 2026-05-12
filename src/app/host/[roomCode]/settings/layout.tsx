@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Room Settings",
+    title: "Settings",
     description: "Configure your NitroQuiz game room settings before starting the race.",
 };
 

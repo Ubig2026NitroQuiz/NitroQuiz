@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Game Lobby",
+    title: "Lobby Host",
     description: "Waiting in the lobby — players are joining your NitroQuiz room.",
 };
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Results",
+    title: "Result",
     description: "See your final results in NitroQuiz — how did you rank on the track?",
 };
 
