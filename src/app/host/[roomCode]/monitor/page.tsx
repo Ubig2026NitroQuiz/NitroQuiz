@@ -579,6 +579,7 @@ export default function GameMonitorPage() {
         .from("game_sessions")
         .update({
           status: "finished",
+          started_at: sess.started_at,
           ended_at: sess.ended_at || new Date().toISOString(),
           participants: formattedParticipants,
           responses: formattedResponses,
