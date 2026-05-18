@@ -15,7 +15,7 @@ import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
 export const metadata: Metadata = {
-    title: "NitroQuiz — Race. Learn. Dominate.",
+    title: "NitroQuiz",
     description: "The ultimate high-speed multiplayer quiz game. Host live quiz battles, challenge your class or friends and race to the top of the leaderboard!",
     openGraph: {
         title: "NitroQuiz — Race. Learn. Dominate.",
