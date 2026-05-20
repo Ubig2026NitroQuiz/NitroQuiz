@@ -1498,5 +1498,495 @@
         "z": 6000,
         "side": "right",
         "src": "/assets/material/kanan_jalan/jenius-kanan.webp"
+    },
+    {
+        "z": 6030,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/advan-kiri.webp"
+    },
+    {
+        "z": 6040,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6070,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6080,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/1bsi.webp"
+    },
+    {
+        "z": 6110,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6120,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6150,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/alfamart-kiri.webp"
+    },
+    {
+        "z": 6160,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6190,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6200,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/advan-kanan.webp"
+    },
+    {
+        "z": 6230,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6240,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6270,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/alfamidi-kiri.webp"
+    },
+    {
+        "z": 6280,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6310,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6320,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/alfamart-kanan.webp"
+    },
+    {
+        "z": 6350,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6360,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6390,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/basmalah-kiri.webp"
+    },
+    {
+        "z": 6400,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6430,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6440,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/alfamidi-kanan.webp"
+    },
+    {
+        "z": 6470,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6480,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6510,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/matahari-kiri.webp"
+    },
+    {
+        "z": 6520,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6550,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6560,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/basmalah-kanan.webp"
+    },
+    {
+        "z": 6590,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6600,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6630,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/mega-kiri.webp"
+    },
+    {
+        "z": 6640,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6670,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6680,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/linebank-kanan.webp"
+    },
+    {
+        "z": 6710,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6720,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6750,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/moratelindo-kiri.webp"
+    },
+    {
+        "z": 6760,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6790,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6800,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/lintasarta-kanan.webp"
+    },
+    {
+        "z": 6830,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6840,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6870,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/ocbc-kiri.webp"
+    },
+    {
+        "z": 6880,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6910,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6920,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/matahari-kanan.webp"
+    },
+    {
+        "z": 6950,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 6960,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 6990,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/panin-kiri.webp"
+    },
+    {
+        "z": 7000,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7030,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7040,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/mega-kanan.webp"
+    },
+    {
+        "z": 7070,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7080,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7110,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/permata-kiri.webp"
+    },
+    {
+        "z": 7120,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7150,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7160,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/moratelindo-kanan.webp"
+    },
+    {
+        "z": 7190,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7200,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7230,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/radnet-kiri.webp"
+    },
+    {
+        "z": 7240,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7270,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7280,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/ocbc-kanan.webp"
+    },
+    {
+        "z": 7310,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7320,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7350,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/telkom-kiri.webp"
+    },
+    {
+        "z": 7360,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7390,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7400,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/panin-kanan.webp"
+    },
+    {
+        "z": 7430,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7440,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7470,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/tiketcom-kiri.webp"
+    },
+    {
+        "z": 7480,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7510,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7520,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/permata-kanan.webp"
+    },
+    {
+        "z": 7550,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7560,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7590,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/transmart-kiri.webp"
+    },
+    {
+        "z": 7600,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7630,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7640,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/radnet-kanan.webp"
+    },
+    {
+        "z": 7670,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7680,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7710,
+        "side": "left",
+        "src": "/assets/material/kiri_jalan/traveloka-kiri.webp"
+    },
+    {
+        "z": 7720,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7750,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7760,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/telkom-kanan.webp"
+    },
+    {
+        "z": 7790,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7800,
+        "side": "right",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7830,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7840,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/tiketcom-kanan.webp"
+    },
+    {
+        "z": 7870,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7880,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/transmart-kanan.webp"
+    },
+    {
+        "z": 7910,
+        "side": "left",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7920,
+        "side": "right",
+        "src": "/assets/material/pohon/2.webp"
+    },
+    {
+        "z": 7950,
+        "side": "left",
+        "src": "/assets/material/pohon/4.webp"
+    },
+    {
+        "z": 7960,
+        "side": "right",
+        "src": "/assets/material/kanan_jalan/traveloka-kanan.webp"
     }
 ]

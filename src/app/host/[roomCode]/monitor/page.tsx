@@ -142,16 +142,26 @@ function PlayerCard({
   let statusText = "rgba(255,255,255,0.45)";
   let statusPulse = false;
 
+  let cardBg = "linear-gradient(135deg, rgba(16,26,52,0.97) 0%, rgba(11,16,32,0.97) 100%)";
+  let cardBorder = "1px solid rgba(255,255,255,0.07)";
+  let cardShadow = "0 4px 20px rgba(0,0,0,0.45)";
+
   if (isFinished) {
     statusLabel = t("host_monitor.finish");
     statusBg = "rgba(16,185,129,0.12)";
     statusBorder = "rgba(16,185,129,0.5)";
     statusText = "#34d399";
+    cardBg = "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,78,59,0.8) 100%)";
+    cardBorder = "1px solid rgba(16,185,129,0.4)";
+    cardShadow = "0 4px 20px rgba(16,185,129,0.25)";
   } else if (player.eliminated) {
     statusLabel = t("host_monitor.crashed");
     statusBg = "rgba(239,68,68,0.12)";
     statusBorder = "rgba(239,68,68,0.5)";
     statusText = "#f87171";
+    cardBg = "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(127,29,29,0.8) 100%)";
+    cardBorder = "1px solid rgba(239,68,68,0.4)";
+    cardShadow = "0 4px 20px rgba(239,68,68,0.25)";
   } else if (!player.minigame) {
     statusLabel = t("host_monitor.quiz");
     statusBg = "rgba(59,130,246,0.12)";
@@ -174,9 +184,9 @@ function PlayerCard({
         alignItems: "stretch",
         borderRadius: "12px",
         overflow: "hidden",
-        background: "linear-gradient(135deg, rgba(16,26,52,0.97) 0%, rgba(11,16,32,0.97) 100%)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
+        background: cardBg,
+        border: cardBorder,
+        boxShadow: cardShadow,
         transition: "all 0.3s ease",
       }}
     >
@@ -365,8 +375,12 @@ export default function GameMonitorPage() {
     participantsRef.current = participants;
   }, [participants]);
 
+  const channelIdRef = useRef(0);
+
   useEffect(() => {
     let channel: ReturnType<typeof supabaseGame.channel> | null = null;
+    let cancelled = false;
+    const instanceId = ++channelIdRef.current;
 
     const fetchAndSubscribe = async () => {
       try {
@@ -377,7 +391,7 @@ export default function GameMonitorPage() {
           .eq("game_pin", roomCode)
           .single();
 
-        if (sessionError || !sessionData) return;
+        if (sessionError || !sessionData || cancelled) return;
 
         const fetchedSessionId = sessionData.id;
 
@@ -400,15 +414,18 @@ export default function GameMonitorPage() {
           .select("*")
           .eq("session_id", fetchedSessionId);
 
+        if (cancelled) return;
         if (pData) setParticipants(pData as Participant[]);
 
-        // Subscribe to Realtime immediately — no extra render cycle needed
+        // Subscribe to Realtime — unique channel name per effect invocation
+        const channelName = `host_monitor_${roomCode?.toUpperCase()}_${fetchedSessionId}_${instanceId}`;
         channel = supabaseGame
-          .channel(`host_monitor_${roomCode?.toUpperCase()}_${fetchedSessionId}`)
+          .channel(channelName)
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${fetchedSessionId}` },
             (payload) => {
+              if (cancelled) return;
               if (payload.eventType === "UPDATE") {
                 const updated = payload.new as Participant;
                 setParticipants((prev) => prev.map((p) => (String(p.id) === String(updated.id) ? { ...p, ...updated } : p)));
@@ -429,6 +446,7 @@ export default function GameMonitorPage() {
             "postgres_changes",
             { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${fetchedSessionId}` },
             (payload) => {
+              if (cancelled) return;
               setSession((prev: any) => ({ ...prev, ...payload.new }));
               if (payload.new.status === "finished" || payload.new.status === "completed") {
                 router.push(`/host/${roomCode}/leaderboard`);
@@ -439,7 +457,7 @@ export default function GameMonitorPage() {
           )
           .subscribe((status) => {
             if (status === "CHANNEL_ERROR") {
-              console.error(`[Realtime] CHANNEL_ERROR on host_monitor_${roomCode}_${fetchedSessionId}`);
+              console.error(`[Realtime] CHANNEL_ERROR on ${channelName}`);
             }
           });
       } catch (err) {
@@ -450,6 +468,7 @@ export default function GameMonitorPage() {
     fetchAndSubscribe();
 
     return () => {
+      cancelled = true;
       if (channel) {
         supabaseGame.removeChannel(channel);
       }

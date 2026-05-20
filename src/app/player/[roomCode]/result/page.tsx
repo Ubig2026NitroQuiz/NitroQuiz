@@ -504,7 +504,7 @@ export default function PlayerResultPage() {
                 <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><House className="w-5 h-5" /> {t("player_result.home")}</span>
               </button>
               <button
-                onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
+                onClick={() => sessionId && (window.location.href = `https://app.gameforsmart.com/stat/${sessionId}`)}
                 className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all transform -skew-x-[12deg] relative overflow-hidden"
                 style={{
                   background: "linear-gradient(135deg,#f59e0b,#d97706)",
@@ -726,7 +726,7 @@ export default function PlayerResultPage() {
               </div>
             </div>
             <button
-              onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
+              onClick={() => sessionId && (window.location.href = `https://app.gameforsmart.com/stat/${sessionId}`)}
               className="group/btn w-full h-12 flex items-center justify-center gap-2 border border-[#f59e0b]/50 text-[#f59e0b] font-display text-sm uppercase tracking-widest hover:bg-[#f59e0b]/10 active:scale-95 transition-all flex-shrink-0 transform -skew-x-[10deg] relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-[#f59e0b]/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
@@ -1013,7 +1013,7 @@ export default function PlayerResultPage() {
         {/* Right floating button — Statistics */}
         <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
           <button
-            onClick={() => sessionId && (window.location.href = `https://gameforsmartnewui.vercel.app/stat/${sessionId}`)}
+            onClick={() => sessionId && (window.location.href = `https://app.gameforsmart.com/stat/${sessionId}`)}
             className="w-12 h-12 flex items-center justify-center rounded-sm bg-[#2a1a00] backdrop-blur-md border-2 border-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] hover:bg-[#f59e0b]/30 hover:shadow-[0_0_22px_rgba(245,158,11,0.8)] text-[#fbbf24] transition-all transform -skew-x-[15deg] active:scale-95"
             title={t("player_result.stats")}
           >
