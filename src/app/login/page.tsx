@@ -213,11 +213,7 @@ export default function LoginPage() {
     }))
     , []);
 
-  const registerUrl =
-    typeof window !== "undefined" &&
-      window.location.hostname.includes("gameforsmart.com")
-      ? "https://app.gameforsmart.com/register"
-      : "https://gameforsmartnewui.vercel.app/register";
+  const registerUrl = "https://app.gameforsmart.com/register";
 
   useEffect(() => {
     const timer = setTimeout(() => setLaunched(true), 400);
