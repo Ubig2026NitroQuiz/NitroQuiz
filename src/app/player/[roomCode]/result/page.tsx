@@ -100,6 +100,7 @@ export default function PlayerResultPage() {
   }, []);
 
   const fetchResults = async () => {
+    let willRedirect = false;
     try {
       const { data: sessionData, error: sessionError } = await supabaseGame
         .from("sessions")
@@ -109,6 +110,9 @@ export default function PlayerResultPage() {
 
       if (sessionError || !sessionData) {
         console.error("Session not found", sessionError);
+        console.log("NitroQuiz Guard: Session missing, redirecting home.");
+        willRedirect = true;
+        window.location.replace("/");
         return;
       }
 
@@ -123,13 +127,55 @@ export default function PlayerResultPage() {
         .select("*")
         .eq("session_id", sessionData.id);
 
-      if (!pError && pData) {
-        setParticipants(pData as Participant[]);
+      if (pError || !pData) {
+        console.error("Participants not found", pError);
+        willRedirect = true;
+        window.location.replace("/");
+        return;
+      }
+
+      setParticipants(pData as Participant[]);
+      
+      // Security check for URL manipulation
+      if (sessionData.status === "waiting" || sessionData.status === "lobby") {
+        console.log("NitroQuiz Guard: Status is waiting/lobby, redirecting to waiting page.");
+        willRedirect = true;
+        window.location.replace(`/player/${roomCode}/waiting`);
+        return;
+      }
+
+      if (sessionData.status === "active") {
+        const storedId = typeof window !== "undefined" ? localStorage.getItem("nitroquiz_game_participantId") : null;
+        const currentP = (pData as Participant[]).find(p => {
+          if (user?.id && p.user_id === user.id) return true;
+          if (storedId && p.id === storedId) return true;
+          if (!user?.id && !storedId && p.nickname === profile?.username) return true;
+          return false;
+        });
+
+        // If they aren't even in the game, kick them out
+        if (!currentP) {
+          console.log("NitroQuiz Guard: Player not found in active game, redirecting home.");
+          willRedirect = true;
+          window.location.replace(`/`);
+          return;
+        }
+
+        // If the player has not finished and is not eliminated, they belong in the game
+        if (!currentP.eliminated && !currentP.finished_at) {
+          console.log("NitroQuiz Guard: Player has not finished, redirecting to game.");
+          willRedirect = true;
+          window.location.replace(`/player/${roomCode}/game`);
+          return;
+        }
       }
     } catch (err) {
       console.error("Failed to load leaderboard data:", err);
     } finally {
-      setIsLoading(false);
+      // If we are redirecting, don't stop loading so the UI doesn't flash the results
+      if (!willRedirect) {
+        setIsLoading(false);
+      }
     }
   };
 

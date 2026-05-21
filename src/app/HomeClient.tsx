@@ -152,8 +152,13 @@ export default function HomeClient() {
     };
 
     const handleJoin = () => {
-        if (roomCode.trim() && user) {
-            router.push(`/join/${roomCode.trim()}`);
+        if (roomCode.trim()) {
+            if (user) {
+                router.push(`/join/${roomCode.trim()}`);
+            } else {
+                localStorage.setItem("nitroquiz_pendingRoomCode", roomCode.trim());
+                router.push("/login");
+            }
         }
     };
 
@@ -830,19 +835,31 @@ export default function HomeClient() {
                                         onScan={(result) => {
                                             if (result && result.length > 0) {
                                                 const scannedText = result[0].rawValue;
+                                                let finalCode = "";
                                                 try {
                                                     const url = new URL(scannedText);
                                                     const pathParts = url.pathname.split('/');
                                                     if (pathParts.includes('join')) {
                                                         const code = pathParts[pathParts.length - 1];
-                                                        setRoomCode(code.toUpperCase().slice(0, 6));
+                                                        finalCode = code.toUpperCase().slice(0, 6);
                                                     } else {
-                                                        setRoomCode(scannedText.toUpperCase().slice(0, 6));
+                                                        finalCode = scannedText.toUpperCase().slice(0, 6);
                                                     }
                                                 } catch(e) {
-                                                    setRoomCode(scannedText.toUpperCase().slice(0, 6));
+                                                    finalCode = scannedText.toUpperCase().slice(0, 6);
                                                 }
+                                                
+                                                setRoomCode(finalCode);
                                                 setIsScanOpen(false);
+                                                
+                                                if (finalCode) {
+                                                    if (user) {
+                                                        router.push(`/join/${finalCode}`);
+                                                    } else {
+                                                        localStorage.setItem("nitroquiz_pendingRoomCode", finalCode);
+                                                        router.push("/login");
+                                                    }
+                                                }
                                             }
                                         }}
                                         onError={(error) => console.log(error)}

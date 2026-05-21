@@ -1672,12 +1672,29 @@ export default function GameSpeedPage() {
 
         const fetchServerState = async () => {
             const participantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
-            if (!participantId) return;
+            // Fetch session status to prevent URL manipulation
+            const { data: sessionData } = await supabaseGame.from('sessions').select('status').eq('game_pin', roomCode).single();
+            if (sessionData) {
+                if (sessionData.status === 'waiting' || sessionData.status === 'lobby') {
+                    window.location.replace(`/player/${roomCode}/waiting`);
+                    return;
+                }
+                if (sessionData.status === 'finished' || sessionData.status === 'completed') {
+                    window.location.replace(`/player/${roomCode}/result`);
+                    return;
+                }
+            }
+
+            if (!participantId) {
+                window.location.replace(`/player/${roomCode}/waiting`);
+                return;
+            }
 
             const { data } = await supabaseGame.from('participants').select('minigame, finished_at, lap_race').eq('id', participantId).single();
             if (data) {
                 if (data.minigame === false && !data.finished_at) {
-                    router.push(`/player/${roomCode}/quiz`);
+                    window.location.replace(`/player/${roomCode}/quiz`);
+                    return;
                 }
                 const dbLap = data.lap_race || 0;
                 setLapRace(dbLap);
