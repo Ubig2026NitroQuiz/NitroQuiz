@@ -93,13 +93,17 @@ export default function QuizPage() {
 
                 // Guard: If DB says minigame is TRUE, you should be in the RACE
                 if (pData.minigame === true && !pData.finished_at) {
-                    router.push(`/player/${roomToUse}/game`);
+                    router.replace(`/player/${roomToUse}/game`);
                     return;
                 }
 
                 // Session Status Guard
                 if (sessionData.status === 'finished' || sessionData.status === 'completed') {
-                    router.push(`/player/${roomToUse}/result`);
+                    router.replace(`/player/${roomToUse}/result`);
+                    return;
+                }
+                if (sessionData.status === 'waiting' || sessionData.status === 'lobby') {
+                    router.replace(`/player/${roomToUse}/waiting`);
                     return;
                 }
 

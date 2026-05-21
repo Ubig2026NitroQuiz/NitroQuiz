@@ -49,12 +49,7 @@ export function HostGuard({ children }: HostGuardProps) {
                     return;
                 }
 
-                // If profile is temporarily null (AuthContext refreshing), wait — don't
-                // fall through to participant checks that would incorrectly redirect a host
-                if (!profile) return;
-
-                // 3. If NOT host, check for participant status (Redirect to player waiting)
-                
+                // 3. Check for participant status (Redirect to player waiting)
                 // 3a. Check localStorage (Fast check for current session)
                 const localRoomCode = localStorage.getItem("nitroquiz_game_roomCode");
                 const localParticipantId = localStorage.getItem("nitroquiz_game_participantId");
