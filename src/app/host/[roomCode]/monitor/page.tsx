@@ -307,7 +307,7 @@ function PlayerCard({
               borderRadius: "6px",
             }}
           >
-            {t("host_monitor.lap")} {player.current_question}/{totalQuestions}
+            {player.current_question}/{totalQuestions}
           </span>
         </div>
 
