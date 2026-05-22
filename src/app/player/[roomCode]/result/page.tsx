@@ -742,9 +742,7 @@ export default function PlayerResultPage() {
                         {index + 1}
                       </div>
                       <div className="w-8 h-8 rounded-full bg-black/40 border border-white/20 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {player.eliminated
-                          ? "💀"
-                          : player.avatar_url ? (
+                        {player.avatar_url ? (
                             <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                           ) : (
                             <InitialsAvatar name={player.nickname} size="sm" />
@@ -877,13 +875,7 @@ export default function PlayerResultPage() {
                     {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                   </p>
 
-                  {currentPlayerData?.eliminated ? (
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
-                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)" }}>
-                      <span className="text-base">💀</span>
-                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#f87171" }}>{t("player_result.eliminated")}</span>
-                    </div>
-                  ) : !allFinished ? (
+                  {!allFinished ? (
                     <motion.div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
                       style={{ background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.35)" }}
                       animate={{ opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 1.5 }}>
