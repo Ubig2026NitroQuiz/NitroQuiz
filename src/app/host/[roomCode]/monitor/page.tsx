@@ -154,14 +154,7 @@ function PlayerCard({
     cardBg = "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,78,59,0.8) 100%)";
     cardBorder = "1px solid rgba(16,185,129,0.4)";
     cardShadow = "0 4px 20px rgba(16,185,129,0.25)";
-  } else if (player.eliminated) {
-    statusLabel = t("host_monitor.crashed");
-    statusBg = "rgba(239,68,68,0.12)";
-    statusBorder = "rgba(239,68,68,0.5)";
-    statusText = "#f87171";
-    cardBg = "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(127,29,29,0.8) 100%)";
-    cardBorder = "1px solid rgba(239,68,68,0.4)";
-    cardShadow = "0 4px 20px rgba(239,68,68,0.25)";
+
   } else if (!player.minigame) {
     statusLabel = t("host_monitor.quiz");
     statusBg = "rgba(59,130,246,0.12)";
@@ -226,20 +219,7 @@ function PlayerCard({
             background: "rgba(0,0,0,0.2)",
           }}
         >
-          {player.eliminated ? (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(239,68,68,0.15)",
-              }}
-            >
-              <Skull size={28} color="#f87171" />
-            </div>
-          ) : player.avatar_url ? (
+          {player.avatar_url ? (
             <img
               src={player.avatar_url}
               alt={player.nickname}
@@ -624,7 +604,7 @@ export default function GameMonitorPage() {
         .from("participants")
         .update({
           finished_at: now,
-          eliminated: true,
+          eliminated: false,
           minigame: false
         })
         .eq("session_id", sessionId)

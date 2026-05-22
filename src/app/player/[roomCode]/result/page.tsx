@@ -505,7 +505,7 @@ export default function PlayerResultPage() {
                 </span>
               </MobileStatCard>
               <MobileStatCard>
-                <span className="font-display text-white text-2xl font-black leading-none">
+                <span className={`font-display text-2xl font-black leading-none ${(currentPlayerData?.score ?? 0) >= 75 ? "text-green-500" : "text-red-500"}`}>
                   {currentPlayerData?.score ?? 0}
                 </span>
                 <span className="text-gray-400 text-[9px] uppercase tracking-widest mt-1.5 font-mono">
@@ -600,7 +600,7 @@ export default function PlayerResultPage() {
                         {(secondPlace.id === storedParticipantId || (secondPlace.nickname === profile?.username && !storedParticipantId)) &&
                           t("player_result.you")}
                       </p>
-                      <p className="font-mono text-slate-400 text-[8px]">
+                      <p className={`font-mono text-[8px] ${secondPlace.score >= 75 ? "text-green-500" : "text-red-500"}`}>
                         {secondPlace.score.toLocaleString()}
                       </p>
                     </div>
@@ -646,7 +646,7 @@ export default function PlayerResultPage() {
                         {(firstPlace.id === storedParticipantId || (firstPlace.nickname === profile?.username && !storedParticipantId)) &&
                           t("player_result.you")}
                       </p>
-                      <p className="font-mono text-white text-[8px] mt-0.5 font-bold">
+                      <p className={`font-mono text-[8px] mt-0.5 font-bold ${firstPlace.score >= 75 ? "text-green-500" : "text-red-500"}`}>
                         {firstPlace.score.toLocaleString()}
                       </p>
                     </div>
@@ -693,7 +693,7 @@ export default function PlayerResultPage() {
                         {(thirdPlace.id === storedParticipantId || (thirdPlace.nickname === profile?.username && !storedParticipantId)) &&
                           t("player_result.you")}
                       </p>
-                      <p className="font-mono text-orange-400 text-[8px]">
+                      <p className={`font-mono text-[8px] ${thirdPlace.score >= 75 ? "text-green-500" : "text-red-500"}`}>
                         {thirdPlace.score.toLocaleString()}
                       </p>
                     </div>
@@ -742,9 +742,7 @@ export default function PlayerResultPage() {
                         {index + 1}
                       </div>
                       <div className="w-8 h-8 rounded-full bg-black/40 border border-white/20 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {player.eliminated
-                          ? "💀"
-                          : player.avatar_url ? (
+                        {player.avatar_url ? (
                             <img src={player.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                           ) : (
                             <InitialsAvatar name={player.nickname} size="sm" />
@@ -759,7 +757,7 @@ export default function PlayerResultPage() {
                         </p>
                       </div>
                       <span
-                        className={`font-mono font-bold text-xs flex-shrink-0 ${isMe ? "text-[#00ff9d]" : index === 0 ? "text-yellow-400" : "text-[#00ff9d]"}`}
+                        className={`font-mono font-bold text-xs flex-shrink-0 ${player.score >= 75 ? "text-green-500" : "text-red-500"}`}
                       >
                         {player.score.toLocaleString()}
                       </span>
@@ -877,13 +875,7 @@ export default function PlayerResultPage() {
                     {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                   </p>
 
-                  {currentPlayerData?.eliminated ? (
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
-                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)" }}>
-                      <span className="text-base">💀</span>
-                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#f87171" }}>{t("player_result.eliminated")}</span>
-                    </div>
-                  ) : !allFinished ? (
+                  {!allFinished ? (
                     <motion.div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
                       style={{ background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.35)" }}
                       animate={{ opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 1.5 }}>
@@ -1007,11 +999,11 @@ export default function PlayerResultPage() {
               {/* SCORE */}
               <div
                 className="flex-1 flex items-center justify-between px-5 relative"
-                style={{ borderBottom: "1px solid rgba(0,255,157,0.15)" }}
+                style={{ borderBottom: `1px solid ${(currentPlayerData?.score ?? 0) >= 75 ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}` }}
               >
-                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: "linear-gradient(to bottom, transparent, #00ff9d, transparent)" }} />
-                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "rgba(0,255,157,0.65)" }}>{t("player_result.score")}</p>
-                <p className="font-display font-black text-white" style={{ fontSize: "clamp(24px,2.8vw,36px)", textShadow: "0 0 18px rgba(0,255,157,0.5)" }}>
+                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: `linear-gradient(to bottom, transparent, ${(currentPlayerData?.score ?? 0) >= 75 ? "#22c55e" : "#ef4444"}, transparent)` }} />
+                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: (currentPlayerData?.score ?? 0) >= 75 ? "rgba(34,197,94,0.65)" : "rgba(239,68,68,0.65)" }}>{t("player_result.score")}</p>
+                <p className="font-display font-black" style={{ color: (currentPlayerData?.score ?? 0) >= 75 ? "#22c55e" : "#ef4444", fontSize: "clamp(24px,2.8vw,36px)", textShadow: `0 0 18px ${(currentPlayerData?.score ?? 0) >= 75 ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)"}` }}>
                   {currentPlayerData?.score ?? 0}
                 </p>
               </div>

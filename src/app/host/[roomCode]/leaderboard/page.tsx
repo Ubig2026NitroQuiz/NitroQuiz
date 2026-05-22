@@ -551,7 +551,7 @@ export default function LeaderboardPage() {
                       </div>
 
                       {/* Score */}
-                      <div className="mt-auto mb-3 font-mono text-lg sm:text-2xl text-slate-200 font-black tracking-tighter drop-shadow-[0_0_12px_rgba(148,163,184,0.5)]">
+                      <div className={`mt-auto mb-3 font-mono text-lg sm:text-2xl font-black tracking-tighter ${secondPlace.score >= 75 ? 'text-green-400 drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]' : 'text-red-400 drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]'}`}>
                         <Odometer value={secondPlace.score} delay={2 * 0.55 + 0.8} />
                       </div>
                     </div>
@@ -649,7 +649,7 @@ export default function LeaderboardPage() {
                       </div>
 
                       {/* Score */}
-                      <div className="mt-auto mb-5 sm:mb-7 font-mono text-3xl sm:text-5xl text-yellow-400 font-black tracking-tighter italic drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                      <div className={`mt-auto mb-5 sm:mb-7 font-mono text-3xl sm:text-5xl font-black tracking-tighter italic ${firstPlace.score >= 75 ? 'text-green-400 drop-shadow-[0_0_20px_rgba(34,197,94,0.5)]' : 'text-red-400 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]'}`}>
                         <Odometer value={firstPlace.score} delay={3 * 0.55 + 0.8} />
                       </div>
                     </div>
@@ -733,7 +733,7 @@ export default function LeaderboardPage() {
                       </div>
 
                       {/* Score */}
-                      <div className="mt-auto mb-2 sm:mb-3 font-mono text-base sm:text-xl text-orange-400 font-bold tracking-tighter drop-shadow-[0_0_10px_rgba(249,115,22,0.4)]">
+                      <div className={`mt-auto mb-2 sm:mb-3 font-mono text-base sm:text-xl font-bold tracking-tighter ${thirdPlace.score >= 75 ? 'text-green-400 drop-shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.4)]'}`}>
                         <Odometer value={thirdPlace.score} delay={1 * 0.55 + 0.8} />
                       </div>
                     </div>
@@ -837,15 +837,7 @@ export default function LeaderboardPage() {
                             </td>
                             <td className="px-2 sm:px-4 py-3 text-right">
                               <span
-                                className={`font-mono font-bold text-sm sm:text-base ${
-                                  player.eliminated
-                                    ? "text-red-500"
-                                    : player.finished_at
-                                    ? "text-[#00ff9d]"
-                                    : index === 0
-                                    ? "text-yellow-400"
-                                    : "text-[#00ff9d]"
-                                }`}
+                                className={`font-mono font-bold text-sm sm:text-base ${player.score >= 75 ? "text-green-400" : "text-red-400"}`}
                               >
                                 {player.score.toLocaleString()}
                               </span>
@@ -853,9 +845,7 @@ export default function LeaderboardPage() {
                             <td className="px-2 sm:px-4 py-3 text-center">
                               <span
                                 className={`font-mono text-xs sm:text-sm ${
-                                  player.eliminated
-                                    ? "text-red-500"
-                                    : player.finished_at
+                                  player.finished_at
                                     ? "text-[#00ff9d]"
                                     : "text-cyan-400"
                                 }`}
