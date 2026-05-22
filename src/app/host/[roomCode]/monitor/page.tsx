@@ -624,7 +624,7 @@ export default function GameMonitorPage() {
         .from("participants")
         .update({
           finished_at: now,
-          eliminated: true,
+          eliminated: false,
           minigame: false
         })
         .eq("session_id", sessionId)

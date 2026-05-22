@@ -526,13 +526,14 @@ export default function QuizPage() {
                                 >
                                     {currentQ.imageUrl && (
                                         <div className="mb-6 flex justify-center">
-                                            <img
-                                                src={currentQ.imageUrl}
-                                                alt="Quiz visual"
-                                                className="max-h-[120px] md:max-h-[180px] object-contain cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:scale-105 transition-transform duration-300 border border-white/10"
-                                                style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)' }}
-                                                onClick={() => setZoomedImage(currentQ.imageUrl || null)}
-                                            />
+                                            <div className="bg-white/95 p-2 rounded-md shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:scale-105 transition-transform duration-300 cursor-zoom-in"
+                                                 onClick={() => setZoomedImage(currentQ.imageUrl || null)}>
+                                                <img
+                                                    src={currentQ.imageUrl}
+                                                    alt="Quiz visual"
+                                                    className="max-h-[120px] md:max-h-[180px] object-contain"
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                     <h3 className="text-base md:text-2xl font-black leading-tight text-white text-center text-balance max-w-3xl tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
@@ -585,10 +586,12 @@ export default function QuizPage() {
                                             {/* Option Image */}
                                             {hasImage && (
                                                 <div
-                                                    className="w-full h-24 sm:h-32 md:h-36 overflow-hidden bg-black/30 border-b border-white/5 cursor-zoom-in transform skew-x-[6deg]"
+                                                    className="w-full h-28 sm:h-36 md:h-40 flex items-center justify-center overflow-hidden bg-black/20 border-b border-white/5 cursor-zoom-in transform skew-x-[6deg] p-3"
                                                     onClick={(e) => { e.stopPropagation(); setZoomedImage(option.image || null); }}
                                                 >
-                                                    <img src={option.image} alt={`Option ${letter}`} className="w-full h-full object-cover transition-transform group-hover/opt:scale-105" />
+                                                    <div className="w-20 h-20 sm:w-28 sm:h-28 bg-white/95 rounded-md p-2 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex items-center justify-center transition-transform group-hover/opt:scale-105">
+                                                        <img src={option.image} alt={`Option ${letter}`} className="w-full h-full object-contain" />
+                                                    </div>
                                                 </div>
                                             )}
 
