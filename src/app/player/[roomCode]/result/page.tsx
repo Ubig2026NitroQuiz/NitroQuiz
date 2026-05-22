@@ -550,12 +550,15 @@ export default function PlayerResultPage() {
                 <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><House className="w-5 h-5" /> {t("player_result.home")}</span>
               </button>
               <button
+                disabled={!allFinished}
                 onClick={() => sessionId && (window.location.href = `https://app.gameforsmart.com/stat/${sessionId}`)}
-                className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 transition-all transform -skew-x-[12deg] relative overflow-hidden"
+                className="group/btn flex-1 h-14 flex items-center justify-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-white active:scale-95 disabled:active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all transform -skew-x-[12deg] relative overflow-hidden"
                 style={{
-                  background: "linear-gradient(135deg,#f59e0b,#d97706)",
-                  boxShadow: "0 0 24px rgba(245,158,11,0.38)",
+                  background: allFinished ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#374151,#1f2937)",
+                  boxShadow: allFinished ? "0 0 24px rgba(245,158,11,0.38)" : "none",
+                  border: allFinished ? "none" : "1px solid rgba(156, 163, 175, 0.2)",
                 }}
+                title={allFinished ? t("player_result.stats") : t("player_result.wait_for_host")}
               >
                 <div className="absolute inset-0 bg-white/15 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
                 <span className="relative z-10 transform skew-x-[12deg] flex items-center gap-2"><BarChart2 className="w-5 h-5" /> {t("player_result.stats")}</span>
@@ -770,8 +773,14 @@ export default function PlayerResultPage() {
               </div>
             </div>
             <button
+              disabled={!allFinished}
               onClick={() => sessionId && (window.location.href = `https://app.gameforsmart.com/stat/${sessionId}`)}
-              className="group/btn w-full h-12 flex items-center justify-center gap-2 border border-[#f59e0b]/50 text-[#f59e0b] font-display text-sm uppercase tracking-widest hover:bg-[#f59e0b]/10 active:scale-95 transition-all flex-shrink-0 transform -skew-x-[10deg] relative overflow-hidden"
+              className="group/btn w-full h-12 flex items-center justify-center gap-2 font-display text-sm uppercase tracking-widest active:scale-95 disabled:active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-all flex-shrink-0 transform -skew-x-[10deg] relative overflow-hidden"
+              style={{
+                border: allFinished ? "1px solid rgba(245,158,11,0.5)" : "1px solid rgba(156, 163, 175, 0.2)",
+                color: allFinished ? "#f59e0b" : "#9ca3af",
+              }}
+              title={allFinished ? t("player_result.stats") : t("player_result.wait_for_host")}
             >
               <div className="absolute inset-0 bg-[#f59e0b]/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
               <span className="relative z-10 transform skew-x-[10deg] flex items-center gap-2"><BarChart2 className="w-4 h-4" /> {t("player_result.stats")}</span>
@@ -1051,9 +1060,17 @@ export default function PlayerResultPage() {
         {/* Right floating button — Statistics */}
         <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
           <button
+            disabled={!allFinished}
             onClick={() => sessionId && (window.location.href = `https://app.gameforsmart.com/stat/${sessionId}`)}
-            className="w-12 h-12 flex items-center justify-center rounded-sm bg-[#2a1a00] backdrop-blur-md border-2 border-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] hover:bg-[#f59e0b]/30 hover:shadow-[0_0_22px_rgba(245,158,11,0.8)] text-[#fbbf24] transition-all transform -skew-x-[15deg] active:scale-95"
-            title={t("player_result.stats")}
+            className="w-12 h-12 flex items-center justify-center rounded-sm backdrop-blur-md transition-all transform -skew-x-[15deg] active:scale-95 disabled:active:scale-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
+            style={{
+              backgroundColor: allFinished ? "#2a1a00" : "#1f2937",
+              borderColor: allFinished ? "#f59e0b" : "#4b5563",
+              borderWidth: "2px",
+              boxShadow: allFinished ? "0 0 12px rgba(245,158,11,0.5)" : "none",
+              color: allFinished ? "#fbbf24" : "#9ca3af",
+            }}
+            title={allFinished ? t("player_result.stats") : t("player_result.wait_for_host")}
           >
             <div className="transform skew-x-[15deg]"><BarChart2 className="w-5 h-5" /></div>
           </button>
