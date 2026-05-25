@@ -523,7 +523,7 @@ export default function PlayerResultPage() {
                 </span>
               </MobileStatCard>
               <MobileStatCard>
-                <span className="font-display text-white text-2xl font-black leading-none">
+                <span className={`font-display text-2xl font-black leading-none ${(currentPlayerData?.score ?? 0) >= 75 ? "text-green-500" : "text-red-500"}`}>
                   {formatDuration(currentPlayerData?.duration)}
                 </span>
                 <span className="text-gray-400 text-[9px] uppercase tracking-widest mt-1.5 font-mono">
@@ -764,7 +764,7 @@ export default function PlayerResultPage() {
                       >
                         {player.score.toLocaleString()}
                       </span>
-                      <span className="text-cyan-400/70 font-mono text-[10px] flex-shrink-0">
+                      <span className={`font-mono text-[10px] flex-shrink-0 ${player.score >= 75 ? "text-green-500/70" : "text-red-500/70"}`}>
                         {formatDuration(player.duration)}
                       </span>
                     </div>
@@ -1033,9 +1033,9 @@ export default function PlayerResultPage() {
               <div
                 className="flex-1 flex items-center justify-between px-5 relative"
               >
-                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: "linear-gradient(to bottom, transparent, #60a5fa, transparent)" }} />
-                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "rgba(96,165,250,0.65)" }}>{t("player_result.time")}</p>
-                <p className="font-display font-black text-white font-mono" style={{ fontSize: "clamp(20px,2.4vw,30px)", textShadow: "0 0 16px rgba(96,165,250,0.5)" }}>
+                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: `linear-gradient(to bottom, transparent, ${(currentPlayerData?.score ?? 0) >= 75 ? "#22c55e" : "#ef4444"}, transparent)` }} />
+                <p className="font-display text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: (currentPlayerData?.score ?? 0) >= 75 ? "rgba(34,197,94,0.65)" : "rgba(239,68,68,0.65)" }}>{t("player_result.time")}</p>
+                <p className="font-display font-black font-mono" style={{ color: (currentPlayerData?.score ?? 0) >= 75 ? "#22c55e" : "#ef4444", fontSize: "clamp(20px,2.4vw,30px)", textShadow: `0 0 16px ${(currentPlayerData?.score ?? 0) >= 75 ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)"}` }}>
                   {formatDuration(currentPlayerData?.duration)}
                 </p>
               </div>
