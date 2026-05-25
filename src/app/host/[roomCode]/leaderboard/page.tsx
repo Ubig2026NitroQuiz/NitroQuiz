@@ -845,9 +845,9 @@ export default function LeaderboardPage() {
                             <td className="px-2 sm:px-4 py-3 text-center">
                               <span
                                 className={`font-mono text-xs sm:text-sm ${
-                                  player.finished_at
-                                    ? "text-[#00ff9d]"
-                                    : "text-cyan-400"
+                                  player.score >= 75
+                                    ? (player.finished_at ? "text-[#00ff9d]" : "text-cyan-400")
+                                    : "text-red-400"
                                 }`}
                               >
                                 {formatDuration(player.duration)}
