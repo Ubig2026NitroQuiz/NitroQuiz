@@ -120,7 +120,7 @@ export default function SettingsPage() {
     const questionCountOptions = useMemo(() => {
         const totalQuestions = quizDetail?.totalQuestions || 0;
         if (totalQuestions === 0) return [5];
-        const baseOptions = [5, 10, 20];
+        const baseOptions = [5, 10, 15, 20];
         const validOptions = baseOptions.filter((count) => count <= totalQuestions);
         return validOptions.length > 0 ? validOptions : [totalQuestions];
     }, [quizDetail]);
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                                             </SelectTrigger>
                                             <SelectContent className="bg-[#0a0f20] border text-white font-display uppercase tracking-wider rounded-sm"
                                                            style={{ borderColor: theme.badgeBorder, boxShadow: `0 0 20px ${theme.badge}` }}>
-                                                {questionCountOptions.map((count) => (
+                                                {questionCountOptions.map((count: number) => (
                                                     <SelectItem key={count} value={count.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer hover:pl-4 transition-all">
                                                         {count}
                                                     </SelectItem>
