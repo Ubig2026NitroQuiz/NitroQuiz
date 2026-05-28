@@ -146,7 +146,7 @@ const COLORS = {
     TREE: '#064e3b',
     FOG: '#020617',
     LIGHT: { road: '#0a0d14', grass: '#1e293b', rumble: '#111827', strip: '#fbbf24', sidewalk: '#334155', curb: '#475569' },
-    DARK: { road: '#0a0d14', grass: '#0f172a', rumble: '#0d1117', strip: '', sidewalk: '#1e293b', curb: '#334155' },
+    DARK: { road: '#0a0d14', grass: '#1e293b', rumble: '#111827', strip: '', sidewalk: '#334155', curb: '#475569' },
     START: { road: '#ffffff', grass: '#334155', rumble: '#ffffff', strip: '', sidewalk: '#ffffff', curb: '#ffffff' },
     FINISH: { road: '#000000', grass: '#111827', rumble: '#000000', strip: '', sidewalk: '#000000', curb: '#000000' }
 };
