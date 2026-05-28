@@ -204,7 +204,7 @@
   },
   "host_monitor": {
     "new": "BARU",
-    "racing": "BALAPAN",
+    "game": "GAME",
     "finish": "SELESAI",
     "crashed": "HANCUR",
     "quiz": "KUIS",

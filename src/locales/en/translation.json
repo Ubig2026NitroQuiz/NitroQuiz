@@ -204,7 +204,7 @@
   },
   "host_monitor": {
     "new": "NEW",
-    "racing": "RACING",
+    "game": "GAME",
     "finish": "FINISH",
     "crashed": "CRASHED",
     "quiz": "QUIZ",

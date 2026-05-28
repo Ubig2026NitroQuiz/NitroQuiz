@@ -136,7 +136,7 @@ function PlayerCard({
 
   const rankColor = "rgba(255,255,255,0.15)";
 
-  let statusLabel = t("host_monitor.racing");
+  let statusLabel = t("host_monitor.game", "Game");
   let statusBg = "rgba(255,255,255,0.05)";
   let statusBorder = "rgba(255,255,255,0.12)";
   let statusText = "rgba(255,255,255,0.45)";
@@ -163,7 +163,7 @@ function PlayerCard({
     statusPulse = true;
   } else {
     // Check if game is active
-    statusLabel = t("host_monitor.racing");
+    statusLabel = t("host_monitor.game", "Game");
     statusBg = "rgba(16,185,129,0.05)";
     statusBorder = "rgba(16,185,129,0.15)";
     statusText = "#10b981";
