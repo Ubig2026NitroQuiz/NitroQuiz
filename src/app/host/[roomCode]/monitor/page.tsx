@@ -171,12 +171,12 @@ function PlayerCard({
 
   return (
     <div
+      className="group"
       style={{
         position: "relative", 
         display: "flex",
         alignItems: "stretch",
         borderRadius: "12px",
-        overflow: "hidden",
         background: cardBg,
         border: cardBorder,
         boxShadow: cardShadow,
@@ -191,6 +191,8 @@ function PlayerCard({
           top: 0,
           bottom: 0,
           width: "3px",
+          borderTopLeftRadius: "12px",
+          borderBottomLeftRadius: "12px",
           background: rankColor,
           boxShadow: `0 0 8px ${rankColor}`,
         }}
@@ -250,8 +252,6 @@ function PlayerCard({
       >
         {/* Name row */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Tooltip>
-            <TooltipTrigger asChild>
               <span
                 style={{
                   fontFamily: "Orbitron, monospace",
@@ -268,11 +268,6 @@ function PlayerCard({
               >
                 {player.nickname}
               </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={8} className="bg-[#0c1020]/95 backdrop-blur-xl border border-[#7C3AED]/60 text-white font-display text-[10px] uppercase font-bold tracking-widest shadow-[0_0_25px_rgba(124,58,237,0.5)] z-[100] max-w-[280px]">
-                {player.nickname}
-            </TooltipContent>
-          </Tooltip>
           <span
             style={{
               fontFamily: "Orbitron, monospace",
@@ -325,6 +320,11 @@ function PlayerCard({
             {statusLabel}
           </div>
         </div>
+      </div>
+
+      {/* Centered Tooltip */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 group-hover:scale-100">
+        {player.nickname}
       </div>
     </div>
   );
@@ -630,7 +630,6 @@ export default function GameMonitorPage() {
 
 
   return (
-    <TooltipProvider delayDuration={100}>
     <div
       style={{
         minHeight: "100vh",
@@ -836,6 +835,5 @@ export default function GameMonitorPage() {
       `}</style>
       <FloatingHostActions />
     </div>
-    </TooltipProvider>
   );
 }
