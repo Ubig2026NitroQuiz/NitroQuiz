@@ -784,10 +784,10 @@ export default function HostLobby() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="group relative bg-gradient-to-b from-[#111625] to-[#0a0d14] border border-white/5 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center transition-all hover:border-[#2d6af2]/50 hover:shadow-[0_0_20px_rgba(45,106,242,0.2)] hover:-translate-y-1 overflow-hidden"
+                        className="group relative bg-gradient-to-b from-[#111625] to-[#0a0d14] border border-white/5 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center transition-all hover:border-[#2d6af2]/50 hover:shadow-[0_0_20px_rgba(45,106,242,0.2)] hover:-translate-y-1"
                       >
                         {/* Laser Edge Left Design */}
-                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#2d6af2] to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#2d6af2] to-transparent opacity-50 group-hover:opacity-100 transition-opacity rounded-tl-xl rounded-bl-xl" />
                         {/* Cyber glow background */}
                         <div className="absolute inset-0 bg-[#2d6af2]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
 
@@ -799,26 +799,19 @@ export default function HostLobby() {
                           )}
                         </div>
                         <div className="bg-black/40 border border-white/5 rounded-md px-2 py-1 w-full text-center relative z-10 shadow-inner group-hover:bg-[#2d6af2]/10 transition-colors">
-                          {player.nickname.length > 12 ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] cursor-default">{player.nickname}</p>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={8} className="bg-[#0c1020]/95 backdrop-blur-xl border border-[#7C3AED]/60 text-white font-display text-[10px] uppercase font-bold tracking-widest shadow-[0_0_25px_rgba(124,58,237,0.5)] z-[100] max-w-[280px] transform -skew-x-[12deg] rounded-none px-3 py-1.5">
-                                <span className="block transform skew-x-[12deg] truncate">{player.nickname}</span>
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{player.nickname}</p>
-                          )}
+                          <p className="font-display text-white text-[10px] sm:text-xs font-bold truncate tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{player.nickname}</p>
                         </div>
 
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelectedPlayer(player); setKickDialogOpen(true); }}
-                          className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/20 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white"
+                          className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/20 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white z-20"
                         >
                           <X size={14} />
                         </button>
+
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 group-hover:scale-100">
+                            {player.nickname}
+                        </div>
                       </motion.div>
                     ))}
                   </AnimatePresence>

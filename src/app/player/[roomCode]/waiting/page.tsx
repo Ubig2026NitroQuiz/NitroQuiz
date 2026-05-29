@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
 import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
 import { supabaseGame } from '@/lib/supabase/game-client';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 export const PLAYER_CHARACTERS = [
     {
@@ -133,6 +132,7 @@ export default function PlayerWaitingPage() {
     const [userAvatar, setUserAvatar] = useState<string | null>(null);
     const [allParticipants, setAllParticipants] = useState<{ id?: string; nickname: string; car_character: string; avatar_url?: string | null }[]>([]);
     const [isExiting, setIsExiting] = useState(false);
+    const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const statusRef = useRef(status);
     useEffect(() => { statusRef.current = status; }, [status]);
 
@@ -505,8 +505,7 @@ export default function PlayerWaitingPage() {
     const displayVisual = assignedChar.gifSrc || assignedChar.imageSrc;
 
     return (
-        <TooltipProvider delayDuration={100}>
-        <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4">
+        <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4" onClick={() => setActiveTooltip(null)}>
             {/* Homepage Background Image */}
             <div
                 className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
@@ -567,104 +566,108 @@ export default function PlayerWaitingPage() {
                             <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 auto-rows-max"
                                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(45,106,242,0.25) transparent' }}>
 
-                                {/* YOU card */}
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="group relative w-full bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 shadow-[inset_0_0_30px_rgba(124,58,237,0.05)]"
-                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)', aspectRatio: '1/1.15' }}>
-                                            
-                                            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_8px_#7C3AED]" />
-                                    <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+                                <div 
+                                    onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === username ? null : username); }}
+                                    className="group relative w-full cursor-pointer"
+                                    style={{ aspectRatio: '1/1.15' }}>
                                     
-                                    <div className="absolute top-2 left-3 z-20 w-6 h-6 rounded-full overflow-hidden border border-[#7C3AED]/60 shadow-[0_0_8px_rgba(124,58,237,0.4)] backdrop-blur-md bg-black/50">
-                                        {userAvatar ? (
-                                            <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <InitialsAvatar name={username} size="sm" />
-                                        )}
-                                    </div>
-
-                                    <div className="absolute top-2 right-2 z-20">
-                                        <div className="font-display font-black text-[8px] tracking-[0.15em] px-2 py-0.5 transform -skew-x-[12deg] shadow-[0_0_10px_rgba(124,58,237,0.5)] border border-[#a78bfa]/50"
-                                            style={{ background: 'linear-gradient(90deg, #7C3AED, #5b21b6)', color: '#fff' }}>
-                                            <span className="block transform skew-x-[12deg]">{t("player_waiting.you")}</span>
+                                    <div className="absolute inset-0 bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 shadow-[inset_0_0_30px_rgba(124,58,237,0.05)]"
+                                        style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)' }}>
+                                        
+                                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_8px_#7C3AED]" />
+                                        <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+                                        
+                                        <div className="absolute top-2 left-3 z-20 w-6 h-6 rounded-full overflow-hidden border border-[#7C3AED]/60 shadow-[0_0_8px_rgba(124,58,237,0.4)] backdrop-blur-md bg-black/50">
+                                            {userAvatar ? (
+                                                <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <InitialsAvatar name={username} size="sm" />
+                                            )}
                                         </div>
-                                    </div>
 
-                                    <div className="absolute inset-x-0 top-6 bottom-10 flex items-center justify-center p-2 z-10 w-full h-auto">
-                                        <img src={assignedChar.imageSrc} alt="car"
-                                            className="w-full h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter contrast-[1.1] brightness-[1.05]" />
-                                    </div>
+                                        <div className="absolute top-2 right-2 z-20">
+                                            <div className="font-display font-black text-[8px] tracking-[0.15em] px-2 py-0.5 transform -skew-x-[12deg] shadow-[0_0_10px_rgba(124,58,237,0.5)] border border-[#a78bfa]/50"
+                                                style={{ background: 'linear-gradient(90deg, #7C3AED, #5b21b6)', color: '#fff' }}>
+                                                <span className="block transform skew-x-[12deg]">{t("player_waiting.you")}</span>
+                                            </div>
+                                        </div>
 
-                                    <div className="absolute bottom-0 inset-x-0 z-20 h-[40px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-2 pb-1.5 pt-4">
-                                        <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#7C3AED]/0 via-[#7C3AED] to-[#7C3AED]/0" />
-                                        <p className="font-display text-white text-[10px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-0.5">
-                                            {username}
-                                        </p>
-                                        <div className="flex justify-between items-center">
-                                            <p className="font-display text-[#a78bfa] text-[7px] tracking-[0.2em] uppercase opacity-90 leading-none truncate pr-1">
-                                                {assignedChar.name}
+                                        <div className="absolute inset-x-0 top-6 bottom-10 flex items-center justify-center p-2 z-10 w-full h-auto">
+                                            <img src={assignedChar.imageSrc} alt="car"
+                                                className="w-full h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter contrast-[1.1] brightness-[1.05]" />
+                                        </div>
+
+                                        <div className="absolute bottom-0 inset-x-0 z-20 h-[40px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-2 pb-1.5 pt-4">
+                                            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#7C3AED]/0 via-[#7C3AED] to-[#7C3AED]/0" />
+                                            <p className="font-display text-white text-[10px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-0.5">
+                                                {username}
                                             </p>
-                                            <div className="flex gap-[2px]">
-                                                <div className="w-[2px] h-[5px] bg-[#7C3AED]/60 transform -skew-x-[20deg]" />
-                                                <div className="w-[2px] h-[5px] bg-[#7C3AED]/80 transform -skew-x-[20deg]" />
-                                                <div className="w-[2px] h-[5px] bg-white shadow-[0_0_5px_#fff] transform -skew-x-[20deg]" />
+                                            <div className="flex justify-between items-center">
+                                                <p className="font-display text-[#a78bfa] text-[7px] tracking-[0.2em] uppercase opacity-90 leading-none truncate pr-1">
+                                                    {assignedChar.name}
+                                                </p>
+                                                <div className="flex gap-[2px]">
+                                                    <div className="w-[2px] h-[5px] bg-[#7C3AED]/60 transform -skew-x-[20deg]" />
+                                                    <div className="w-[2px] h-[5px] bg-[#7C3AED]/80 transform -skew-x-[20deg]" />
+                                                    <div className="w-[2px] h-[5px] bg-white shadow-[0_0_5px_#fff] transform -skew-x-[20deg]" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                </TooltipTrigger>
-                                    <TooltipContent className="bg-[#111729] text-white border-[#7C3AED]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(124,58,237,0.4)]">
+                                    
+                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 ${activeTooltip === username ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 group-hover:scale-100'}`}>
                                         {username}
-                                    </TooltipContent>
-                                </Tooltip>
+                                    </div>
+                                </div>
 
                                 {/* Other players */}
                                 {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
                                     const charObj = PLAYER_CHARACTERS.find(c => c.id === p.car_character) || PLAYER_CHARACTERS[0];
                                     return (
-                                        <Tooltip key={i}>
-                                            <TooltipTrigger asChild>
-                                                <div className="group relative w-full bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 shadow-[inset_0_0_30px_rgba(45,106,242,0.05)]"
-                                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)', aspectRatio: '1/1.15' }}>
-                                                    
-                                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_8px_#2d6af2] opacity-80" />
-                                            <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(45,106,242,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45,106,242,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+                                        <div key={i} 
+                                            onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === p.nickname ? null : p.nickname); }}
+                                            className="group relative w-full cursor-pointer"
+                                            style={{ aspectRatio: '1/1.15' }}>
                                             
-                                            <div className="absolute top-2 left-3 z-20 w-6 h-6 rounded-full overflow-hidden border border-[#2d6af2]/50 shadow-[0_0_6px_rgba(45,106,242,0.3)] backdrop-blur-md bg-black/50">
-                                                {p.avatar_url ? (
-                                                    <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <InitialsAvatar name={p.nickname} size="sm" />
-                                                )}
-                                            </div>
+                                            <div className="absolute inset-0 bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 shadow-[inset_0_0_30px_rgba(45,106,242,0.05)]"
+                                                style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)' }}>
+                                                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_8px_#2d6af2] opacity-80" />
+                                                <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(45,106,242,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45,106,242,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+                                                
+                                                <div className="absolute top-2 left-3 z-20 w-6 h-6 rounded-full overflow-hidden border border-[#2d6af2]/50 shadow-[0_0_6px_rgba(45,106,242,0.3)] backdrop-blur-md bg-black/50">
+                                                    {p.avatar_url ? (
+                                                        <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <InitialsAvatar name={p.nickname} size="sm" />
+                                                    )}
+                                                </div>
 
-                                            <div className="absolute inset-x-0 top-6 bottom-10 flex items-center justify-center p-2 z-10 w-full h-auto">
-                                                <img src={charObj.imageSrc} alt="car" className="w-full h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter brightness-[0.95]" />
-                                            </div>
+                                                <div className="absolute inset-x-0 top-6 bottom-10 flex items-center justify-center p-2 z-10 w-full h-auto">
+                                                    <img src={charObj.imageSrc} alt="car" className="w-full h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)] filter brightness-[0.95]" />
+                                                </div>
 
-                                            <div className="absolute bottom-0 inset-x-0 z-20 h-[40px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-2 pb-1.5 pt-4">
-                                                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#2d6af2]/0 via-[#2d6af2] to-[#2d6af2]/0 opacity-50" />
-                                                <p className="font-display text-white/90 text-[10px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-0.5">
-                                                    {p.nickname}
-                                                </p>
-                                                <div className="flex justify-between items-center">
-                                                    <p className="font-display text-[#5a9cff]/80 text-[7px] tracking-[0.2em] uppercase leading-none truncate pr-1">
-                                                        {charObj.name}
+                                                <div className="absolute bottom-0 inset-x-0 z-20 h-[40px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-2 pb-1.5 pt-4">
+                                                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#2d6af2]/0 via-[#2d6af2] to-[#2d6af2]/0 opacity-50" />
+                                                    <p className="font-display text-white/90 text-[10px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-0.5">
+                                                        {p.nickname}
                                                     </p>
-                                                    <div className="flex gap-[2px] opacity-60">
-                                                        <div className="w-[2px] h-[5px] bg-[#2d6af2]/60 transform -skew-x-[20deg]" />
-                                                        <div className="w-[2px] h-[5px] bg-[#2d6af2]/80 transform -skew-x-[20deg]" />
-                                                        <div className="w-[2px] h-[5px] bg-[#5a9cff] shadow-[0_0_5px_#5a9cff] transform -skew-x-[20deg]" />
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="font-display text-[#5a9cff]/80 text-[7px] tracking-[0.2em] uppercase leading-none truncate pr-1">
+                                                            {charObj.name}
+                                                        </p>
+                                                        <div className="flex gap-[2px] opacity-60">
+                                                            <div className="w-[2px] h-[5px] bg-[#2d6af2]/60 transform -skew-x-[20deg]" />
+                                                            <div className="w-[2px] h-[5px] bg-[#2d6af2]/80 transform -skew-x-[20deg]" />
+                                                            <div className="w-[2px] h-[5px] bg-[#5a9cff] shadow-[0_0_5px_#5a9cff] transform -skew-x-[20deg]" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                            
+                                            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 ${activeTooltip === p.nickname ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 group-hover:scale-100'}`}>
+                                                {p.nickname}
+                                            </div>
                                         </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="bg-[#111729] text-white border-[#2d6af2]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(45,106,242,0.4)]">
-                                            {p.nickname}
-                                        </TooltipContent>
-                                        </Tooltip>
                                     );
                                 })}
 
@@ -778,61 +781,63 @@ export default function PlayerWaitingPage() {
                                         style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(124,58,237,0.25) transparent' }}>
 
                                         {/* YOU card */}
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <div className="group relative h-[190px] w-full bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 hover:border-[#a78bfa] transition-all hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] shadow-[inset_0_0_40px_rgba(124,58,237,0.05)]"
-                                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
-                                                    
-                                                    {/* Tech styling bases */}
-                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_10px_#7C3AED]" />
-                                            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.2) 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
+                                        <div 
+                                            onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === username ? null : username); }}
+                                            className="group relative h-[190px] w-full cursor-pointer"
+                                        >
                                             
-                                            {/* Profile avatar */}
-                                            <div className="absolute top-3 left-4 z-20 w-8 h-8 rounded-full overflow-hidden border border-[#7C3AED]/60 shadow-[0_0_10px_rgba(124,58,237,0.4)] backdrop-blur-md bg-black/50">
-                                                {userAvatar ? (
-                                                    <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <InitialsAvatar name={username} size="sm" />
-                                                )}
-                                            </div>
-
-                                            {/* YOU badge */}
-                                            <div className="absolute top-3 right-3 z-20">
-                                                <div className="font-display font-black text-[9px] tracking-[0.2em] px-3 py-1 transform -skew-x-[15deg] shadow-[0_0_15px_rgba(124,58,237,0.5)] border border-[#a78bfa]/50"
-                                                    style={{ background: 'linear-gradient(90deg, #7C3AED, #5b21b6)', color: '#fff' }}>
-                                                    <span className="block transform skew-x-[15deg]">{t("player_waiting.you")}</span>
+                                            <div className="absolute inset-0 bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 group-hover:border-[#a78bfa] transition-all group-hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] shadow-[inset_0_0_40px_rgba(124,58,237,0.05)]"
+                                                style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
+                                                {/* Tech styling bases */}
+                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_10px_#7C3AED]" />
+                                                <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.2) 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
+                                                
+                                                {/* Profile avatar */}
+                                                <div className="absolute top-3 left-4 z-20 w-8 h-8 rounded-full overflow-hidden border border-[#7C3AED]/60 shadow-[0_0_10px_rgba(124,58,237,0.4)] backdrop-blur-md bg-black/50">
+                                                    {userAvatar ? (
+                                                        <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <InitialsAvatar name={username} size="sm" />
+                                                    )}
                                                 </div>
-                                            </div>
 
-                                            {/* Car image */}
-                                            <div className="absolute inset-x-0 top-6 bottom-12 flex items-center justify-center p-2 z-10 w-full h-auto">
-                                                <img src={assignedChar.imageSrc} alt="car"
-                                                    className="w-full h-full object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] filter contrast-[1.1] brightness-[1.05] group-hover:scale-105 transition-transform duration-500 will-change-transform" />
-                                            </div>
+                                                {/* YOU badge */}
+                                                <div className="absolute top-3 right-3 z-20">
+                                                    <div className="font-display font-black text-[9px] tracking-[0.2em] px-3 py-1 transform -skew-x-[15deg] shadow-[0_0_15px_rgba(124,58,237,0.5)] border border-[#a78bfa]/50"
+                                                        style={{ background: 'linear-gradient(90deg, #7C3AED, #5b21b6)', color: '#fff' }}>
+                                                        <span className="block transform skew-x-[15deg]">{t("player_waiting.you")}</span>
+                                                    </div>
+                                                </div>
 
-                                            {/* Name plate */}
-                                            <div className="absolute bottom-0 inset-x-0 z-20 h-[48px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-3 pb-2 pt-4">
-                                                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#7C3AED]/0 via-[#7C3AED] to-[#7C3AED]/0" />
-                                                <p className="font-display text-white text-[12px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-1">
-                                                    {username}
-                                                </p>
-                                                <div className="flex justify-between items-center">
-                                                    <p className="font-display text-[#a78bfa] text-[8px] tracking-[0.3em] uppercase opacity-90 leading-none truncate pr-2">
-                                                        {assignedChar.name}
+                                                {/* Car image */}
+                                                <div className="absolute inset-x-0 top-6 bottom-12 flex items-center justify-center p-2 z-10 w-full h-auto">
+                                                    <img src={assignedChar.imageSrc} alt="car"
+                                                        className="w-full h-full object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] filter contrast-[1.1] brightness-[1.05] group-hover:scale-105 transition-transform duration-500 will-change-transform" />
+                                                </div>
+
+                                                {/* Name plate */}
+                                                <div className="absolute bottom-0 inset-x-0 z-20 h-[48px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-3 pb-2 pt-4">
+                                                    <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#7C3AED]/0 via-[#7C3AED] to-[#7C3AED]/0" />
+                                                    <p className="font-display text-white text-[12px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-1">
+                                                        {username}
                                                     </p>
-                                                    <div className="flex gap-[2px]">
-                                                        <div className="w-[3px] h-[6px] bg-[#7C3AED]/60 transform -skew-x-[20deg]" />
-                                                        <div className="w-[3px] h-[6px] bg-[#7C3AED]/80 transform -skew-x-[20deg]" />
-                                                        <div className="w-[3px] h-[6px] bg-white shadow-[0_0_5px_#fff] transform -skew-x-[20deg]" />
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="font-display text-[#a78bfa] text-[8px] tracking-[0.3em] uppercase opacity-90 leading-none truncate pr-2">
+                                                            {assignedChar.name}
+                                                        </p>
+                                                        <div className="flex gap-[2px]">
+                                                            <div className="w-[3px] h-[6px] bg-[#7C3AED]/60 transform -skew-x-[20deg]" />
+                                                            <div className="w-[3px] h-[6px] bg-[#7C3AED]/80 transform -skew-x-[20deg]" />
+                                                            <div className="w-[3px] h-[6px] bg-white shadow-[0_0_5px_#fff] transform -skew-x-[20deg]" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                            
+                                            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#7C3AED]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(124,58,237,0.8)] rounded-md whitespace-nowrap scale-95 ${activeTooltip === username ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 group-hover:scale-100'}`}>
+                                                {username}
+                                            </div>
                                         </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="bg-[#111729] text-white border-[#7C3AED]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(124,58,237,0.4)]">
-                                            {username}
-                                        </TooltipContent>
-                                        </Tooltip>
 
                                         {/* Other players */}
                                         {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
@@ -840,53 +845,55 @@ export default function PlayerWaitingPage() {
                                             const pCarName = charObj.name;
                                             const carSrc = charObj.imageSrc;
                                             return (
-                                                <Tooltip key={i}>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="group relative h-[190px] w-full bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 hover:border-[#5a9cff] transition-all hover:shadow-[0_0_30px_rgba(45,106,242,0.2)] shadow-[inset_0_0_40px_rgba(45,106,242,0.05)]"
-                                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
-                                                            
-                                                            {/* Tech styling bases */}
-                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_10px_#2d6af2] opacity-80 group-hover:opacity-100" />
-                                                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(45,106,242,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(45,106,242,0.2) 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
+                                                <div key={i} 
+                                                    onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === p.nickname ? null : p.nickname); }}
+                                                    className="group relative h-[190px] w-full cursor-pointer"
+                                                >
                                                     
-                                                    {/* Profile avatar */}
-                                                    <div className="absolute top-3 left-4 z-20 w-8 h-8 rounded-full overflow-hidden border border-[#2d6af2]/50 shadow-[0_0_8px_rgba(45,106,242,0.3)] backdrop-blur-md bg-black/50 group-hover:border-[#5a9cff] transition-colors">
-                                                        {p.avatar_url ? (
-                                                            <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <InitialsAvatar name={p.nickname} size="sm" />
-                                                        )}
-                                                    </div>
+                                                    <div className="absolute inset-0 bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 group-hover:border-[#5a9cff] transition-all group-hover:shadow-[0_0_30px_rgba(45,106,242,0.2)] shadow-[inset_0_0_40px_rgba(45,106,242,0.05)]"
+                                                        style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
+                                                        {/* Tech styling bases */}
+                                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_10px_#2d6af2] opacity-80 group-hover:opacity-100" />
+                                                        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(45,106,242,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(45,106,242,0.2) 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
+                                                        
+                                                        {/* Profile avatar */}
+                                                        <div className="absolute top-3 left-4 z-20 w-8 h-8 rounded-full overflow-hidden border border-[#2d6af2]/50 shadow-[0_0_8px_rgba(45,106,242,0.3)] backdrop-blur-md bg-black/50 group-hover:border-[#5a9cff] transition-colors">
+                                                            {p.avatar_url ? (
+                                                                <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <InitialsAvatar name={p.nickname} size="sm" />
+                                                            )}
+                                                        </div>
 
-                                                    {/* Car image */}
-                                                    <div className="absolute inset-x-0 top-6 bottom-12 flex items-center justify-center p-2 z-10 w-full h-auto">
-                                                        <img src={carSrc} alt="car"
-                                                            className="w-full h-full object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] filter brightness-[0.95] group-hover:brightness-[1.1] group-hover:scale-105 transition-transform duration-500 will-change-transform" />
-                                                    </div>
+                                                        {/* Car image */}
+                                                        <div className="absolute inset-x-0 top-6 bottom-12 flex items-center justify-center p-2 z-10 w-full h-auto">
+                                                            <img src={carSrc} alt="car"
+                                                                className="w-full h-full object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] filter brightness-[0.95] group-hover:brightness-[1.1] group-hover:scale-105 transition-transform duration-500 will-change-transform" />
+                                                        </div>
 
-                                                    {/* Name plate */}
-                                                    <div className="absolute bottom-0 inset-x-0 z-20 h-[48px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-3 pb-2 pt-4">
-                                                        <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#2d6af2]/0 via-[#2d6af2] to-[#2d6af2]/0 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                                        <p className="font-display text-white/90 group-hover:text-white text-[12px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-1 transition-colors">
-                                                            {p.nickname}
-                                                        </p>
-                                                        <div className="flex justify-between items-center">
-                                                            <p className="font-display text-[#5a9cff]/80 group-hover:text-[#5a9cff] text-[8px] tracking-[0.3em] uppercase leading-none truncate pr-2 transition-colors">
-                                                                {pCarName}
+                                                        {/* Name plate */}
+                                                        <div className="absolute bottom-0 inset-x-0 z-20 h-[48px] bg-gradient-to-t from-[#04060f] to-transparent flex flex-col justify-end px-3 pb-2 pt-4">
+                                                            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#2d6af2]/0 via-[#2d6af2] to-[#2d6af2]/0 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                            <p className="font-display text-white/90 group-hover:text-white text-[12px] font-black tracking-[0.15em] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-none mb-1 transition-colors">
+                                                                {p.nickname}
                                                             </p>
-                                                            <div className="flex gap-[2px] opacity-60 group-hover:opacity-100 transition-opacity">
-                                                                <div className="w-[3px] h-[6px] bg-[#2d6af2]/60 transform -skew-x-[20deg]" />
-                                                                <div className="w-[3px] h-[6px] bg-[#2d6af2]/80 transform -skew-x-[20deg]" />
-                                                                <div className="w-[3px] h-[6px] bg-[#5a9cff] shadow-[0_0_5px_#5a9cff] transform -skew-x-[20deg]" />
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="font-display text-[#5a9cff]/80 group-hover:text-[#5a9cff] text-[8px] tracking-[0.3em] uppercase leading-none truncate pr-2 transition-colors">
+                                                                    {pCarName}
+                                                                </p>
+                                                                <div className="flex gap-[2px] opacity-60 group-hover:opacity-100 transition-opacity">
+                                                                    <div className="w-[3px] h-[6px] bg-[#2d6af2]/60 transform -skew-x-[20deg]" />
+                                                                    <div className="w-[3px] h-[6px] bg-[#2d6af2]/80 transform -skew-x-[20deg]" />
+                                                                    <div className="w-[3px] h-[6px] bg-[#5a9cff] shadow-[0_0_5px_#5a9cff] transform -skew-x-[20deg]" />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    
+                                                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 ${activeTooltip === p.nickname ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 group-hover:scale-100'}`}>
+                                                        {p.nickname}
+                                                    </div>
                                                 </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="bg-[#111729] text-white border-[#2d6af2]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(45,106,242,0.4)]">
-                                                    {p.nickname}
-                                                </TooltipContent>
-                                                </Tooltip>
                                             );
                                         })}
 
@@ -1162,6 +1169,5 @@ export default function PlayerWaitingPage() {
                 )}
             </AnimatePresence>
         </div>
-        </TooltipProvider>
     );
 }
