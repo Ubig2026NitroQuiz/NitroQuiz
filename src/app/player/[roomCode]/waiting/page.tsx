@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
 import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
 import { supabaseGame } from '@/lib/supabase/game-client';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 export const PLAYER_CHARACTERS = [
     {
@@ -504,6 +505,7 @@ export default function PlayerWaitingPage() {
     const displayVisual = assignedChar.gifSrc || assignedChar.imageSrc;
 
     return (
+        <TooltipProvider delayDuration={100}>
         <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4">
             {/* Homepage Background Image */}
             <div
@@ -566,10 +568,12 @@ export default function PlayerWaitingPage() {
                                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(45,106,242,0.25) transparent' }}>
 
                                 {/* YOU card */}
-                                <div className="group relative w-full bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 shadow-[inset_0_0_30px_rgba(124,58,237,0.05)]"
-                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)', aspectRatio: '1/1.15' }}>
-                                    
-                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_8px_#7C3AED]" />
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="group relative w-full bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 shadow-[inset_0_0_30px_rgba(124,58,237,0.05)]"
+                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)', aspectRatio: '1/1.15' }}>
+                                            
+                                            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_8px_#7C3AED]" />
                                     <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
                                     
                                     <div className="absolute top-2 left-3 z-20 w-6 h-6 rounded-full overflow-hidden border border-[#7C3AED]/60 shadow-[0_0_8px_rgba(124,58,237,0.4)] backdrop-blur-md bg-black/50">
@@ -609,15 +613,22 @@ export default function PlayerWaitingPage() {
                                         </div>
                                     </div>
                                 </div>
+                                </TooltipTrigger>
+                                    <TooltipContent className="bg-[#111729] text-white border-[#7C3AED]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(124,58,237,0.4)]">
+                                        {username}
+                                    </TooltipContent>
+                                </Tooltip>
 
                                 {/* Other players */}
                                 {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
                                     const charObj = PLAYER_CHARACTERS.find(c => c.id === p.car_character) || PLAYER_CHARACTERS[0];
                                     return (
-                                        <div key={i} className="group relative w-full bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 shadow-[inset_0_0_30px_rgba(45,106,242,0.05)]"
-                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)', aspectRatio: '1/1.15' }}>
-                                            
-                                            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_8px_#2d6af2] opacity-80" />
+                                        <Tooltip key={i}>
+                                            <TooltipTrigger asChild>
+                                                <div className="group relative w-full bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 shadow-[inset_0_0_30px_rgba(45,106,242,0.05)]"
+                                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)', aspectRatio: '1/1.15' }}>
+                                                    
+                                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_8px_#2d6af2] opacity-80" />
                                             <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(45,106,242,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45,106,242,0.3) 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
                                             
                                             <div className="absolute top-2 left-3 z-20 w-6 h-6 rounded-full overflow-hidden border border-[#2d6af2]/50 shadow-[0_0_6px_rgba(45,106,242,0.3)] backdrop-blur-md bg-black/50">
@@ -649,6 +660,11 @@ export default function PlayerWaitingPage() {
                                                 </div>
                                             </div>
                                         </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-[#111729] text-white border-[#2d6af2]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(45,106,242,0.4)]">
+                                            {p.nickname}
+                                        </TooltipContent>
+                                        </Tooltip>
                                     );
                                 })}
 
@@ -762,10 +778,12 @@ export default function PlayerWaitingPage() {
                                         style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(124,58,237,0.25) transparent' }}>
 
                                         {/* YOU card */}
-                                        <div className="group relative h-[190px] w-full bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 hover:border-[#a78bfa] transition-all hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] shadow-[inset_0_0_40px_rgba(124,58,237,0.05)]"
-                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
-                                            
-                                            {/* Tech styling bases */}
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="group relative h-[190px] w-full bg-[#0a0e1a] border-t border-r border-[#7C3AED]/40 hover:border-[#a78bfa] transition-all hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] shadow-[inset_0_0_40px_rgba(124,58,237,0.05)]"
+                                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
+                                                    
+                                                    {/* Tech styling bases */}
                                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#b89aff] via-[#7C3AED] to-[#3a1a7a] z-10 shadow-[0_0_10px_#7C3AED]" />
                                             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(124,58,237,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.2) 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
                                             
@@ -810,6 +828,11 @@ export default function PlayerWaitingPage() {
                                                 </div>
                                             </div>
                                         </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-[#111729] text-white border-[#7C3AED]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(124,58,237,0.4)]">
+                                            {username}
+                                        </TooltipContent>
+                                        </Tooltip>
 
                                         {/* Other players */}
                                         {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
@@ -817,11 +840,13 @@ export default function PlayerWaitingPage() {
                                             const pCarName = charObj.name;
                                             const carSrc = charObj.imageSrc;
                                             return (
-                                                <div key={i} className="group relative h-[190px] w-full bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 hover:border-[#5a9cff] transition-all hover:shadow-[0_0_30px_rgba(45,106,242,0.2)] shadow-[inset_0_0_40px_rgba(45,106,242,0.05)]"
-                                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
-                                                    
-                                                    {/* Tech styling bases */}
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_10px_#2d6af2] opacity-80 group-hover:opacity-100" />
+                                                <Tooltip key={i}>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="group relative h-[190px] w-full bg-[#0a0e1a]/80 border-t border-r border-[#2d6af2]/30 hover:border-[#5a9cff] transition-all hover:shadow-[0_0_30px_rgba(45,106,242,0.2)] shadow-[inset_0_0_40px_rgba(45,106,242,0.05)]"
+                                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)' }}>
+                                                            
+                                                            {/* Tech styling bases */}
+                                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#5a9cff] via-[#2d6af2] to-[#123075] z-10 shadow-[0_0_10px_#2d6af2] opacity-80 group-hover:opacity-100" />
                                                     <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(45,106,242,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(45,106,242,0.2) 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
                                                     
                                                     {/* Profile avatar */}
@@ -857,6 +882,11 @@ export default function PlayerWaitingPage() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-[#111729] text-white border-[#2d6af2]/50 font-display text-xs px-3 py-1.5 shadow-[0_0_15px_rgba(45,106,242,0.4)]">
+                                                    {p.nickname}
+                                                </TooltipContent>
+                                                </Tooltip>
                                             );
                                         })}
 
@@ -1132,5 +1162,6 @@ export default function PlayerWaitingPage() {
                 )}
             </AnimatePresence>
         </div>
+        </TooltipProvider>
     );
 }
