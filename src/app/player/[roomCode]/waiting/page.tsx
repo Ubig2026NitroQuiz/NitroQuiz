@@ -380,18 +380,23 @@ export default function PlayerWaitingPage() {
 
     const preloadQuizData = async (sessId: string) => {
         try {
+            // First fetch minimal session details from supabase
             const { data } = await supabaseGame.from("sessions")
-                .select("current_questions, question_limit, quiz_id, difficulty").eq("id", sessId).single();
-            if (data?.current_questions) {
-                let questions = data.current_questions;
-                if (typeof questions === 'string') { try { questions = JSON.parse(questions); } catch (e) { } }
-                localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questions));
-                localStorage.setItem('nitroquiz_game_roomCode', roomCode);
-                localStorage.setItem('nitroquiz_game_sessionId', sessId);
-                localStorage.setItem('nitroquiz_game_difficulty', data.difficulty || 'easy');
-                if (data.quiz_id) localStorage.setItem('nitroquiz_game_quizId', data.quiz_id);
-                localStorage.removeItem('nitroquiz_game_score');
-                localStorage.removeItem('nitroquiz_game_questionIndex');
+                .select("question_limit, quiz_id, difficulty").eq("id", sessId).single();
+            
+            // Then fetch sanitized questions securely from our API
+            const response = await fetch(`/api/quiz/questions?sessionId=${sessId}`);
+            if (response.ok) {
+                const apiData = await response.json();
+                if (apiData.questions) {
+                    localStorage.setItem('nitroquiz_game_questions', JSON.stringify(apiData.questions));
+                    localStorage.setItem('nitroquiz_game_roomCode', roomCode);
+                    localStorage.setItem('nitroquiz_game_sessionId', sessId);
+                    localStorage.setItem('nitroquiz_game_difficulty', apiData.difficulty || data?.difficulty || 'easy');
+                    if (data?.quiz_id) localStorage.setItem('nitroquiz_game_quizId', data.quiz_id);
+                    localStorage.removeItem('nitroquiz_game_score');
+                    localStorage.removeItem('nitroquiz_game_questionIndex');
+                }
             }
 
             const difficulty = data?.difficulty || 'easy';

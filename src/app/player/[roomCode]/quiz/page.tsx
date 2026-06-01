@@ -14,7 +14,7 @@ export interface QuizQuestion {
     id: string;
     question: string;
     options: { text: string; image?: string }[];
-    correctAnswer: number;
+    correctAnswer?: number;
     imageUrl?: string;
     originalDoc?: any;
 }
@@ -70,7 +70,7 @@ export default function QuizPage() {
                 // 1. Fetch Session Info (Questions & Status)
                 const { data: sessionData, error: sessError } = await supabaseGame
                     .from('sessions')
-                    .select('id, status, current_questions, difficulty')
+                    .select('id, status, difficulty')
                     .eq('game_pin', roomToUse)
                     .single();
 
@@ -113,52 +113,17 @@ export default function QuizPage() {
                 setScore(pData.score || 0);
                 setCurrentIndex(pData.current_question || 0);
 
-                // Initialize Questions
-                let rawQuestions = sessionData.current_questions;
-                if (typeof rawQuestions === 'string') {
-                    try { rawQuestions = JSON.parse(rawQuestions); } catch (e) { }
-                }
-
-                if (Array.isArray(rawQuestions)) {
-                    const normalized: QuizQuestion[] = rawQuestions.map((q: any, idx: number) => {
-                        let options: { text: string; image?: string }[] = [];
-                        let correctAnswer = 0;
-
-                        if (Array.isArray(q.answers)) {
-                            options = q.answers.map((a: any) => ({
-                                text: a.answer || a.text || '',
-                                image: a.image || a.image_url || a.imageUrl || undefined
-                            }));
-                            const correctId = String(q.correct);
-                            const correctIdx = q.answers.findIndex((a: any) => String(a.id) === correctId);
-                            correctAnswer = correctIdx >= 0 ? correctIdx : 0;
-                        } else if (Array.isArray(q.options)) {
-                            options = q.options.map((opt: any) => {
-                                if (typeof opt === 'string') return { text: opt };
-                                return {
-                                    text: opt.text || opt.answer || '',
-                                    image: opt.image || opt.image_url || opt.imageUrl || undefined
-                                };
-                            });
-                            correctAnswer = q.correctAnswer ?? 0;
-                        }
-
-                        return {
-                            id: q.id || `q-${idx}`,
-                            question: q.question || q.text || '',
-                            options,
-                            correctAnswer,
-                            imageUrl: q.image || q.image_url || q.imageUrl || undefined,
-                            originalDoc: q
-                        };
-                    });
-                    setQuestions(normalized);
-
-                    // Keep cache updated
-                    localStorage.setItem('nitroquiz_game_questions', JSON.stringify(rawQuestions));
-                    localStorage.setItem('nitroquiz_game_sessionId', sessionData.id);
-                    localStorage.setItem('nitroquiz_game_roomCode', roomToUse);
-                    localStorage.setItem('nitroquiz_game_difficulty', sessionData.difficulty || 'easy');
+                // Initialize Questions securely from API
+                const qRes = await fetch(`/api/quiz/questions?sessionId=${sessionData.id}`);
+                if (qRes.ok) {
+                    const apiData = await qRes.json();
+                    if (apiData.questions && Array.isArray(apiData.questions)) {
+                        setQuestions(apiData.questions);
+                        localStorage.setItem('nitroquiz_game_questions', JSON.stringify(apiData.questions));
+                        localStorage.setItem('nitroquiz_game_sessionId', sessionData.id);
+                        localStorage.setItem('nitroquiz_game_roomCode', roomToUse);
+                        localStorage.setItem('nitroquiz_game_difficulty', apiData.difficulty || sessionData.difficulty || 'easy');
+                    }
                 }
 
             } catch (err) {
@@ -183,69 +148,35 @@ export default function QuizPage() {
         if (isAnswered) return;
 
         const currentQ = questions[currentIndex];
-        const correct = optionIndex === currentQ.correctAnswer;
-
+        const participantId = localStorage.getItem('nitroquiz_game_participantId');
+        
         setSelectedOption(optionIndex);
         setIsAnswered(true);
 
-        const earnedPoints = correct ? Math.ceil(100 / questions.length) : 0;
-        const newScore = Math.min(100, score + earnedPoints);
-        setScore(newScore);
-
-        localStorage.setItem('nitroquiz_game_score', newScore.toString());
-
-        const participantId = localStorage.getItem('nitroquiz_game_participantId');
-        // Start transition timer immediately for snappier feel
+        // Optimistic transition
         setTimeout(() => {
             nextQuestion();
         }, 300);
 
-        // Update database in background but keep track of it
+        // Update database and validate securely on backend
         lastUpdateRef.current = (async () => {
-            if (participantId) {
+            if (participantId && sessionId) {
                 try {
-                    // Fetch the current state from Supabase to prevent overwriting
-                    const { data: currentData } = await supabaseGame
-                        .from('participants')
-                        .select('answers, correct, score, current_question')
-                        .eq('id', participantId)
-                        .single();
-
-                    if (currentData) {
-                        let currentAnswers: any[] = [];
-                        if (currentData.answers) {
-                            try {
-                                currentAnswers = typeof currentData.answers === 'string'
-                                    ? JSON.parse(currentData.answers)
-                                    : currentData.answers;
-                            } catch (e) { }
-                        }
-
-                        // Extract strict raw IDs from original dictionary
-                        let answer_id = "";
-                        if (currentQ.originalDoc?.answers?.[optionIndex]?.id) {
-                            answer_id = currentQ.originalDoc.answers[optionIndex].id;
-                        }
-
-                        const newEntry = {
-                            id: generateXID(),
-                            correct: correct,
-                            answer_id: answer_id,
-                            question_id: currentQ.id
-                        };
-
-                        const updatedAnswers = [...currentAnswers, newEntry];
-                        const updatedCorrect = (currentData.correct || 0) + (correct ? 1 : 0);
-
-                        await supabaseGame
-                            .from('participants')
-                            .update({
-                                answers: updatedAnswers,
-                                correct: updatedCorrect,
-                                score: newScore,
-                                current_question: currentIndex + 1
-                            })
-                            .eq('id', participantId);
+                    const res = await fetch('/api/quiz/validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId,
+                            participantId,
+                            questionId: currentQ.id,
+                            optionIndex
+                        })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        setScore(data.newScore);
+                        localStorage.setItem('nitroquiz_game_score', data.newScore.toString());
                     }
                 } catch (e) {
                     console.error("Failed to update score/lap in background", e);

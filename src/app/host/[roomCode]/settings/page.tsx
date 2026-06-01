@@ -1,465 +1,229 @@
-"use client"
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * HALAMAN: SettingsPage (Pengaturan Game)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Halaman pengaturan sebelum memulai game quiz.
+ * Host dapat mengatur: durasi, jumlah soal, suara, dan tingkat kesulitan.
+ *
+ * Struktur file hasil refaktor:
+ * ┌─ page.tsx                          → Orkestrator utama (file ini)
+ * ├─ types.ts                          → Definisi tipe (QuizDetail, Difficulty, dll.)
+ * ├─ hooks/useSettingsData.ts          → Custom hook untuk state & logika data
+ * └─ components/
+ *    ├─ SettingsForm.tsx               → Formulir pengaturan lengkap
+ *    └─ CancelSessionDialog.tsx        → Dialog konfirmasi pembatalan
+ *
+ * Warna kategori menggunakan shared constants dari:
+ *    @/app/host/select-quiz/constants  → getCategoryColor()
+ *
+ * CATATAN: File ini hanya mengatur layout dan meneruskan data/aksi ke
+ * sub-komponen. Semua logika bisnis ada di useSettingsData hook.
+ */
 
-import { useState, useEffect, useMemo, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Clock, ListOrdered, Play, Settings, Volume2, VolumeX } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
-import { useRouter, useParams, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
-import Image from "next/image"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog"
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { Question } from "@/types"
-import { Logo } from "@/components/ui/logo"
-import { useTranslation } from "react-i18next"
-import { useBgm } from "@/contexts/BgmContext"
-import { FloatingHostActions } from "@/components/FloatingHostActions"
-import { createGFSClient } from "@/lib/supabase/gfs-client"
-import { supabaseGame } from "@/lib/supabase/game-client"
+"use client";
 
-// ── Category color map (Copied from select-quiz) ──
-const categoryColorMap: Record<string, {
-    bar: string;        // top bar bg color
-    badge: string;      // badge bg
-    badgeBorder: string;
-    badgeText: string;
-    hoverBorder: string;
-}> = {
-    general: { bar: '#1a5f5f', badge: 'rgba(26,95,95,0.22)', badgeBorder: 'rgba(38,166,154,0.4)', badgeText: '#4db6ac', hoverBorder: 'rgba(26,95,95,0.7)' },
-    math: { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
-    history: { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
-    science: { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
-    geography: { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
-    language: { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
-    sport: { bar: '#ef4444', badge: 'rgba(239,68,68,0.15)', badgeBorder: 'rgba(252,165,165,0.35)', badgeText: '#fca5a5', hoverBorder: 'rgba(239,68,68,0.6)' },
-    technology: { bar: '#2d6af2', badge: 'rgba(45,106,242,0.18)', badgeBorder: 'rgba(100,181,246,0.35)', badgeText: '#64b5f6', hoverBorder: 'rgba(45,106,242,0.6)' },
-    art: { bar: '#d946ef', badge: 'rgba(217,70,239,0.15)', badgeBorder: 'rgba(240,171,252,0.35)', badgeText: '#f0abfc', hoverBorder: 'rgba(217,70,239,0.6)' },
-    music: { bar: '#ec4899', badge: 'rgba(236,72,153,0.15)', badgeBorder: 'rgba(249,168,212,0.35)', badgeText: '#f9a8d4', hoverBorder: 'rgba(236,72,153,0.6)' },
-    matematika: { bar: '#00c853', badge: 'rgba(0,200,83,0.15)', badgeBorder: 'rgba(0,230,118,0.35)', badgeText: '#00e676', hoverBorder: 'rgba(0,200,83,0.6)' },
-    sejarah: { bar: '#e91e8c', badge: 'rgba(233,30,140,0.15)', badgeBorder: 'rgba(240,98,146,0.35)', badgeText: '#f06292', hoverBorder: 'rgba(233,30,140,0.6)' },
-    sains: { bar: '#7c3aed', badge: 'rgba(124,58,237,0.18)', badgeBorder: 'rgba(167,139,250,0.35)', badgeText: '#a78bfa', hoverBorder: 'rgba(124,58,237,0.6)' },
-    geografi: { bar: '#1a9e6e', badge: 'rgba(26,158,110,0.18)', badgeBorder: 'rgba(52,211,153,0.35)', badgeText: '#34d399', hoverBorder: 'rgba(26,158,110,0.6)' },
-    bahasa: { bar: '#f59e0b', badge: 'rgba(245,158,11,0.15)', badgeBorder: 'rgba(251,191,36,0.35)', badgeText: '#fbbf24', hoverBorder: 'rgba(245,158,11,0.6)' },
-    olahraga: { bar: '#ef4444', badge: 'rgba(239,68,68,0.15)', badgeBorder: 'rgba(252,165,165,0.35)', badgeText: '#fca5a5', hoverBorder: 'rgba(239,68,68,0.6)' },
-    teknologi: { bar: '#2d6af2', badge: 'rgba(45,106,242,0.18)', badgeBorder: 'rgba(100,181,246,0.35)', badgeText: '#64b5f6', hoverBorder: 'rgba(45,106,242,0.6)' },
-    seni: { bar: '#d946ef', badge: 'rgba(217,70,239,0.15)', badgeBorder: 'rgba(240,171,252,0.35)', badgeText: '#f0abfc', hoverBorder: 'rgba(217,70,239,0.6)' },
-    musik: { bar: '#ec4899', badge: 'rgba(236,72,153,0.15)', badgeBorder: 'rgba(249,168,212,0.35)', badgeText: '#f9a8d4', hoverBorder: 'rgba(236,72,153,0.6)' }
-};
+import { Card } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
+import { FloatingHostActions } from "@/components/FloatingHostActions";
 
-const getCategoryColor = (category?: string) => {
-    if (!category) return categoryColorMap.general;
-    const catLower = category.toLowerCase();
-    const mapped = categoryColorMap[catLower];
-    if (mapped) return mapped;
-    const foundKey = Object.keys(categoryColorMap).find(key => catLower.includes(key));
-    if (foundKey) return categoryColorMap[foundKey];
-    return categoryColorMap.general;
-};
+// Warna kategori dari shared constants (menghindari duplikasi)
+import { getCategoryColor } from "@/app/host/select-quiz/constants";
 
-const backgroundGif = "/assets/background/2_v2.webp"
+// Custom hook & sub-komponen halaman ini
+import { useSettingsData } from "./hooks/useSettingsData";
+import { SettingsForm, CancelSessionDialog } from "./components";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KOMPONEN UTAMA
+// ═══════════════════════════════════════════════════════════════════════════
 
 export default function SettingsPage() {
-    const supabaseCentral = createGFSClient();
-    const router = useRouter()
-    const { t } = useTranslation()
-    const params = useParams()
-    const searchParams = useSearchParams()
+    // ── Ambil semua state dan fungsi dari custom hook ──
+    const {
+        quizDetail,
+        duration, setDuration,
+        questionCount, setQuestionCount, questionCountOptions,
+        selectedDifficulty, setSelectedDifficulty,
+        isMuted, setIsMuted,
+        saving,
+        showCancelDialog, setShowCancelDialog,
+        isDeleting,
+        handleCreateRoom,
+        handleCancelSession,
+        t,
+    } = useSettingsData();
 
-    const roomCode = Array.isArray(params.roomCode) ? params.roomCode[0] : params.roomCode;
-
-    const [quizId, setQuizId] = useState<string | null>(null);
-    const [duration, setDuration] = useState("300")
-    const [questionCount, setQuestionCount] = useState("5")
-    const [selectedDifficulty, setSelectedDifficulty] = useState("easy")
-
-    const [quizDetail, setQuizDetail] = useState<{
-        title: string;
-        description: string;
-        totalQuestions: number;
-        questions: any[];
-        category?: string;
-    } | null>(null)
-
-    const [saving, setSaving] = useState(false)
-    const [showCancelDialog, setShowCancelDialog] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const { isMuted, setIsMuted } = useBgm()
-
-    const shuffleArray = <T,>(array: T[]): T[] => {
-        const shuffled = [...array]
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled
-    }
-
-    useEffect(() => {
-        const fetchQuizFromCentral = async () => {
-            const storedQuizId = localStorage.getItem("currentQuizId");
-            if (!storedQuizId) { console.error("No quiz ID found in storage"); router.push('/host/select-quiz'); return; }
-            setQuizId(storedQuizId);
-            try {
-                const { data, error } = await supabaseCentral.from('quizzes').select('*').eq('id', storedQuizId).single();
-                if (error) { console.error("Failed to load quiz metadata", error); return; }
-                if (data) {
-                    let qs = data.questions || [];
-                    if (typeof qs === 'string') { try { qs = JSON.parse(qs); } catch (e) { } }
-                    setQuizDetail({ title: data.title || "Untitled Quiz", description: data.description || "No description provided.", totalQuestions: qs.length, questions: qs, category: data.category });
-                }
-            } catch (err) { console.error("Error fetching quiz from central:", err); }
-        };
-        fetchQuizFromCentral();
-    }, [router]);
-
-
-
-    const questionCountOptions = useMemo(() => {
-        const totalQuestions = quizDetail?.totalQuestions || 0;
-        if (totalQuestions === 0) return [5];
-        const baseOptions = [5, 10, 15, 20];
-        const validOptions = baseOptions.filter((count) => count <= totalQuestions);
-        return validOptions.length > 0 ? validOptions : [totalQuestions];
-    }, [quizDetail]);
-
-    useEffect(() => {
-        if (!quizDetail) return;
-        if (quizDetail.totalQuestions > 0) {
-            if (questionCountOptions.includes(5)) { setQuestionCount("5"); }
-            else if (questionCountOptions.length > 0) { setQuestionCount(questionCountOptions[0].toString()); }
-            else { setQuestionCount(quizDetail.totalQuestions.toString()); }
-        }
-    }, [quizDetail, questionCountOptions]);
-
-    const handleCreateRoom = async () => {
-        if (saving || !quizDetail || !quizId) return;
-        setSaving(true);
-        try {
-            const limit = parseInt(questionCount);
-            const selectedQuestions = shuffleArray(quizDetail.questions).slice(0, limit);
-
-            const sessionPayload = {
-                status: 'waiting',
-                question_limit: limit,
-                total_time_minutes: parseInt(duration) / 60,
-                difficulty: selectedDifficulty,
-                current_questions: selectedQuestions,
-            };
-
-            console.log("[handleCreateRoom] Updating session payloads for pin:", roomCode);
-
-            // Update in local game DB
-            const { data: sessionData, error } = await supabaseGame
-                .from('sessions')
-                .update(sessionPayload)
-                .eq('game_pin', roomCode)
-                .select()
-                .single();
-
-            // Update in centralized platform DB parallelly
-            const { error: mainError } = await supabaseCentral
-                .from('game_sessions')
-                .update(sessionPayload)
-                .eq('game_pin', roomCode);
-
-            if (error || mainError) { 
-                console.error("Error updating session:", { error, mainError });
-                setSaving(false);
-                return;
-            }
-
-            if (!sessionData) {
-                console.error("Session updated but no data returned.");
-                setSaving(false);
-                return;
-            }
-
-            console.log("[handleCreateRoom] Session updated successfully:", sessionData.id);
-
-            const settings = {
-                sessionId: sessionData.id, gamePin: roomCode, quizId: quizId, quizTitle: quizDetail.title,
-                totalTimeMinutes: parseInt(duration) / 60, questionLimit: limit, difficulty: selectedDifficulty,
-                questions: selectedQuestions, status: 'waiting', players: []
-            };
-            localStorage.setItem(`session_${roomCode}`, JSON.stringify(settings));
-            localStorage.setItem("hostroomCode", roomCode as string);
-            router.push(`/host/${roomCode}/lobby`);
-        } catch (err) {
-            console.error("Unexpected error updating session:", err);
-            setSaving(false);
-        }
-    };
-
-    const handleCancelSession = async () => {
-        setIsDeleting(true);
-        try {
-            await Promise.allSettled([
-                supabaseCentral.from('game_sessions').delete().eq('game_pin', roomCode),
-                supabaseGame.from('sessions').delete().eq('game_pin', roomCode)
-            ]);
-            localStorage.removeItem(`session_${roomCode}`);
-            // Remove the popstate listener before navigating to avoid the dialog showing up again
-            window.onpopstate = null;
-            router.push('/host/select-quiz');
-        }
-        catch (err) {
-            console.error("Error deleting session:", err);
-            window.onpopstate = null;
-            router.push('/host/select-quiz');
-        }
-    };
-
-    // ── Navigation Protection (Browser Back / Gestures) ──
-    useEffect(() => {
-        // Handle Browser Back Button and Gestures
-        const blockNavigation = () => {
-            setShowCancelDialog(true);
-            // Push state back to prevent navigation
-            window.history.pushState(null, "", window.location.pathname);
-        };
-
-        // Initialize history state
-        window.history.pushState(null, "", window.location.pathname);
-        window.onpopstate = blockNavigation;
-
-        // Handle Close Tab / Refresh
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            e.preventDefault();
-            e.returnValue = ""; // Standard way to show exit confirmation
-            return "";
-        };
-        window.addEventListener("beforeunload", handleBeforeUnload);
-
-        return () => {
-            window.onpopstate = null;
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-        };
-    }, []);
-
+    // ── Tampilkan loading jika quiz belum dimuat ──
     if (!quizDetail) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-display text-white">
-                <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
-                    style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }} />
-                <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/85 to-[#2d6af2]/10 pointer-events-none" />
-                <div className="text-center z-10">
-                    <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
-                    <p className="mt-4 text-[#5a9cff] text-xl tracking-[0.2em] uppercase animate-pulse">{t('room_settings.loading')}</p>
-                </div>
-            </div>
-        );
+        return <LoadingScreen t={t} />;
     }
 
-    const theme = getCategoryColor(quizDetail.category);
+    // ── Hitung skema warna berdasarkan kategori quiz ──
+    const theme = getCategoryColor(quizDetail.category || 'general');
 
     return (
         <div className="h-screen bg-[#04060f] relative overflow-hidden font-body selection:bg-[#2d6af2] selection:text-white">
-            {/* Racing Stripe */}
-            <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1" />
-            {/* Background Image */}
-            <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
-                style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }} />
-            <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(0,255,157,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.022)_1px,transparent_1px)] bg-[length:80px_80px]" />
-            <div className="fixed bottom-0 left-0 right-0 h-52 z-0 bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px)] bg-[length:80px_40px] [transform:perspective(400px)_rotateX(60deg)] origin-bottom pointer-events-none opacity-60" />
-            <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(45,106,242,0.07),transparent)] pointer-events-none" />
-            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/50 to-[#2d6af2]/10 pointer-events-none" />
-            <div className="scanlines" />
 
+            {/* ═══ Lapisan Latar Belakang ═══ */}
+            <BackgroundLayers />
 
+            {/* ═══ Konten Utama ═══ */}
             <div className="absolute inset-0 overflow-y-auto z-10 flex flex-col">
-                {/* Top Bar */}
-                <div className="w-full px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <motion.button
-                            initial={{ opacity: 0, x: -20 }} 
-                            animate={{ opacity: 1, x: 0 }} 
-                            whileHover={{ scale: 1.05, filter: "brightness(1.2) drop-shadow(0 0 8px rgba(45,106,242,0.5))" }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setShowCancelDialog(true)}
-                            className="cursor-pointer transition-all focus:outline-none w-32 md:w-40"
-                        >
-                            <Logo withText={false} animated={false} />
-                        </motion.button>
-                    </div>
-                    <div className="relative w-32 md:w-60 h-10 md:h-14">
-                        <Image src="/assets/logo/logo2.png" alt="GameForSmart.com" fill
-                            className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(169,141,197,0.4)]" />
-                    </div>
-                </div>
 
+                {/* ── Top Bar: Logo & Branding ── */}
+                <TopBar onBack={() => setShowCancelDialog(true)} />
+
+                {/* ── Kartu Pengaturan ── */}
                 <div className="relative container mx-auto px-4 sm:px-6 pb-6 max-w-3xl flex-1 flex flex-col justify-center py-4">
-                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 100, damping: 12 }}>
-                        <Card className="bg-[#0c1328]/85 border backdrop-blur-xl rounded-md relative overflow-hidden p-0 transition-colors"
-                              style={{ borderTop: `4px solid ${theme.bar}`, borderColor: theme.badgeBorder, boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 40px ${theme.badge}` }}>
-                            <div className="p-6 sm:p-8 flex flex-col gap-8 relative z-10">
-                                {/* Quiz Title */}
-                                <div className="py-5 bg-gradient-to-r from-[#17254d] to-transparent border-l-2 pl-6 relative -mx-6 sm:-mx-8 shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)] transition-colors"
-                                     style={{ borderLeftColor: theme.bar }}>
-                                    <h2 className="text-xl sm:text-2xl pr-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 font-display font-black italic uppercase tracking-wider drop-shadow-md">
-                                        {quizDetail.title}
-                                    </h2>
-                                </div>
-
-                                {/* ── Row 1: Duration + Questions + Sound ── */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                    {/* Duration */}
-                                    <div className="space-y-1.5 group/dur">
-                                        <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-2 transition-colors group-hover/dur:text-white">
-                                            <Clock className="h-3 w-3" style={{ color: theme.bar }} /><span>{t('room_settings.duration')}</span>
-                                        </Label>
-                                        <Select value={duration} onValueChange={setDuration}>
-                                            <SelectTrigger className="h-11 bg-[#0f142b] border border-white/5 border-l-2 text-white shadow-inner font-display font-bold text-[12px] uppercase tracking-widest focus:ring-0 rounded-sm transition-all"
-                                                           style={{ borderLeftColor: theme.bar }}>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-[#0a0f20] border text-white font-display uppercase tracking-wider rounded-sm"
-                                                           style={{ borderColor: theme.badgeBorder, boxShadow: `0 0 20px ${theme.badge}` }}>
-                                                {Array.from({ length: 6 }, (_, i) => (i + 1) * 5).map((min) => (
-                                                    <SelectItem key={min} value={(min * 60).toString()} className="focus:bg-white/10 focus:text-white cursor-pointer hover:pl-4 transition-all">
-                                                        {min} {t('room_settings.min')}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Questions */}
-                                    <div className="space-y-1.5 group/qst">
-                                        <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-2 transition-colors group-hover/qst:text-white">
-                                            <ListOrdered className="h-3 w-3" style={{ color: theme.bar }} /><span>{t('room_settings.questions')}</span>
-                                        </Label>
-                                        <Select value={questionCount} onValueChange={setQuestionCount}>
-                                            <SelectTrigger className="h-11 bg-[#0f142b] border border-white/5 border-l-2 text-white shadow-inner font-display font-bold text-[12px] uppercase tracking-widest focus:ring-0 rounded-sm transition-all"
-                                                           style={{ borderLeftColor: theme.bar }}>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-[#0a0f20] border text-white font-display uppercase tracking-wider rounded-sm"
-                                                           style={{ borderColor: theme.badgeBorder, boxShadow: `0 0 20px ${theme.badge}` }}>
-                                                {questionCountOptions.map((count: number) => (
-                                                    <SelectItem key={count} value={count.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer hover:pl-4 transition-all">
-                                                        {count}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Sound */}
-                                    <div className="space-y-1.5 group/snd">
-                                        <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-2 transition-colors group-hover/snd:text-white">
-                                            {isMuted ? <VolumeX className="h-3 w-3 text-red-500" /> : <Volume2 className="h-3 w-3" style={{ color: theme.bar }} />}
-                                            <span>{t('room_settings.sound')}</span>
-                                        </Label>
-                                        <div className="flex items-center justify-center gap-3 h-11 bg-[#0f142b] border border-white/5 border-l-2 shadow-inner rounded-sm font-display font-bold transition-all"
-                                             style={{ borderLeftColor: theme.bar }}>
-                                            <VolumeX className={`h-4 w-4 transition-colors ${isMuted ? "text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" : "text-white/20"}`} />
-                                            <div className="flex scale-90 origin-center justify-center -mx-2">
-                                                <Switch
-                                                    checked={!isMuted}
-                                                    onCheckedChange={(checked: boolean) => setIsMuted(!checked)}
-                                                    className="data-[state=unchecked]:bg-[#333] border border-white/10"
-                                                    style={{ backgroundColor: !isMuted ? theme.bar : undefined, boxShadow: !isMuted ? `0 0 10px ${theme.badge}` : undefined }}
-                                                />
-                                            </div>
-                                            <Volume2 className={`h-4 w-4 transition-colors text-white/20`} style={{ color: !isMuted ? theme.bar : undefined, filter: !isMuted ? `drop-shadow(0 0 5px ${theme.badge})` : undefined }} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* ── Row 2: Difficulty ── */}
-                                <div className="space-y-1.5 border-t border-white/5 pt-6 sm:mt-2">
-                                    <Label className="text-[10px] font-display font-bold uppercase tracking-[0.2em] flex items-center gap-1.5 pl-0.5 text-white/40 mb-4 transition-colors">
-                                        <Settings className="h-3 w-3 text-amber-500" /><span>{t('room_settings.difficulty.title')}</span>
-                                    </Label>
-                                    <div className="grid grid-cols-3 gap-3 sm:gap-4 px-2">
-                                        {(["Easy", "Normal", "Hard"] as const).map((diff) => {
-                                            const isActive = selectedDifficulty === diff.toLowerCase();
-                                            const colors = {
-                                                Easy: { main: '#00ff9d', bg: 'bg-[#00ff9d]/20', border: 'border-[#00ff9d]', glow: 'shadow-[0_0_15px_rgba(0,255,157,0.4)]' },
-                                                Normal: { main: '#f59e0b', bg: 'bg-amber-500/20', border: 'border-amber-500', glow: 'shadow-[0_0_15px_rgba(245,158,11,0.4)]' },
-                                                Hard: { main: '#ef4444', bg: 'bg-red-500/20', border: 'border-red-500', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.4)]' }
-                                            }[diff];
-
-                                            return (
-                                                <button
-                                                    key={diff}
-                                                    onClick={() => setSelectedDifficulty(diff.toLowerCase())}
-                                                    className={`h-11 sm:h-12 text-[10px] sm:text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-300 transform -skew-x-[15deg] border ${
-                                                        isActive 
-                                                        ? `${colors.bg} ${colors.border} text-[${colors.main}] ${colors.glow}`
-                                                        : `bg-[#0f142b] border-white/5 text-white/40 hover:bg-white/10 hover:border-white/20 hover:text-white`
-                                                    }`}
-                                                >
-                                                    <div className="transform skew-x-[15deg]">
-                                                        {t(`room_settings.difficulty.${diff.toLowerCase()}`)}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* ── Continue button with glow ── */}
-                                <div className="mt-4 pb-2">
-                                    <button
-                                        onClick={handleCreateRoom}
-                                        disabled={saving}
-                                        className="w-full h-14 group/btnstart overflow-hidden text-white font-display text-[14px] font-black tracking-[0.3em] uppercase transition-all duration-300 relative transform -skew-x-[15deg] disabled:opacity-50 border"
-                                        style={{ 
-                                            borderColor: theme.badgeBorder,
-                                            boxShadow: saving ? 'none' : `0 0 30px ${theme.badge}`,
-                                            background: saving ? '#1e293b' : `linear-gradient(135deg, ${theme.bar}, ${theme.badgeBorder}, ${theme.bar})` 
-                                        }}
-                                    >
-                                        <div className="absolute inset-0 bg-white/20 transform -translate-x-[150%] group-hover/btnstart:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
-                                        <div className="absolute inset-0 border border-white/20 pointer-events-none" />
-                                        <div className="transform skew-x-[15deg] absolute inset-0 flex items-center justify-center gap-3">
-                                            {saving ? (
-                                                <>
-                                                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    {t('room_settings.button.loading')}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    {t('room_settings.button.continue')} <Play size={14} className="fill-white" />
-                                                </>
-                                            )}
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 100, damping: 12 }}
+                    >
+                        <Card
+                            className="bg-[#0c1328]/85 border backdrop-blur-xl rounded-md relative overflow-hidden p-0 transition-colors"
+                            style={{
+                                borderTop: `4px solid ${theme.bar}`,
+                                borderColor: theme.badgeBorder,
+                                boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 40px ${theme.badge}`,
+                            }}
+                        >
+                            <SettingsForm
+                                theme={theme}
+                                quizTitle={quizDetail.title}
+                                duration={duration}
+                                setDuration={setDuration}
+                                questionCount={questionCount}
+                                setQuestionCount={setQuestionCount}
+                                questionCountOptions={questionCountOptions}
+                                isMuted={isMuted}
+                                setIsMuted={setIsMuted}
+                                selectedDifficulty={selectedDifficulty}
+                                setSelectedDifficulty={setSelectedDifficulty}
+                                saving={saving}
+                                onSubmit={handleCreateRoom}
+                                t={t}
+                            />
                         </Card>
                     </motion.div>
 
-                    <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-                        <DialogOverlay className="bg-black/80 backdrop-blur-sm fixed inset-0 z-50" />
-                        <DialogContent className="bg-[#0b0811]/95 border border-red-500/20 border-t-4 border-t-red-600 p-0 overflow-hidden rounded-sm max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_40px_rgba(220,38,38,0.2)] backdrop-blur-2xl">
-                            <div className="p-8">
-                                <DialogHeader>
-                                    <DialogTitle className="text-xl text-transparent bg-clip-text bg-gradient-to-r from-white to-red-200 font-display font-black italic uppercase tracking-wider text-center drop-shadow-[0_0_10px_rgba(220,38,38,0.6)]">{t('room_settings.delete_dialog.title')}</DialogTitle>
-                                    <DialogDescription className="text-center text-red-500/70 font-display font-bold text-[10px] tracking-[0.2em] mt-5 uppercase border border-red-500/20 bg-[#1a0a10] p-4 rounded-sm shadow-inner">
-                                        {t('room_settings.delete_dialog.description')}
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter className="flex gap-4 mt-8">
-                                    <button onClick={() => setShowCancelDialog(false)} disabled={isDeleting}
-                                        className="flex-1 bg-[#0f142b] border border-white/5 text-white/40 hover:bg-white/10 hover:border-white/20 hover:text-white font-display font-black text-[11px] uppercase tracking-widest h-12 transform -skew-x-[15deg] transition-all">
-                                        <div className="transform skew-x-[15deg]">{t('room_settings.delete_dialog.cancel')}</div>
-                                    </button>
-                                    <button onClick={handleCancelSession} disabled={isDeleting}
-                                        className="flex-1 bg-red-600/20 border border-red-500 text-red-500 hover:bg-red-600 hover:text-white font-display font-black text-[11px] uppercase tracking-widest h-12 transform -skew-x-[15deg] transition-all shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-                                        <div className="transform skew-x-[15deg]">{isDeleting ? t('room_settings.delete_dialog.deleting') : t('room_settings.delete_dialog.delete')}</div>
-                                    </button>
-                                </DialogFooter>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    {/* Dialog Konfirmasi Pembatalan */}
+                    <CancelSessionDialog
+                        open={showCancelDialog}
+                        onOpenChange={setShowCancelDialog}
+                        onConfirmCancel={handleCancelSession}
+                        isDeleting={isDeleting}
+                        t={t}
+                    />
                 </div>
             </div>
+
+            {/* ═══ Tombol Aksi Mengambang Host ═══ */}
             <FloatingHostActions />
         </div>
-    )
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-KOMPONEN INTERNAL: Layar Loading
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Tampilan loading saat data quiz sedang dimuat dari database.
+ */
+function LoadingScreen({ t }: { t: (key: string) => string }) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-display text-white">
+            <div
+                className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
+                style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }}
+            />
+            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/85 to-[#2d6af2]/10 pointer-events-none" />
+            <div className="text-center z-10">
+                <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
+                <p className="mt-4 text-[#5a9cff] text-xl tracking-[0.2em] uppercase animate-pulse">
+                    {t('room_settings.loading')}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-KOMPONEN INTERNAL: Lapisan Latar Belakang
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Lapisan-lapisan dekoratif latar belakang halaman pengaturan.
+ * Termasuk: racing stripe, gambar background, grid, efek radial, dan scanlines.
+ */
+function BackgroundLayers() {
+    return (
+        <>
+            {/* Garis balap dekoratif di atas */}
+            <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1" />
+
+            {/* Gambar latar belakang */}
+            <div
+                className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-20"
+                style={{ backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")', backgroundAttachment: 'fixed' }}
+            />
+
+            {/* Pola grid halus */}
+            <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(0,255,157,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,157,0.022)_1px,transparent_1px)] bg-[length:80px_80px]" />
+
+            {/* Grid perspektif di bawah */}
+            <div className="fixed bottom-0 left-0 right-0 h-52 z-0 bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.06)_1px,transparent_1px)] bg-[length:80px_40px] [transform:perspective(400px)_rotateX(60deg)] origin-bottom pointer-events-none opacity-60" />
+
+            {/* Efek radial gradient */}
+            <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(45,106,242,0.07),transparent)] pointer-events-none" />
+
+            {/* Overlay gradient untuk keterbacaan */}
+            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/50 to-[#2d6af2]/10 pointer-events-none" />
+
+            {/* Efek scanlines */}
+            <div className="scanlines" />
+        </>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-KOMPONEN INTERNAL: Top Bar (Navigasi & Branding)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Bar atas halaman berisi logo navigasi kembali dan branding NitroQuiz.
+ * Klik logo akan membuka dialog konfirmasi pembatalan.
+ */
+function TopBar({ onBack }: { onBack: () => void }) {
+    return (
+        <div className="w-full px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
+            {/* Logo klik untuk kembali (menampilkan dialog konfirmasi) */}
+            <div className="flex items-center gap-3">
+                <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    whileHover={{ scale: 1.05, filter: "brightness(1.2) drop-shadow(0 0 8px rgba(45,106,242,0.5))" }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onBack}
+                    className="cursor-pointer transition-all focus:outline-none w-32 md:w-40"
+                >
+                    <Logo withText={false} animated={false} />
+                </motion.button>
+            </div>
+
+            {/* Logo branding */}
+            <div className="relative w-32 md:w-60 h-10 md:h-14">
+                <Image
+                    src="/assets/logo/logo2.png"
+                    alt="GameForSmart.com"
+                    fill
+                    className="object-contain opacity-70 hover:opacity-100 transition-opacity duration-300 drop-shadow-[0_0_10px_rgba(169,141,197,0.4)]"
+                />
+            </div>
+        </div>
+    );
 }
