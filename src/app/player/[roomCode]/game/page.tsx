@@ -2278,31 +2278,29 @@ export default function GameSpeedPage() {
             try {
                 let questionsData = [];
 
-                // 1. Fetch current questions from DB using roomCode (Game PIN)
-                // This ensures we get the LATEST config from host settings
+                // 1. Fetch current questions from DB securely via API using roomCode (Game PIN)
+                // This ensures we get the LATEST config from host settings and sanitized options
                 console.log(`[GameSpeed] Fetching session data for room: ${roomCode}`);
-                const { data: sessionData, error } = await supabaseGame
-                    .from('sessions')
-                    .select('id, current_questions, difficulty')
-                    .eq('game_pin', roomCode)
-                    .single();
+                const response = await fetch(`/api/quiz/questions?roomCode=${roomCode}`);
 
-                if (!error && sessionData?.current_questions) {
-                    questionsData = sessionData.current_questions;
-                    console.log(`[GameSpeed] Loaded ${questionsData.length} questions from DB.`);
+                if (response.ok) {
+                    const apiData = await response.json();
+                    if (apiData.questions && Array.isArray(apiData.questions)) {
+                        questionsData = apiData.questions;
+                        console.log(`[GameSpeed] Loaded ${questionsData.length} questions from API.`);
 
-                    // Sync to localStorage so other hooks/pages can use it
-                    localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
-                    localStorage.setItem('nitroquiz_game_sessionId', sessionData.id);
-                    if (sessionData.difficulty) {
-                        localStorage.setItem('nitroquiz_game_difficulty', sessionData.difficulty);
+                        // Sync to localStorage so other hooks/pages can use it
+                        localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questionsData));
+                        if (apiData.difficulty) {
+                            localStorage.setItem('nitroquiz_game_difficulty', apiData.difficulty);
+                        }
                     }
                 } else {
-                    // Fallback to localStorage ONLY if DB fetch fails
+                    // Fallback to localStorage ONLY if API fetch fails
                     const stored = localStorage.getItem('nitroquiz_game_questions');
                     if (stored) {
                         questionsData = JSON.parse(stored);
-                        console.log('[GameSpeed] DB fetch failed, using fallback questions from localStorage.');
+                        console.log('[GameSpeed] API fetch failed, using fallback questions from localStorage.');
                     }
                 }
 
