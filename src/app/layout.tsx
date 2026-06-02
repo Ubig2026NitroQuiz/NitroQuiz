@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import NextTopLoader from 'nextjs-toploader';
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
+import { ClientUrlCleaner } from "@/components/ClientUrlCleaner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -112,6 +113,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${inter.variable} ${orbitron.variable} ${rajdhani.variable} ${pressStart2P.variable} ${lpmq.variable}`}>
+        <ClientUrlCleaner />
         <ClientLayout>
         <NextTopLoader
           color="#2d6af2"
