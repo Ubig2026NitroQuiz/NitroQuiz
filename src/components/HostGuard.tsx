@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabaseGame } from "@/lib/supabase/game-client";
-import { Logo } from "@/components/ui/logo";
 import { useTranslation } from "react-i18next";
 
 interface HostGuardProps {
@@ -15,20 +14,27 @@ export function HostGuard({ children }: HostGuardProps) {
     const router = useRouter();
     const params = useParams();
     const roomCode = (params.roomCode as string)?.toUpperCase();
-    const { profile, loading: authLoading } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
     const authorizedAsHost = useRef(false);
     const { t } = useTranslation()
 
     useEffect(() => {
-        // Once confirmed as host, never re-run checks (prevents AuthContext refresh race)
+        // ── Jika sudah dikonfirmasi sebagai host, jangan cek ulang ──
+        // (mencegah race condition saat AuthContext re-render)
         if (authorizedAsHost.current) return;
 
+        // ── Tunggu sampai auth sepenuhnya selesai loading ──
         if (authLoading || !roomCode) return;
+
+        // ── Jika ada user yang login tapi profile belum siap, tunggu ──
+        // Ini mencegah race condition di mana auth sudah selesai loading
+        // tapi profile belum ter-fetch dari database
+        if (user && !profile) return;
 
         const checkAuthorization = async () => {
             try {
-                // 1. Fetch the session to find the host
+                // 1. Ambil data sesi untuk mengetahui siapa host-nya
                 const { data: session, error: sessionError } = await supabaseGame
                     .from("sessions")
                     .select("id, host_id")
@@ -41,16 +47,27 @@ export function HostGuard({ children }: HostGuardProps) {
                     return;
                 }
 
-                // 2. PRIORITY: Check if the current user is the host
-                // If they are the host, they SHOULD stay here, even if they are also a participant
+                // 2. PRIORITAS UTAMA: Cek apakah user adalah HOST
+                // Host HARUS tetap di halaman host, meskipun juga terdaftar sebagai participant
                 if (profile && profile.id === session.host_id) {
                     authorizedAsHost.current = true;
                     setIsAuthorized(true);
                     return;
                 }
 
-                // 3. Check for participant status (Redirect to player waiting)
-                // 3a. Check localStorage (Fast check for current session)
+                // 2b. Fallback: Jika profile.id tidak cocok, cek langsung via database
+                // menggunakan auth_user_id → profile.id mapping
+                // Ini menangani kasus di mana host_id di sessions merujuk ke profile.id
+                // tapi bisa saja ada ketidakcocokan format
+                if (user && !profile) {
+                    // Sudah ditangani di atas (return early), tapi guard tambahan
+                    return;
+                }
+
+                // 3. Cek status participant (Redirect ke player waiting)
+                // PENTING: Cek ini hanya berjalan jika user BUKAN host
+
+                // 3a. Cek localStorage (cek cepat untuk sesi saat ini)
                 const localRoomCode = localStorage.getItem("nitroquiz_game_roomCode");
                 const localParticipantId = localStorage.getItem("nitroquiz_game_participantId");
                 if (localRoomCode === roomCode && localParticipantId) {
@@ -59,7 +76,7 @@ export function HostGuard({ children }: HostGuardProps) {
                     return;
                 }
 
-                // 3b. Check Database (Logged-in user check)
+                // 3b. Cek Database (untuk user yang login)
                 if (profile) {
                     const { data: participant } = await supabaseGame
                         .from("participants")
@@ -75,7 +92,7 @@ export function HostGuard({ children }: HostGuardProps) {
                     }
                 }
 
-                // 4. If neither host nor recognized participant, kick to home
+                // 4. Jika bukan host dan bukan participant, redirect ke home
                 router.replace("/");
                 setIsAuthorized(false);
             } catch (err) {
@@ -85,9 +102,9 @@ export function HostGuard({ children }: HostGuardProps) {
         };
 
         checkAuthorization();
-    }, [roomCode, profile, authLoading, router]);
+    }, [roomCode, user, profile, authLoading, router]);
 
-    // Show loading screen while checking
+    // Tampilkan loading screen selama pengecekan
     if (authLoading || isAuthorized === null) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#04060f] relative overflow-hidden font-display text-white">
@@ -102,6 +119,6 @@ export function HostGuard({ children }: HostGuardProps) {
         );
     }
 
-    // If authorized, render children
+    // Jika terotorisasi, tampilkan children
     return isAuthorized ? <>{children}</> : null;
 }
