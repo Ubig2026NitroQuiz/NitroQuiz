@@ -627,7 +627,7 @@ export default function PlayerWaitingPage() {
 
                                 {/* Other players */}
                                 {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
-                                    const charObj = PLAYER_CHARACTERS.find(c => c.id === p.car_character) || PLAYER_CHARACTERS[0];
+                                    const charObj = PLAYER_CHARACTERS.find(c => c.id === (p.car_character || "").replace("-bot", "")) || PLAYER_CHARACTERS[0];
                                     return (
                                         <div key={i} 
                                             onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === p.nickname ? null : p.nickname); }}
@@ -846,7 +846,7 @@ export default function PlayerWaitingPage() {
 
                                         {/* Other players */}
                                         {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
-                                            const charObj = PLAYER_CHARACTERS.find(c => c.id === p.car_character) || PLAYER_CHARACTERS[0];
+                                            const charObj = PLAYER_CHARACTERS.find(c => c.id === (p.car_character || "").replace("-bot", "")) || PLAYER_CHARACTERS[0];
                                             const pCarName = charObj.name;
                                             const carSrc = charObj.imageSrc;
                                             return (
