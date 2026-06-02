@@ -6,6 +6,7 @@
  * Hook untuk mengelola sistem undangan (invite) di lobby host.
  *
  * Tanggung Jawab:
+ * - Mengelola state dialog invite teman & grup (buka/tutup)
  * - Mengambil daftar teman mutual (saling follow) dari database pusat
  * - Mengambil daftar grup yang diikuti user
  * - Mengirim undangan ke teman individual (notifikasi sessionFriend)
@@ -29,8 +30,6 @@ import type { FriendProfile, UserGroup } from "../types";
 interface UseInviteSystemParams {
   profileId: string | undefined;    // ID profil user yang sedang login
   sessionId: string | null;         // ID sesi game saat ini
-  inviteFriendOpen: boolean;        // Status dialog invite teman terbuka
-  inviteGroupOpen: boolean;         // Status dialog invite grup terbuka
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -40,10 +39,12 @@ interface UseInviteSystemParams {
 export function useInviteSystem({
   profileId,
   sessionId,
-  inviteFriendOpen,
-  inviteGroupOpen,
 }: UseInviteSystemParams) {
   const supabaseCentral = createGFSClient();
+
+  // ── State dialog ──
+  const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
+  const [inviteGroupOpen, setInviteGroupOpen] = useState(false);
 
   // ── State teman ──
   const [mutualFriends, setMutualFriends] = useState<FriendProfile[]>([]);
@@ -59,10 +60,6 @@ export function useInviteSystem({
 
   // ── State toast undangan ──
   const [inviteToastVisible, setInviteToastVisible] = useState(false);
-
-  // ── State dialog ──
-  const [inviteFriendDialogOpen, setInviteFriendDialogOpen] = useState(false);
-  const [inviteGroupDialogOpen, setInviteGroupDialogOpen] = useState(false);
 
   // ═══════════════════════════════════════════════════════════════════════
   // AMBIL DAFTAR TEMAN MUTUAL saat dialog teman dibuka
@@ -296,8 +293,13 @@ export function useInviteSystem({
   // ═══════════════════════════════════════════════════════════════════════
 
   return {
+    // State & aksi dialog
+    inviteFriendOpen,
+    setInviteFriendOpen,
+    inviteGroupOpen,
+    setInviteGroupOpen,
+
     // State & aksi teman
-    mutualFriends,
     loadingFriends,
     searchFriendQuery,
     setSearchFriendQuery,
@@ -306,7 +308,6 @@ export function useInviteSystem({
     handleInviteFriend,
 
     // State & aksi grup
-    userGroups,
     loadingGroups,
     searchGroupQuery,
     setSearchGroupQuery,
@@ -316,11 +317,5 @@ export function useInviteSystem({
 
     // Toast
     inviteToastVisible,
-
-    // Dialog
-    inviteFriendDialogOpen,
-    setInviteFriendDialogOpen,
-    inviteGroupDialogOpen,
-    setInviteGroupDialogOpen,
   };
 }
