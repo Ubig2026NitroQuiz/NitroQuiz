@@ -479,11 +479,6 @@ export default function PlayerResultPage() {
                 >
                   {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                 </p>
-                {!allFinished && (
-                  <p className="text-[#00ff9d]/70 text-[10px] uppercase tracking-[0.2em] font-mono mt-1 animate-pulse">
-                    {t("player_result.waiting_others")}
-                  </p>
-                )}
               </div>
             </motion.div>
             <motion.div
@@ -817,7 +812,7 @@ export default function PlayerResultPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 90 }}
               className="absolute z-10"
-              style={{ top: "20%", left: "12%", bottom: "18%", width: "min(260px, 17vw)" }}
+              style={{ top: "calc(50% - 160px)", left: "12%", width: "min(260px, 17vw)", height: "320px" }}
             >
               <div
                 className="w-full h-full overflow-hidden flex flex-col"
@@ -885,26 +880,6 @@ export default function PlayerResultPage() {
                     {currentPlayerData ? getDisplayName(currentPlayerData) : t("player_result.player_fallback")}
                   </p>
 
-                  {!allFinished ? (
-                    <motion.div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
-                      style={{ background: "rgba(96,165,250,0.1)", border: "1px solid rgba(96,165,250,0.35)" }}
-                      animate={{ opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                      <span className="text-base">⏳</span>
-                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#93c5fd" }}>{t("player_result.waiting")}</span>
-                    </motion.div>
-                  ) : currentPlayerRank === 1 ? (
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
-                      style={{ background: "rgba(250,204,21,0.1)", border: "1px solid rgba(250,204,21,0.45)" }}>
-                      <span className="text-base">🏆</span>
-                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#fde047" }}>{t("player_result.champion")}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg"
-                      style={{ background: "rgba(0,255,157,0.08)", border: "1px solid rgba(0,255,157,0.35)" }}>
-                      <span className="text-base">✅</span>
-                      <span className="font-display text-xs font-black uppercase tracking-widest" style={{ color: "#4ade80" }}>{t("player_result.finished")}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Bottom racing stripe */}
