@@ -282,7 +282,7 @@
     "waiting": "WAITING",
     "champion": "CHAMPION",
     "finished": "FINISHED",
-    "wait_for_host": "WAIT FOR HOST"
+    "wait_for_host": "WAITING..."
   },
   "player_game": {
     "establishing_signal": "ESTABLISHING SIGNAL...",

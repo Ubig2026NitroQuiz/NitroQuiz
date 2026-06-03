@@ -282,7 +282,7 @@
     "waiting": "في الانتظار",
     "champion": "بطل",
     "finished": "اكتمل",
-    "wait_for_host": "انتظر المضيف"
+    "wait_for_host": "قيد الانتظار..."
   },
   "player_game": {
     "establishing_signal": "جاري إنشاء الإشارة...",
