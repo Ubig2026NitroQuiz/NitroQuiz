@@ -135,7 +135,8 @@ function LoadingState() {
         <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6" />
         {/* Teks loading */}
         <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
-          {t("host_leaderboard.loading")}
+          {/* {t("host_leaderboard.loading")} */}
+          Loading...
         </p>
       </div>
     </div>

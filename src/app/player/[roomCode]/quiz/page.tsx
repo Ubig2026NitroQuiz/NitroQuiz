@@ -345,7 +345,8 @@ export default function QuizPage() {
                         <Trophy className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-[#2d6af2]/40" />
                     </div>
                     <p className="text-[#2d6af2] text-base font-bold uppercase tracking-[0.4em] animate-pulse">
-                        {t("player_quiz.establishing_signal")}
+                        {/* {t("player_quiz.establishing_signal")} */}
+                        Loading...
                     </p>
                 </div>
             </div>

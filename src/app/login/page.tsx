@@ -588,7 +588,8 @@ function NitroLaunchButton({
           {isLoggingIn ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              {t('login.form.authenticating')}
+              {/* {t('login.form.authenticating')} */}
+              Loading...
             </>
           ) : (
             <>

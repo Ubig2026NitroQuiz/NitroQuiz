@@ -73,7 +73,8 @@ export default function PlayerWaitingPage() {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
                         <Loader2 className="w-16 h-16 text-[#00ff9d] animate-spin mb-6" />
                         <h2 className="font-display text-2xl tracking-widest text-[#00ff9d] uppercase glow-text">
-                            {t("player_waiting.connecting")}
+                            {/* {t("player_waiting.connecting")} */}
+                            Loading...
                         </h2>
                     </motion.div>
                 )}
@@ -161,7 +162,8 @@ export default function PlayerWaitingPage() {
                             {t("player_waiting.go")}
                         </motion.h1>
                         <p className="font-display text-[#00ff9d] text-sm mt-4 animate-pulse">
-                            {t("player_waiting.launching")}
+                            {/* {t("player_waiting.launching")} */}
+                            Loading...
                         </p>
                     </motion.div>
                 )}

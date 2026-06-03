@@ -226,7 +226,8 @@ function LoadingScreen({ t }: { t: (key: string) => string }) {
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-[#2d6af2]/30 rounded-full animate-spin mx-auto mb-6" />
         <p className="text-[#2d6af2] text-xl tracking-widest uppercase animate-pulse">
-          {t("host_lobby.loading")}
+          {/* {t("host_lobby.loading")} */}
+          Loading...
         </p>
       </div>
     </div>

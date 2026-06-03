@@ -404,7 +404,8 @@ export default function PlayerResultPage() {
         <div className="text-center z-10">
           <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6" />
           <p className="mt-4 text-[#2d6af2] text-xl tracking-[0.2em] uppercase animate-pulse">
-            {t("player_result.establishing_signal")}
+            {/* {t("player_result.establishing_signal")} */}
+            Loading...
           </p>
         </div>
       </div>
