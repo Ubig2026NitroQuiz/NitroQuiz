@@ -130,7 +130,8 @@ function JoiningSpinner({ t }: { t: TFunction }) {
 
       {/* Teks status bergabung */}
       <h2 className="font-display text-sm font-bold tracking-[0.3em] text-[#5a9cff] uppercase animate-pulse">
-        {t("joining_room", "JOINING ROOM...")}
+        {/* {t("joining_room", "JOINING ROOM...")} */}
+        Loading...
       </h2>
     </div>
   );

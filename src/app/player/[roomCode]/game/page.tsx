@@ -2444,7 +2444,8 @@ export default function GameSpeedPage() {
                             fontWeight: 700,
                             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
                         }}>
-                            {t('player_game.establishing_signal')}
+                            {/* {t('player_game.establishing_signal')} */}
+                            Loading...
                         </p>
                     </div>
                     <style>{`
@@ -2981,7 +2982,10 @@ export default function GameSpeedPage() {
             {mounted && (!assetsLoaded || !isTimerReady) && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#020617', color: 'white', fontFamily: 'var(--font-rajdhani)' }}>
                     <div style={{ width: '64px', height: '64px', border: '4px solid rgba(59,130,246,0.1)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', boxShadow: '0 0 20px rgba(59,130,246,0.2)' }} />
-                    <p style={{ marginTop: '2rem', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4em', color: '#3b82f6', animation: 'pulse 2s ease-in-out infinite' }}>{t('player_game.establishing_signal')}</p>
+                    <p style={{ marginTop: '2rem', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4em', color: '#3b82f6', animation: 'pulse 2s ease-in-out infinite' }}>
+                        {/* {t('player_game.establishing_signal')} */}
+                        Loading...
+                    </p>
                     <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
                 </div>
             )}
@@ -3006,7 +3010,8 @@ export default function GameSpeedPage() {
                         marginBottom: '1.5rem',
                         animation: 'finish-glow 0.6s ease-in-out infinite alternate'
                     }}>
-                        {gameState === 'gameover' ? '⏱ TIME UP' : t('player_game.race_finished')}
+                        {/* {gameState === 'gameover' ? '⏱ TIME UP' : t('player_game.race_finished')} */}
+                        {gameState === 'gameover' ? '⏱ TIME UP' : 'Loading...'}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -3024,7 +3029,8 @@ export default function GameSpeedPage() {
                             letterSpacing: '0.2em',
                             textTransform: 'uppercase'
                         }}>
-                            {t('player_game.redirecting')}...
+                            {/* {t('player_game.redirecting')}... */}
+                            Loading...
                         </span>
                     </div>
 

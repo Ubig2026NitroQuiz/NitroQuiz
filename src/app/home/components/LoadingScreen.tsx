@@ -28,7 +28,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ t }) => {
                 <div className="w-14 h-14 border-[3px] border-white/10 border-t-[#7C3AED] rounded-full animate-spin mx-auto mb-6"></div>
                 {/* Teks loading */}
                 <p className="mt-4 text-white/60 text-sm tracking-[0.3em] uppercase font-body">
-                    {t('homepage.loading')}
+                    {/* {t('homepage.loading')} */}
+                    Loading...
                 </p>
             </div>
         </div>

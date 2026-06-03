@@ -145,7 +145,8 @@ function LoadingScreen({ t }: { t: (key: string) => string }) {
             <div className="text-center z-10">
                 <div className="w-16 h-16 border-4 border-[#2d6af2]/30 border-t-[#2d6af2] rounded-full animate-spin mx-auto mb-6"></div>
                 <p className="mt-4 text-[#5a9cff] text-xl tracking-[0.2em] uppercase animate-pulse">
-                    {t('room_settings.loading')}
+                    {/* {t('room_settings.loading')} */}
+                    Loading...
                 </p>
             </div>
         </div>
