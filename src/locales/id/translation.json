@@ -282,7 +282,7 @@
     "waiting": "MENUNGGU",
     "champion": "JUARA",
     "finished": "SELESAI",
-    "wait_for_host": "MENUNGGU HOST"
+    "wait_for_host": "MENUNGGU..."
   },
   "player_game": {
     "establishing_signal": "MEMANTAPKAN SINYAL...",
