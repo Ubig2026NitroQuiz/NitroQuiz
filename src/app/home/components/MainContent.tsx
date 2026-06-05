@@ -36,9 +36,7 @@ export const MainContent: React.FC<MainContentProps> = ({
     t, roomCode, setRoomCode, handleHost, handleJoin, onOpenScan,
 }) => {
     return (
-        <main className="relative z-20 flex flex-col items-center justify-center h-screen w-full max-w-5xl mx-auto p-4 md:p-6 overflow-hidden">
-
-            {/* ── Logo & Tagline ─────────────────────────────────────── */}
+        <main className="relative z-20 flex flex-col items-center justify-center min-h-[100dvh] py-20 w-full max-w-5xl mx-auto p-4 md:p-6">
             <header className="text-center mb-6 md:mb-10 relative z-30 w-full flex flex-col items-center">
                 {/* Logo utama NitroQuiz */}
                 <motion.div
@@ -88,7 +86,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 className="flex flex-col md:flex-row gap-4 lg:gap-6 w-full justify-center items-stretch max-w-5xl px-4 md:px-0"
             >
                 {/* ── KARTU HOST ─────────────────────────────────────── */}
-                <div className="host-card race-card flex-1 flex flex-col p-8 relative group">
+                <div className="host-card race-card flex-1 flex flex-col p-6 md:p-8 relative group">
                     <div className="motion-texture"></div>
                     <div className="laser-edge text-[#7C3AED]"></div>
                     <div className="checkered-tag"></div>
@@ -144,7 +142,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 </div>
 
                 {/* ── KARTU JOIN ──────────────────────────────────────── */}
-                <div className="join-card race-card flex-1 flex flex-col p-8 relative group">
+                <div className="join-card race-card flex-1 flex flex-col p-6 md:p-8 relative group">
                     <div className="motion-texture"></div>
                     <div className="laser-edge text-[#2d6af2]"></div>
                     <div className="checkered-tag"></div>
