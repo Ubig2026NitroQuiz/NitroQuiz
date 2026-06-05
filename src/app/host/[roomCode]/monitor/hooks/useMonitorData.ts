@@ -473,14 +473,32 @@ export function useMonitorData() {
   // ═══════════════════════════════════════════════════════════════════════
 
   const rankedParticipants = useMemo(() => {
-    // Sorting dinonaktifkan saat ini, bisa diaktifkan kembali:
-    // return [...participants].sort((a, b) => {
-    //   if (b.score !== a.score) return b.score - a.score;
-    //   if (b.current_question !== a.current_question) return b.current_question - a.current_question;
-    //   return (b.lap_race || 0) - (a.lap_race || 0);
-    // });
-    return participants;
-  }, [participants]);
+    return [...participants].sort((a, b) => {
+      // 1. Prioritaskan yang sudah selesai (finished)
+      const aFinished = a.finished_at !== null || a.current_question >= totalQuestions;
+      const bFinished = b.finished_at !== null || b.current_question >= totalQuestions;
+
+      if (aFinished && !bFinished) return -1;
+      if (!aFinished && bFinished) return 1;
+
+      // 2. Jika keduanya selesai dan memiliki finished_at, urutkan berdasarkan waktu tercepat
+      if (aFinished && bFinished && a.finished_at && b.finished_at) {
+        return new Date(a.finished_at).getTime() - new Date(b.finished_at).getTime();
+      }
+
+      // 3. Urutkan berdasarkan progres soal (current_question) terbanyak
+      if (b.current_question !== a.current_question) {
+        return b.current_question - a.current_question;
+      }
+
+      // 4. Jika progres sama, urutkan berdasarkan skor tertinggi
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return 0;
+    });
+  }, [participants, totalQuestions]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // RETURN: Semua state dan aksi yang dibutuhkan komponen
