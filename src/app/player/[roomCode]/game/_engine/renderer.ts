@@ -370,7 +370,9 @@ export function renderPlayer(
 
     // Hitung dimensi dasar dari sprite utama (foward-sonic.png)
     const baseCar = sprites.car;
-    const playerScale = (width / 1920) * 1.5;
+    // Jika layar potret (tinggi > lebar), berikan dorongan ukuran agar mobil tidak terlalu kecil
+    const isPortrait = height > width;
+    const playerScale = (width / 1920) * (isPortrait ? 2.5 : 1.5);
     const baseW = baseCar ? baseCar.width * playerScale : 200;
     const baseH = baseCar ? baseCar.height * playerScale : 100;
 
