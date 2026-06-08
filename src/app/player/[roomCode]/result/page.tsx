@@ -103,7 +103,7 @@ export default function PlayerResultPage() {
   return (
     <>
       {/* ══ TAMPILAN MOBILE ══ */}
-      <div className="md:hidden min-h-screen bg-[#04060f] text-white flex flex-col relative overflow-hidden font-body">
+      <div className="md:hidden min-h-[100dvh] bg-[#04060f] text-white flex flex-col relative overflow-y-auto overflow-x-hidden font-body">
         <NitroBackground />
 
         {/* Tampilan hasil pemain */}

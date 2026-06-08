@@ -36,7 +36,7 @@ export const MainContent: React.FC<MainContentProps> = ({
     t, roomCode, setRoomCode, handleHost, handleJoin, onOpenScan,
 }) => {
     return (
-        <main className="relative z-20 flex flex-col items-center justify-center min-h-[100dvh] py-20 w-full max-w-5xl mx-auto p-4 md:p-6">
+        <main className="relative z-20 flex flex-col items-center justify-center flex-1 w-full max-w-5xl mx-auto p-4 md:p-6">
             <header className="text-center mb-6 md:mb-10 relative z-30 w-full flex flex-col items-center">
                 {/* Logo utama NitroQuiz */}
                 <motion.div

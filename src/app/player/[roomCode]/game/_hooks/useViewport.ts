@@ -20,8 +20,10 @@ export function useViewport(mobileOrientationChoice: 'portrait' | 'landscape' | 
         setAspectRatio(ratio);
         const hasTouchSupport = (typeof window !== 'undefined') && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
         const isPortrait = ratio < 1;
-        const isSmallScreen = w < 768;
-        setIsMobile((isSmallScreen || isPortrait) && hasTouchSupport);
+        // Gunakan Math.min agar saat dilandscape (w > 768 tapi h < 768) tetap terdeteksi sebagai mobile
+        const isSmallScreen = Math.min(w, h) < 768; 
+        const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        setIsMobile((isSmallScreen && hasTouchSupport) || isMobileUserAgent);
     }, [mobileOrientationChoice]);
 
     useEffect(() => { setMounted(true); }, []);
