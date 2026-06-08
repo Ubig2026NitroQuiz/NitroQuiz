@@ -85,7 +85,7 @@ export function GameHUD({
                 inset: 0,
                 pointerEvents: 'none',
                 zIndex: 200,
-                padding: isMobile ? '0.75rem' : '2rem',
+                padding: isMobilePortrait ? '3.5rem 0.75rem 0.75rem' : (isMobile ? '0.75rem' : '2rem'),
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
@@ -107,9 +107,9 @@ export function GameHUD({
             {/* ==========================================
                 Header: Statistik & Mini Map
                ========================================== */}
-            <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'start', width: '100%', gap: isMobilePortrait ? '0.5rem' : '1rem' }}>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'start', width: '100%', gap: isMobilePortrait ? '0.5rem' : '1rem' }}>
                 {/* Kolom Kiri: Kecepatan, POV, Mute, NOS, Lap */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobilePortrait ? '0.4rem' : '1rem', width: 'auto', flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobilePortrait ? '0.4rem' : '1rem', width: 'auto' }}>
                     {/* Baris Speedometer + Tombol POV + Mute */}
                     <div style={{ display: 'flex', gap: isMobilePortrait ? '0.4rem' : '1rem', alignItems: 'center', justifyContent: 'flex-start' }}>
                         {/* Speedometer */}
@@ -201,7 +201,7 @@ function TimerDisplay({ globalTimeLeft, isMobilePortrait, isMobile, usePCLayout 
         <div style={{
             position: 'absolute',
             left: '50%',
-            top: isMobilePortrait ? '0.4rem' : (isMobile ? '0.75rem' : '1.25rem'),
+            top: isMobilePortrait ? '0.5rem' : (isMobile ? '0.75rem' : '1.25rem'),
             transform: 'translateX(-50%)',
             zIndex: 1000,
             backgroundColor: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 0, 0, 0.65)',
@@ -242,25 +242,45 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
         <div style={{
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
-            padding: isMobileLandscape ? '0.2rem 0.5rem' : (isMobilePortrait ? '0.3rem 0.5rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem')),
-            borderRadius: usePCLayout ? '2rem' : '0.6rem',
+            padding: isMobilePortrait ? '0.6rem 0.8rem' : (isMobileLandscape ? '0.2rem 0.5rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.8rem 1.2rem')),
+            borderRadius: usePCLayout ? '2rem' : '1rem',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             flex: 'none',
-            textAlign: 'left'
+            textAlign: 'left',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
         }}>
-            <div style={{ fontSize: isMobilePortrait ? '6px' : (isMobileLandscape ? '5px' : (usePCLayout ? '10px' : '7px')), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>{t('player_game.speedometer')}</div>
+            <div style={{ 
+                fontSize: isMobilePortrait ? '0.55rem' : (isMobileLandscape ? '5px' : (usePCLayout ? '10px' : '0.6rem')), 
+                color: 'rgba(255, 255, 255, 0.5)', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.15em', 
+                fontWeight: 900, 
+                marginBottom: isMobilePortrait ? '0.2rem' : '0.1rem' 
+            }}>
+                {t('player_game.speedometer')}
+            </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', justifyContent: 'flex-start' }}>
                 <span style={{
-                    fontSize: isMobilePortrait ? '1.2rem' : (isMobileLandscape ? '1rem' : (usePCLayout ? '4.5rem' : '1.75rem')),
+                    fontSize: isMobilePortrait ? '2.5rem' : (isMobileLandscape ? '1rem' : (usePCLayout ? '4.5rem' : '2.5rem')),
                     fontWeight: 900,
                     fontFamily: 'var(--font-rajdhani)',
                     color: '#fff',
                     fontStyle: 'italic',
-                    textShadow: '0 0 10px rgba(255,255,255,0.7)'
+                    textShadow: '0 0 10px rgba(255,255,255,0.7)',
+                    lineHeight: '1'
                 }}>
                     {stats.speed}
                 </span>
-                <span style={{ fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.55rem' : (usePCLayout ? '1rem' : '0.6rem')), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                <span style={{ 
+                    fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '0.55rem' : (usePCLayout ? '1rem' : '0.8rem')), 
+                    color: '#60a5fa', 
+                    fontWeight: 800,
+                    marginLeft: '0.2rem'
+                }}>
+                    KPH
+                </span>
             </div>
         </div>
     );
@@ -392,10 +412,11 @@ function MiniMapContainer({ miniMapRef, miniMapMinimized, setMiniMapMinimized, i
         <div
             onClick={() => isMobile && setMiniMapMinimized(!miniMapMinimized)}
             style={{
-                position: 'relative',
+                position: 'absolute',
+                top: 0,
+                right: 0,
                 pointerEvents: 'auto',
                 zIndex: 300,
-                alignSelf: 'start',
                 transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
                 cursor: 'pointer'
             }}
