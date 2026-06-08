@@ -54,7 +54,7 @@ export const MobileLeaderboardView = ({
 
   return (
     <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
-      className="relative z-10 flex flex-col min-h-screen px-4 pt-6 pb-8">
+      className="relative z-10 flex flex-col min-h-[100dvh] px-4 pt-6 pb-8">
       {/* Header dengan tombol kembali */}
       <div className="flex items-center gap-3 mb-4 flex-shrink-0">
         <button onClick={onBack}

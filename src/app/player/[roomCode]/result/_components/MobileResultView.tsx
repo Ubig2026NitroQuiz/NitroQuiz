@@ -38,7 +38,7 @@ export const MobileResultView = ({
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="relative z-10 flex flex-col min-h-screen px-4 pt-8 pb-8">
+      className="relative z-10 flex flex-col min-h-[100dvh] px-4 pt-8 pb-8">
       {/* Logo */}
       <div className="flex justify-center mb-5 flex-shrink-0">
         <button onClick={() => router.push("/")}

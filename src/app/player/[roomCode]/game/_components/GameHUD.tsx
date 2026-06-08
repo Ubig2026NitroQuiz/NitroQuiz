@@ -156,6 +156,7 @@ export function GameHUD({
                     setMiniMapMinimized={setMiniMapMinimized}
                     isMobile={isMobile}
                     isMobilePortrait={isMobilePortrait}
+                    isMobileLandscape={isMobileLandscape}
                     usePCLayout={usePCLayout}
                 />
             </div>
@@ -241,16 +242,16 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
         <div style={{
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
-            padding: isMobileLandscape ? '0.6rem 1rem' : (isMobilePortrait ? '0.3rem 0.5rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem')),
+            padding: isMobileLandscape ? '0.2rem 0.5rem' : (isMobilePortrait ? '0.3rem 0.5rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem')),
             borderRadius: usePCLayout ? '2rem' : '0.6rem',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             flex: 'none',
             textAlign: 'left'
         }}>
-            <div style={{ fontSize: isMobilePortrait ? '6px' : (isMobileLandscape ? '8px' : (usePCLayout ? '10px' : '7px')), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>{t('player_game.speedometer')}</div>
+            <div style={{ fontSize: isMobilePortrait ? '6px' : (isMobileLandscape ? '5px' : (usePCLayout ? '10px' : '7px')), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>{t('player_game.speedometer')}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', justifyContent: 'flex-start' }}>
                 <span style={{
-                    fontSize: isMobilePortrait ? '1.2rem' : (isMobileLandscape ? '1.8rem' : (usePCLayout ? '4.5rem' : '1.75rem')),
+                    fontSize: isMobilePortrait ? '1.2rem' : (isMobileLandscape ? '1rem' : (usePCLayout ? '4.5rem' : '1.75rem')),
                     fontWeight: 900,
                     fontFamily: 'var(--font-rajdhani)',
                     color: '#fff',
@@ -259,7 +260,7 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
                 }}>
                     {stats.speed}
                 </span>
-                <span style={{ fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '1rem' : '0.6rem')), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                <span style={{ fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.55rem' : (usePCLayout ? '1rem' : '0.6rem')), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
             </div>
         </div>
     );
@@ -281,8 +282,8 @@ function POVToggleButton({ stateRef, viewMode, setViewMode, isMobilePortrait, is
                 pointerEvents: 'auto',
                 backgroundColor: 'rgba(59, 130, 246, 0.25)',
                 backdropFilter: 'blur(15px)',
-                width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
-                height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '1.8rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '1.8rem' : (usePCLayout ? '5rem' : '2.5rem')),
                 borderRadius: usePCLayout ? '1.25rem' : '0.5rem',
                 border: '2px solid rgba(59, 130, 246, 0.5)',
                 color: 'white',
@@ -295,7 +296,7 @@ function POVToggleButton({ stateRef, viewMode, setViewMode, isMobilePortrait, is
                 gap: '2px'
             }}
         >
-            <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1rem')), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
+            <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '0.75rem' : (usePCLayout ? '1.8rem' : '1rem')), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
                 {viewMode === 'first' ? '🎥' : '👤'}
             </span>
         </button>
@@ -314,8 +315,8 @@ function MuteToggleButton({ isMuted, toggleMute, isMobilePortrait, isMobileLands
                 pointerEvents: 'auto',
                 backgroundColor: isMuted ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)',
                 backdropFilter: 'blur(15px)',
-                width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
-                height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                width: isMobilePortrait ? '2rem' : (isMobileLandscape ? '1.8rem' : (usePCLayout ? '5rem' : '2.5rem')),
+                height: isMobilePortrait ? '2rem' : (isMobileLandscape ? '1.8rem' : (usePCLayout ? '5rem' : '2.5rem')),
                 borderRadius: usePCLayout ? '1.25rem' : '0.5rem',
                 border: isMuted ? '2px solid rgba(239, 68, 68, 0.5)' : '2px solid rgba(16, 185, 129, 0.5)',
                 color: 'white',
@@ -326,7 +327,7 @@ function MuteToggleButton({ isMuted, toggleMute, isMobilePortrait, isMobileLands
                 transition: 'all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
             }}
         >
-            <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1.1rem')) }}>
+            <span style={{ fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '0.75rem' : (usePCLayout ? '1.8rem' : '1.1rem')) }}>
                 {isMuted ? <VolumeX size={isMobile ? 16 : 24} /> : <Volume2 size={isMobile ? 16 : 24} />}
             </span>
         </button>
@@ -342,7 +343,7 @@ function NOSBar({ stats, t, isMobilePortrait, isMobileLandscape, usePCLayout }: 
         <div style={{
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
-            padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.5rem 0.8rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem')),
+            padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.2rem 0.5rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem')),
             borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
@@ -350,8 +351,8 @@ function NOSBar({ stats, t, isMobilePortrait, isMobileLandscape, usePCLayout }: 
             gap: usePCLayout ? '0.75rem' : '0.5rem',
             flex: isMobilePortrait ? 'none' : (usePCLayout ? 'none' : 1)
         }}>
-            <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem')), textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>{t('player_game.nos')}</span>
-            <div style={{ flex: 1, minWidth: isMobilePortrait ? '40px' : (isMobileLandscape ? '70px' : (usePCLayout ? '80px' : '30px')), height: '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+            <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.5rem' : (usePCLayout ? '0.7rem' : '0.6rem')), textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>{t('player_game.nos')}</span>
+            <div style={{ flex: 1, minWidth: isMobilePortrait ? '40px' : (isMobileLandscape ? '40px' : (usePCLayout ? '80px' : '30px')), height: '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ width: `${stats.nos}%`, height: '100%', backgroundColor: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
             </div>
         </div>
@@ -367,7 +368,7 @@ function LapCounter({ stats, t, lapRace, isMobilePortrait, isMobileLandscape, us
         <div style={{
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
-            padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.5rem 0.8rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem')),
+            padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.2rem 0.5rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem')),
             borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
@@ -375,17 +376,17 @@ function LapCounter({ stats, t, lapRace, isMobilePortrait, isMobileLandscape, us
             gap: '0.3rem',
             flex: 'none'
         }}>
-            <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem')), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
-            <span style={{ fontSize: isMobilePortrait ? '0.7rem' : (isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem')), fontWeight: 900, color: '#fff' }}>{Math.min(stats.totalLaps, lapRace + 1)}/{stats.totalLaps}</span>
+            <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobilePortrait ? '0.5rem' : (isMobileLandscape ? '0.5rem' : (usePCLayout ? '0.7rem' : '0.6rem')), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>{t('player_game.lap')}</span>
+            <span style={{ fontSize: isMobilePortrait ? '0.7rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '1.25rem' : '0.8rem')), fontWeight: 900, color: '#fff' }}>{Math.min(stats.totalLaps, lapRace + 1)}/{stats.totalLaps}</span>
         </div>
     );
 }
 
 /** Kontainer Mini Map */
-function MiniMapContainer({ miniMapRef, miniMapMinimized, setMiniMapMinimized, isMobile, isMobilePortrait, usePCLayout }: {
+function MiniMapContainer({ miniMapRef, miniMapMinimized, setMiniMapMinimized, isMobile, isMobilePortrait, isMobileLandscape, usePCLayout }: {
     miniMapRef: React.RefObject<HTMLCanvasElement | null>;
     miniMapMinimized: boolean; setMiniMapMinimized: (v: boolean) => void;
-    isMobile: boolean; isMobilePortrait: boolean; usePCLayout: boolean;
+    isMobile: boolean; isMobilePortrait: boolean; isMobileLandscape: boolean; usePCLayout: boolean;
 }): React.ReactElement {
     return (
         <div
@@ -404,7 +405,7 @@ function MiniMapContainer({ miniMapRef, miniMapMinimized, setMiniMapMinimized, i
                 backdropFilter: 'blur(10px)',
                 padding: isMobile ? '0.25rem' : '0.4rem',
                 borderRadius: isMobile ? '0.6rem' : '1rem',
-                transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobilePortrait ? 'scale(0.55)' : (isMobile ? 'scale(0.85)' : 'none')),
+                transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobileLandscape ? 'scale(0.35)' : (isMobilePortrait ? 'scale(0.55)' : (isMobile ? 'scale(0.85)' : 'none'))),
                 transformOrigin: 'top right',
                 position: 'relative',
                 border: isMobile ? '2px solid rgba(255,255,255,0.2)' : 'none'
