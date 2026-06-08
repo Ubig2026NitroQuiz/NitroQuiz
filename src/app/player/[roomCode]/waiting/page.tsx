@@ -52,7 +52,8 @@ export default function PlayerWaitingPage() {
     } = useWaitingData(roomCode);
 
     const assignedChar = PLAYER_CHARACTERS.find((c: any) => c.id === assignedCarId) || PLAYER_CHARACTERS[0];
-    const displayVisual = assignedChar.gifSrc || assignedChar.imageSrc;
+    /* const displayVisual = assignedChar.gifSrc || assignedChar.imageSrc; */
+    const displayVisual = assignedChar.imageSrc;
 
     return (
         <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4" onClick={() => setActiveTooltip(null)}>
