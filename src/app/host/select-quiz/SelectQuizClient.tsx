@@ -98,7 +98,7 @@ export default function SelectQuizClient({
             <div className="relative z-10 flex-1 flex flex-col h-full overflow-hidden">
 
                 {/* ── Top Bar: Logo & Branding ── */}
-                <TopBar onBack={() => router.back()} />
+                <TopBar onBack={() => router.push('/')} />
 
                 {/* ── Area Konten yang Bisa Di-scroll ── */}
                 <div className="flex-1 overflow-y-auto relative w-full pt-0.5">
@@ -219,8 +219,8 @@ function TopBar({ onBack }: { onBack: () => void }) {
                 <button
                     onClick={onBack}
                     className="cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-200"
-                    title="Kembali"
-                    aria-label="Kembali ke halaman sebelumnya"
+                    title="Kembali ke Beranda"
+                    aria-label="Kembali ke Beranda"
                 >
                     <Logo width={100} height={30} withText={false} animated={false} />
                 </button>
