@@ -23,14 +23,24 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
     // ✅ Register Service Worker for PWA support (Next.js 15+ Turbopack compatible)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
-        .then((reg) => {
-          console.log('[NitroQuiz] Service Worker registered:', reg.scope);
-        })
-        .catch((err) => {
-          console.warn('[NitroQuiz] Service Worker registration failed:', err);
+      if (process.env.NODE_ENV === 'production') {
+        navigator.serviceWorker
+          .register('/sw.js', { scope: '/' })
+          .then((reg) => {
+            console.log('[NitroQuiz] Service Worker registered:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[NitroQuiz] Service Worker registration failed:', err);
+          });
+      } else {
+        // Hapus Service Worker di mode development agar tidak caching HMR
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister();
+            console.log('[NitroQuiz] Service Worker unregistered in development mode.');
+          }
         });
+      }
     }
 
     // Read i18next cookie
