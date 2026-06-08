@@ -38,7 +38,7 @@ export const MobileStatCard = ({ children }: MobileStatCardProps) => (
     }}
   >
     {/* Konten di-skew balik agar teks tetap tegak */}
-    <div className="transform skew-x-[8deg]">{children}</div>
+    <div className="transform skew-x-[8deg] flex flex-col items-center">{children}</div>
   </div>
 );
 
