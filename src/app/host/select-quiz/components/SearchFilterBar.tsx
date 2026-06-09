@@ -146,7 +146,7 @@ const TAB_CONFIG: Record<QuizTab, {
 
 function NavigationTabs({ activeTab, setActiveTab, t }: NavigationTabsProps) {
     return (
-        <div className="flex items-center justify-center sm:justify-start flex-wrap gap-2 flex-shrink-0 w-full md:w-auto">
+        <div className="flex items-center justify-center sm:justify-start flex-nowrap gap-1.5 sm:gap-2 flex-shrink-0 w-full md:w-auto">
             {(Object.entries(TAB_CONFIG) as [QuizTab, typeof TAB_CONFIG[QuizTab]][]).map(([tab, config]) => {
                 const isActive = activeTab === tab;
                 const Icon = config.icon;
@@ -155,12 +155,12 @@ function NavigationTabs({ activeTab, setActiveTab, t }: NavigationTabsProps) {
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`group/tb flex items-center justify-center h-9 px-4 relative overflow-hidden transform -skew-x-[12deg] transition-all duration-300 rounded-sm hover:shadow-[0_0_15px_${config.shadowColor}] ${isActive ? config.activeClass : `bg-white/[0.03] border border-white/5 text-gray-400 ${config.inactiveHover}`}`}
+                        className={`flex-1 sm:flex-none group/tb flex items-center justify-center h-9 px-1.5 sm:px-4 relative overflow-hidden transform -skew-x-[12deg] transition-all duration-300 rounded-sm hover:shadow-[0_0_15px_${config.shadowColor}] ${isActive ? config.activeClass : `bg-white/[0.03] border border-white/5 text-gray-400 ${config.inactiveHover}`}`}
                     >
                         <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/tb:translate-x-[200%] transition-transform duration-700" />
-                        <div className="relative z-10 flex items-center gap-2 transform skew-x-[12deg]">
-                            <Icon size={12} className={`w-3.5 h-3.5 ${tab === 'favorites' && isActive ? 'fill-white' : ''}`} />
-                            <span className="font-display text-[10px] tracking-widest uppercase font-black">{t(config.labelKey)}</span>
+                        <div className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2 transform skew-x-[12deg] min-w-0">
+                            <Icon size={12} className={`w-3.5 h-3.5 flex-shrink-0 ${tab === 'favorites' && isActive ? 'fill-white' : ''}`} />
+                            <span className="font-display text-[9px] sm:text-[10px] tracking-widest uppercase font-black truncate">{t(config.labelKey)}</span>
                         </div>
                     </button>
                 );

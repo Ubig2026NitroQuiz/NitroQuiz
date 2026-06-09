@@ -65,7 +65,7 @@ export function PlayersGrid({
 
       {/* ── Grid Kartu Pemain ── */}
       <div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+        className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
         style={{ maxWidth: "1600px", margin: "0 auto", width: "100%" }}
       >
         <AnimatePresence>

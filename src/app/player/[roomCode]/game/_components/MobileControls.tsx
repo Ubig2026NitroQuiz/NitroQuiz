@@ -62,7 +62,7 @@ export function MobileControls({
                     onPointerCancel={(e) => { e.preventDefault(); state.current.keyBoost = false; setIsBoosting(false); }}
                     onPointerLeave={() => { state.current.keyBoost = false; setIsBoosting(false); }}
                 >
-                    <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '-0.05em' }}>NITRO</span>
+                    <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '-0.05em' }}>NOS</span>
                     <div style={{ width: '60%', height: '2px', backgroundColor: 'rgba(255,255,255,0.4)', marginTop: '2px' }} />
                 </button>
             </div>

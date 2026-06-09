@@ -224,7 +224,9 @@ function PlayerCard({
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="group relative bg-gradient-to-b from-[#111625] to-[#0a0d14] border border-white/5 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center transition-all hover:border-[#2d6af2]/50 hover:shadow-[0_0_20px_rgba(45,106,242,0.2)] hover:-translate-y-1"
+      tabIndex={0}
+      onClick={() => {}}
+      className="group relative bg-gradient-to-b from-[#111625] to-[#0a0d14] border border-white/5 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center transition-all hover:border-[#2d6af2]/50 hover:shadow-[0_0_20px_rgba(45,106,242,0.2)] hover:-translate-y-1 cursor-pointer"
     >
       {/* Garis laser di sisi kiri */}
       <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#2d6af2] to-transparent opacity-50 group-hover:opacity-100 transition-opacity rounded-tl-xl rounded-bl-xl" />
@@ -252,19 +254,19 @@ function PlayerCard({
         </p>
       </div>
 
-      {/* Tombol Kick (muncul saat hover) */}
+      {/* Tombol Kick (selalu tampil di mobile, hover di desktop) */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onKick(player);
         }}
-        className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/20 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white z-20"
+        className="absolute top-1.5 end-1.5 sm:top-2 sm:end-2 opacity-70 md:opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-red-500/20 text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-500 hover:text-white z-20 shadow-[0_0_10px_rgba(239,68,68,0.3)] md:shadow-none"
       >
         <X size={14} />
       </button>
 
-      {/* Tooltip Nama (muncul saat hover) */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 group-hover:scale-100">
+      {/* Tooltip Nama (hanya desktop) */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-300 z-[999] pointer-events-none bg-[#0c1020]/95 backdrop-blur-xl text-white border border-[#2d6af2]/80 font-display text-sm px-4 py-2 shadow-[0_0_30px_rgba(45,106,242,0.8)] rounded-md whitespace-nowrap scale-95 md:group-hover:scale-100 hidden md:block">
         {player.nickname}
       </div>
     </motion.div>
