@@ -146,6 +146,8 @@
     "min": "Mnt",
     "questions": "Soal",
     "sound": "Suara",
+    "sound_mute": "Bisukan Suara",
+    "sound_unmute": "Bunyikan Suara",
     "difficulty": {
       "title": "Kesulitan",
       "easy": "Mudah",
@@ -196,11 +198,13 @@
     "share_link": "Bagikan Tautan",
     "exit_dialog_title": "Keluar Lobby?",
     "exit_dialog_desc": "Apakah Anda yakin ingin keluar?",
-    "confirm_exit": "KELUAR"
+    "confirm_exit": "KELUAR",
+    "enter_fullscreen": "Layar Penuh",
+    "exit_fullscreen": "Keluar Layar Penuh"
   },
   "host_monitor": {
     "new": "BARU",
-    "racing": "BALAPAN",
+    "game": "GAME",
     "finish": "SELESAI",
     "crashed": "HANCUR",
     "quiz": "KUIS",
@@ -247,7 +251,7 @@
     "go": "GAS!",
     "launching": "MELUNCURKAN BALAPAN...",
     "exit_title": "Keluar?",
-    "exit_description": "Progres bakal hilang.",
+    "exit_description": "Yakin ingin keluar dari ruangan?",
     "exit_confirm": "KELUAR",
     "exit_cancel": "BATAL"
   },
@@ -278,7 +282,7 @@
     "waiting": "MENUNGGU",
     "champion": "JUARA",
     "finished": "SELESAI",
-    "wait_for_host": "MENUNGGU HOST"
+    "wait_for_host": "MENUNGGU..."
   },
   "player_game": {
     "establishing_signal": "MEMANTAPKAN SINYAL...",
@@ -296,5 +300,15 @@
     "nos": "NOS",
     "lap": "PUTARAN",
     "pov_hint": "POV (T)"
+  },
+  "pwa": {
+    "installTitle": "Instal NitroQuiz!",
+    "install": "Instal",
+    "later": "Nanti",
+    "appInstalled": "Aplikasi Terpasang",
+    "installApp": "Instal Aplikasi"
+  },
+  "host": {
+    "verify": "Memverifikasi Akses..."
   }
 }

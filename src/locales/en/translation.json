@@ -146,6 +146,8 @@
     "min": "Min",
     "questions": "Questions",
     "sound": "Sound",
+    "sound_mute": "Mute Sound",
+    "sound_unmute": "Unmute Sound",
     "difficulty": {
       "title": "Difficulty",
       "easy": "Easy",
@@ -196,11 +198,13 @@
     "share_link": "Share Link",
     "exit_dialog_title": "Exit Lobby?",
     "exit_dialog_desc": "Are you sure you want to exit?",
-    "confirm_exit": "EXIT"
+    "confirm_exit": "EXIT",
+    "enter_fullscreen": "Enter Fullscreen",
+    "exit_fullscreen": "Exit Fullscreen"
   },
   "host_monitor": {
     "new": "NEW",
-    "racing": "RACING",
+    "game": "GAME",
     "finish": "FINISH",
     "crashed": "CRASHED",
     "quiz": "QUIZ",
@@ -247,7 +251,7 @@
     "go": "GO!",
     "launching": "LAUNCHING RACE...",
     "exit_title": "Leave?",
-    "exit_description": "Progress will be lost.",
+    "exit_description": "Are you sure you want to leave the room?",
     "exit_confirm": "LEAVE",
     "exit_cancel": "CANCEL"
   },
@@ -278,7 +282,7 @@
     "waiting": "WAITING",
     "champion": "CHAMPION",
     "finished": "FINISHED",
-    "wait_for_host": "WAIT FOR HOST"
+    "wait_for_host": "WAITING..."
   },
   "player_game": {
     "establishing_signal": "ESTABLISHING SIGNAL...",
@@ -296,5 +300,15 @@
     "nos": "NOS",
     "lap": "LAP",
     "pov_hint": "POV (T)"
+  },
+  "pwa": {
+    "installTitle": "Install NitroQuiz!",
+    "install": "Install",
+    "later": "Later",
+    "appInstalled": "App Installed",
+    "installApp": "Install App"
+  },
+  "host": {
+    "verify": "Verifying Access..."
   }
 }

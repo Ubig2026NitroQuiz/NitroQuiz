@@ -1,454 +1,92 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * HALAMAN: Waiting (Player - Lobby & Character Selection)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * File ini menangani halaman tunggu pemain sebelum permainan dimulai.
+ * Logika state dan subscription dipisahkan ke dalam useWaitingData hook.
+ * UI dipisahkan ke komponen masing-masing agar mudah dibaca dan dikelola.
+ */
+
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { syncServerTime, getSyncedServerTime } from '@/lib/serverTime';
-import { Loader2, Zap, Users, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from "react-i18next";
-import { useAuth } from '@/contexts/AuthContext'; import { ASSET_LIST, TRACK_ASSETS } from '@/lib/gameAssets';
 
-export const PLAYER_CHARACTERS = [
-    {
-        id: 'rico',
-        name: 'RICO',
-        imageSrc: '/assets/characters/rico/showroom/showroom1.png',
-        gifSrc: '/assets/characters/rico/showroom/pose1.gif',
-        stats: { speed: 80, accel: 60, handling: 70 }
-    },
-    {
-        id: 'gecho',
-        name: 'NINJA GECKO',
-        imageSrc: '/assets/characters/gecho/showroom/showroom1.png',
-        gifSrc: '/assets/characters/gecho/showroom/pose1.gif',
-        stats: { speed: 70, accel: 90, handling: 80 }
-    },
-    {
-        id: 'roadhog',
-        name: 'ROADHOG',
-        imageSrc: '/assets/characters/roadhog/showroom/showroom1.png',
-        gifSrc: '/assets/characters/roadhog/showroom/pose1.gif',
-        stats: { speed: 60, accel: 80, handling: 50 }
-    }
-];
-
-// Helper: Generate initials from a name
-const getInitials = (name: string): string => {
-    if (!name) return "?";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-};
-
-// Initials avatar colors based on nickname hash
-const AVATAR_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#f97316'];
-const getAvatarColor = (name: string): string => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
-
-// Reusable InitialsAvatar component
-const InitialsAvatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) => {
-    const fontSize = size === 'lg' ? 'text-xl' : size === 'md' ? 'text-base' : 'text-[10px]';
-    return (
-        <div
-            className={`w-full h-full rounded-full flex items-center justify-center ${fontSize} font-black text-white`}
-            style={{ backgroundColor: getAvatarColor(name) }}
-        >
-            {getInitials(name)}
-        </div>
-    );
-};
-
-
-// Reusable Confirmation Dialog for logout/exit
-const LogoutConfirmDialog = ({ onConfirm, onCancel, t }: { onConfirm: () => void, onCancel: () => void, t: any }) => (
-    <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
-    >
-        <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            className="bg-[#0c1225] border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl overflow-hidden relative"
-        >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500" />
-            <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
-                    <LogOut className="w-8 h-8 text-red-500" />
-                </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">
-                    {t("player_waiting.exit_title")}
-                </h3>
-                <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-                    {t("player_waiting.exit_description")}
-                </p>
-                <div className="flex gap-4 w-full">
-                    <button
-                        onClick={onCancel}
-                        className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all outline-none"
-                    >
-                        {t("player_waiting.exit_cancel")}
-                    </button>
-                    <button
-                        onClick={onConfirm}
-                        className="flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest bg-red-600 text-white hover:bg-red-500 transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] outline-none"
-                    >
-                        {t("player_waiting.exit_confirm")}
-                    </button>
-                </div>
-            </div>
-        </motion.div>
-    </motion.div>
-);
-
+import { useWaitingData, PLAYER_CHARACTERS } from './hooks/useWaitingData';
+import {
+    LogoutConfirmDialog,
+    MobileWaitingView,
+    DesktopWaitingView,
+    MobileCharacterSelector,
+    CountdownOverlay
+} from './components';
 
 export default function PlayerWaitingPage() {
     const router = useRouter();
     const params = useParams();
     const { t } = useTranslation();
-    const roomCode = (params.roomCode as string)?.toUpperCase();
-    const { profile, loading: authLoading } = useAuth();
+    const roomCode = (params.roomCode as string)?.toUpperCase() || '';
 
-    const [status, setStatus] = useState<"loading" | "waiting" | "countdown" | "go" | "error">("loading");
-    const [errorMessage, setErrorMessage] = useState("");
-    const [assignedCarId, setAssignedCarId] = useState<string>("rico");
-    const [isSelectingCharacter, setIsSelectingCharacter] = useState(false);
-    const [pendingCharacterId, setPendingCharacterId] = useState<string>("rico");
-    const [countdownValue, setCountdownValue] = useState(3);
-    const [participantId, setParticipantId] = useState<string | null>(null);
-    const [sessionId, setSessionId] = useState<string | null>(null);
-    const [participantCount, setParticipantCount] = useState(1);
-    const [username, setUsername] = useState("");
-    const [userAvatar, setUserAvatar] = useState<string | null>(null);
-    const [allParticipants, setAllParticipants] = useState<{ id?: string; nickname: string; car_character: string; avatar_url?: string | null }[]>([]);
-    const [isExiting, setIsExiting] = useState(false);
-    const statusRef = useRef(status);
-    useEffect(() => { statusRef.current = status; }, [status]);
+    const {
+        status,
+        errorMessage,
+        assignedCarId,
+        isSelectingCharacter,
+        pendingCharacterId,
+        countdownValue,
+        participantCount,
+        username,
+        userAvatar,
+        allParticipants,
+        isExiting,
+        activeTooltip,
+        setPendingCharacterId,
+        setIsSelectingCharacter,
+        setIsExiting,
+        setActiveTooltip,
+        handleConfirmExit,
+        handleSelectCharacter,
+    } = useWaitingData(roomCode);
 
-    // Sync server time on mount
-    useEffect(() => {
-        const initSync = async () => {
-            await syncServerTime();
-        };
-        initSync();
-    }, []);
-
-    // Countdown logic deduplicated
-    const startCountdown = useCallback((startTime: number, sessId: string) => {
-        if (statusRef.current === "countdown" || statusRef.current === "go") return;
-
-        setStatus("countdown");
-        statusRef.current = "countdown";
-        preloadQuizData(sessId);
-
-        const syncLoop = () => {
-            const nowOnServer = getSyncedServerTime();
-            const elapsed = nowOnServer - startTime;
-            const remaining = Math.max(0, 3000 - elapsed);
-            const displayVal = Math.min(3, Math.ceil(remaining / 1000));
-
-            setCountdownValue(displayVal);
-
-            if (remaining > 0 && statusRef.current === "countdown") {
-                requestAnimationFrame(syncLoop);
-            } else if (remaining <= 0 && statusRef.current === "countdown") {
-                setStatus("go");
-                setTimeout(() => {
-                    router.push(`/player/${roomCode}/game`);
-                }, 800);
-            }
-        };
-        requestAnimationFrame(syncLoop);
-    }, [roomCode, router]);
-
-    const channelRef = useRef<any>(null);
-
-    useEffect(() => {
-        if (authLoading) return;
-        let isMounted = true;
-
-        const fetchSessionState = async () => {
-            try {
-                const { data: sessionData, error: sessionError } = await supabase
-                    .from("sessions").select("id, status, countdown_started_at, started_at, created_at").eq("game_pin", roomCode).single();
-
-                if (sessionError || !sessionData || !isMounted) {
-                    if (sessionError) {
-                        setStatus("error");
-                        setErrorMessage("Room not found or invalid.");
-                    }
-                    return;
-                }
-
-                if (sessionData.status === "active") {
-                    router.push(`/player/${roomCode}/game`);
-                    return;
-                }
-
-                if (sessionData.status === "finished" || sessionData.status === "completed") {
-                    router.push(`/player/${roomCode}/result`);
-                    return;
-                }
-
-                // If countdown has already started but session not yet active
-                if (sessionData.countdown_started_at && !sessionData.started_at) {
-                    const startTime = new Date(sessionData.countdown_started_at).getTime();
-                    const nowOnServer = getSyncedServerTime();
-                    const elapsed = nowOnServer - startTime;
-                    const remaining = Math.max(0, 3000 - elapsed);
-
-                    if (remaining > 0) {
-                        startCountdown(startTime, sessionData.id);
-                    } else {
-                        // Countdown already finished but status not yet 'active' in DB cache
-                        setStatus("go");
-                        router.push(`/player/${roomCode}/game`);
-                        return;
-                    }
-                }
-
-                // If we are here, we are in waiting state or countdown has started
-                if (!sessionData.countdown_started_at) {
-                    setStatus("waiting");
-                }
-                setSessionId(sessionData.id);
-
-                // Setup Subscriptions only once
-                if (!channelRef.current) {
-                    const channel = supabase.channel(`player-session-${sessionData.id}`)
-                        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionData.id}` },
-                            (payload) => {
-                                // Re-verify via fetchSessionState to be safe and consistent
-                                fetchSessionState();
-                            })
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionData.id}` },
-                            async (payload) => {
-                                const { data: pList, count } = await supabase.from("participants")
-                                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
-                                if (isMounted) {
-                                    if (count !== null) setParticipantCount(count);
-                                    if (pList) setAllParticipants(pList);
-                                }
-                            })
-                        .subscribe();
-
-                    channelRef.current = channel;
-                }
-
-                // Initial fetch for additional info (participants)
-                const storedParticipantId = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_participantId') : null;
-                const storedRoomCode = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_roomCode') : null;
-
-                if (!storedParticipantId || storedRoomCode !== roomCode) {
-                    router.replace(`/join/${roomCode}`);
-                    return;
-                }
-
-                const storedCarCharacter = typeof window !== 'undefined' ? localStorage.getItem('nitroquiz_game_carCharacter') : null;
-                const assignedCar = storedCarCharacter || "rico";
-
-                setParticipantId(storedParticipantId);
-                setAssignedCarId(assignedCar);
-                setPendingCharacterId(assignedCar);
-
-                const { data: pList, count } = await supabase.from("participants")
-                    .select("id, nickname, car_character, avatar_url", { count: "exact" }).eq("session_id", sessionData.id);
-
-                if (isMounted) {
-                    if (count !== null) setParticipantCount(count);
-                    if (pList) {
-                        setAllParticipants(pList);
-                        const me = pList.find(p => p.id === storedParticipantId);
-                        if (me) {
-                            setUsername(me.nickname);
-                            setUserAvatar(profile?.avatar_url || me.avatar_url || null);
-                        } else if (profile) {
-                            setUsername(profile.username || "Player");
-                            setUserAvatar(profile.avatar_url || null);
-                        }
-                    }
-                }
-            } catch (err: any) {
-                if (isMounted) {
-                    setStatus("error");
-                    setErrorMessage(err.message || "Unknown error occurred.");
-                }
-            }
-        };
-
-        fetchSessionState();
-
-        // Handle visibility change to catch missed events when tab is inactive
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                console.log("[NitroQuiz] Tab focused, re-verifying session state...");
-                fetchSessionState();
-            }
-        };
-        window.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            isMounted = false;
-            if (channelRef.current) {
-                supabase.removeChannel(channelRef.current);
-                channelRef.current = null;
-            }
-            window.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [roomCode, router, startCountdown, authLoading, profile]);
-
-    const preloadQuizData = async (sessId: string) => {
-        try {
-            const { data } = await supabase.from("sessions")
-                .select("current_questions, question_limit, quiz_id, difficulty").eq("id", sessId).single();
-            if (data?.current_questions) {
-                let questions = data.current_questions;
-                if (typeof questions === 'string') { try { questions = JSON.parse(questions); } catch (e) { } }
-                localStorage.setItem('nitroquiz_game_questions', JSON.stringify(questions));
-                localStorage.setItem('nitroquiz_game_roomCode', roomCode);
-                localStorage.setItem('nitroquiz_game_sessionId', sessId);
-                localStorage.setItem('nitroquiz_game_difficulty', data.difficulty || 'easy');
-                if (data.quiz_id) localStorage.setItem('nitroquiz_game_quizId', data.quiz_id);
-                localStorage.removeItem('nitroquiz_game_score');
-                localStorage.removeItem('nitroquiz_game_questionIndex');
-            }
-
-            const difficulty = data?.difficulty || 'easy';
-            const route = `/player/${roomCode}/game`;
-
-            const link = document.createElement('link'); link.rel = 'prefetch'; link.href = route; document.head.appendChild(link);
-        } catch (err) { console.error('Failed to preload quiz:', err); }
-    };
-
-    // --- Asset Background Preloader ---
-    // Runs during idle in waiting room (2s after mount).
-    // Non-blocking: each Image loads asynchronously via browser.
-    // Only stores to global store AFTER onload (ensures valid width/height).
-    useEffect(() => {
-        const preloadAssets = () => {
-            console.log("[NitroQuiz] Starting background asset preload...");
-
-            if (typeof window === 'undefined') return;
-            if (!(window as any).__nitroquiz_asset_store) {
-                (window as any).__nitroquiz_asset_store = {};
-            }
-            const store = (window as any).__nitroquiz_asset_store;
-            // let charId = assignedCarId || 'rico';
-            let charId = 'rico'; // Forced to 'rico'
-            let loaded = 0;
-            let total = 0;
-
-            const onDone = () => {
-                loaded++;
-                if (loaded === total) {
-                    console.log(`[NitroQuiz] Preload complete: ${loaded}/${total} assets cached.`);
-                }
-            };
-
-            // 1. ASSET_LIST (Characters, UI, effects)
-            ASSET_LIST.forEach(asset => {
-                if (!asset.src) return;
-                total++;
-                let src = asset.src;
-                if (src.includes('/characters/rico/')) {
-                    src = src.replace('/characters/rico/', `/characters/${charId}/`);
-                }
-                const img = new Image();
-                img.onload = () => {
-                    (img as any).assetName = asset.name;
-                    store[asset.name] = img;
-                    onDone();
-                };
-                img.onerror = () => onDone(); // Skip failures silently
-                img.src = src;
-            });
-
-            // 2. TRACK_ASSETS (Road, landmarks, obstacles)
-            const uniqueTrackSources = Array.from(new Set(TRACK_ASSETS.map(item => item.src))).filter(Boolean);
-            uniqueTrackSources.forEach(src => {
-                if (store[src]) return; // Already loaded
-                total++;
-                const img = new Image();
-                img.onload = () => {
-                    (img as any).assetName = src;
-                    store[src] = img;
-                    onDone();
-                };
-                img.onerror = () => onDone();
-                img.src = src;
-            });
-
-            // 3. Showroom visuals (Characters)
-            PLAYER_CHARACTERS.forEach(char => {
-                [char.imageSrc, char.gifSrc].filter(Boolean).forEach(src => {
-                    if (!src || store[src]) return;
-                    total++;
-                    const img = new Image();
-                    img.onload = () => { store[src] = img; onDone(); };
-                    img.onerror = () => onDone();
-                    img.src = src;
-                });
-            });
-
-            if (total === 0) console.log("[NitroQuiz] No assets to preload.");
-        };
-
-        // Delay 2s to let waiting room UI mount first
-        const timeout = setTimeout(preloadAssets, 2000);
-        return () => clearTimeout(timeout);
-    }, [assignedCarId]);
-
-    const getCountdownLabel = (val: number) => {
-        if (val === 3) return t("player_waiting.ready");
-        if (val === 2) return t("player_waiting.steady");
-        if (val === 1) return t("player_waiting.go_race");
-        return t("player_waiting.go");
-    };
-    const getCountdownColor = (val: number) => {
-        if (val === 3) return "text-red-500";
-        if (val === 2) return "text-yellow-400";
-        return "text-[#00ff9d]";
-    };
-
-    const handleSelectCharacter = async () => {
-        if (participantId && sessionId && pendingCharacterId !== assignedCarId) {
-            await supabase.from("participants")
-                .update({ car_character: pendingCharacterId })
-                .eq("id", participantId);
-        }
-        setAssignedCarId(pendingCharacterId);
-        setIsSelectingCharacter(false);
-    };
-
-    const assignedChar = PLAYER_CHARACTERS.find(c => c.id === assignedCarId) || PLAYER_CHARACTERS[0];
-    const displayVisual = assignedChar.gifSrc || assignedChar.imageSrc;
+    const assignedChar = PLAYER_CHARACTERS.find((c: any) => c.id === assignedCarId) || PLAYER_CHARACTERS[0];
+    /* const displayVisual = assignedChar.gifSrc || assignedChar.imageSrc; */
+    const displayVisual = assignedChar.imageSrc;
 
     return (
-        <div className="bg-[#0b101a] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4">
-            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#0b101a] via-transparent to-[#2d6af2]/10 pointer-events-none" />
-            <div className="fixed bottom-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#2d6af2]/10 via-[#0a101f]/50 to-[#0a101f] pointer-events-none z-0" />
-            <div className="fixed bottom-0 w-full h-1/2 bg-[linear-gradient(transparent_0%,rgba(45,106,242,0.1)_1px,transparent_1px),linear-gradient(90deg,transparent_0%,rgba(45,106,242,0.1)_1px,transparent_1px)] bg-[length:60px_60px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom z-0 pointer-events-none opacity-20" />
+        <div className="bg-[#04060f] text-white min-h-screen relative overflow-hidden font-body flex flex-col items-center justify-center p-4" onClick={() => setActiveTooltip(null)}>
+            {/* Background Image */}
+            <div
+                className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+                style={{
+                    backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")',
+                    backgroundAttachment: 'fixed'
+                }}
+            />
+            {/* Gradient Overlay */}
+            <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/60 to-[#7C3AED]/10 pointer-events-none" />
 
             <div className="relative z-20 w-full max-w-sm text-center">
-
-                {/* LOADING */}
+                {/* ── STATUS: LOADING ── */}
                 {status === "loading" && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
                         <Loader2 className="w-16 h-16 text-[#00ff9d] animate-spin mb-6" />
-                        <h2 className="font-display text-2xl tracking-widest text-[#00ff9d] uppercase glow-text">{t("player_waiting.connecting")}</h2>
+                        <h2 className="font-display text-2xl tracking-widest text-[#00ff9d] uppercase glow-text">
+                            {/* {t("player_waiting.connecting")} */}
+                            Loading...
+                        </h2>
                     </motion.div>
                 )}
 
-                {/* ERROR */}
+                {/* ── STATUS: ERROR ── */}
                 {status === "error" && (
                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-red-500/10 border border-red-500/50 p-6 rounded-2xl backdrop-blur-md">
                         <Zap className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                        <h2 className="font-display text-xl text-red-400 mb-2 uppercase tracking-widest">{t("player_waiting.connection_lost")}</h2>
+                        <h2 className="font-display text-xl text-red-400 mb-2 uppercase tracking-widest">
+                            {t("player_waiting.connection_lost")}
+                        </h2>
                         <p className="text-gray-400 text-sm font-mono">{errorMessage}</p>
                         <button onClick={() => router.push('/')} className="mt-6 px-6 py-2 bg-red-500/20 hover:bg-red-500 text-white rounded-xl transition-colors font-display text-xs uppercase tracking-wider">
                             {t("player_waiting.back_home")}
@@ -456,506 +94,67 @@ export default function PlayerWaitingPage() {
                     </motion.div>
                 )}
 
-                {/* ── WAITING ── */}
+                {/* ── STATUS: WAITING ── */}
                 {status === "waiting" && (
                     <>
-                        {/* ===== MOBILE ===== */}
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                            className="md:hidden fixed inset-0 z-30 bg-[#0b101a] flex flex-col">
-                            {/* Top bar */}
-                            <div className="flex items-center justify-between px-4 pt-6 pb-3 flex-shrink-0"
-                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                <img src="/assets/logo/logo1.png" alt="Logo" className="h-9 object-contain" />
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="w-3 h-3 text-gray-500 animate-spin" />
-                                    <span className="font-display text-[9px] text-gray-400 uppercase tracking-[0.2em]">{t("player_waiting.waiting_host")}</span>
-                                </div>
-                            </div>
+                        <MobileWaitingView
+                            participantCount={participantCount}
+                            username={username}
+                            userAvatar={userAvatar}
+                            allParticipants={allParticipants}
+                            assignedChar={assignedChar}
+                            activeTooltip={activeTooltip}
+                            setActiveTooltip={setActiveTooltip}
+                            setIsExiting={setIsExiting}
+                            setIsSelectingCharacter={setIsSelectingCharacter}
+                            t={t}
+                            PLAYER_CHARACTERS={PLAYER_CHARACTERS}
+                        />
 
-                            {/* Players header */}
-                            <div className="flex items-center gap-2 px-4 py-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(80,110,180,0.15)' }}>
-                                <div className="grid grid-cols-3 gap-0.5 flex-shrink-0">
-                                    {Array.from({ length: 9 }).map((_, i) => (
-                                        <div key={i} className="w-1 h-1 rounded-full bg-[#4a7cdc]" />
-                                    ))}
-                                </div>
-                                <span className="font-display text-white text-xs font-bold tracking-widest">
-                                    {t("player_waiting.player", { count: participantCount })}
-                                </span>
-                            </div>
-
-                            {/* Scrollable player cards grid */}
-                            <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 auto-rows-max"
-                                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(45,106,242,0.25) transparent' }}>
-
-                                {/* YOU card */}
-                                <div className="relative rounded-xl overflow-hidden w-full"
-                                    style={{
-                                        background: 'linear-gradient(160deg, rgba(28,42,80,0.95), rgba(22,34,68,0.98))',
-                                        border: '1.5px solid rgba(60,110,220,0.6)',
-                                        boxShadow: 'inset 0 0 24px rgba(40,80,180,0.1)',
-                                        aspectRatio: '1/1.1',
-                                    }}>
-                                    <div className="absolute top-1.5 left-1.5 z-10 w-6 h-6 rounded-full border border-white/20 overflow-hidden bg-black/40">
-                                        {userAvatar ? (
-                                            <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <InitialsAvatar name={username} size="sm" />
-                                        )}
-                                    </div>
-                                    <div className="absolute top-1.5 right-1.5 z-10 font-display font-black text-[8px] tracking-widest px-1.5 py-0.5 rounded"
-                                        style={{ background: '#00d4ff', color: '#000' }}>
-                                        {t("player_waiting.you")}
-                                    </div>
-                                    <div className="flex items-center justify-center px-4 py-3" style={{ minHeight: '100px' }}>
-                                        <img src={assignedChar.imageSrc} alt="car" className="w-full max-h-[80px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
-                                    </div>
-                                    <div className="text-center pb-2 px-2">
-                                        <p className="font-display text-white text-[10px] font-bold tracking-[0.18em] truncate">{username}</p>
-                                        <p className="font-display text-[#00ff9d] text-[8px] tracking-widest mt-0.5 opacity-80">{assignedChar.name}</p>
-                                    </div>
-                                </div>
-
-                                {/* Other players */}
-                                {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
-                                    const charObj = PLAYER_CHARACTERS.find(c => c.id === p.car_character) || PLAYER_CHARACTERS[0];
-                                    return (
-                                        <div key={i} className="relative rounded-xl overflow-hidden w-full"
-                                            style={{
-                                                background: 'linear-gradient(160deg, rgba(24,34,62,0.92), rgba(18,26,50,0.95))',
-                                                border: '1px solid rgba(50,80,160,0.45)',
-                                                aspectRatio: '1/1.1',
-                                            }}>
-                                            <div className="absolute top-1.5 left-1.5 z-10 w-6 h-6 rounded-full border border-white/20 overflow-hidden bg-black/40">
-                                                {p.avatar_url ? (
-                                                    <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <InitialsAvatar name={p.nickname} size="sm" />
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-center px-4 py-3" style={{ minHeight: '100px' }}>
-                                                <img src={charObj.imageSrc} alt="car" className="w-full max-h-[80px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
-                                            </div>
-                                            <div className="text-center pb-2 px-2">
-                                                <p className="font-display text-white text-[10px] font-bold tracking-[0.18em] truncate">{p.nickname}</p>
-                                                <p className="font-display text-[#00d4ff] text-[8px] tracking-widest mt-0.5 opacity-80">{charObj.name}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                {/* Empty slot */}
-                                <div className="relative rounded-xl overflow-hidden w-full flex flex-col items-center justify-center"
-                                    style={{
-                                        background: 'rgba(18,26,50,0.5)',
-                                        border: '1px dashed rgba(50,80,160,0.3)',
-                                        aspectRatio: '1/1.1',
-                                    }}>
-                                    <svg viewBox="0 0 180 80" className="w-[80px] h-[35px] opacity-15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <rect x="8" y="28" width="164" height="34" rx="12" stroke="#7090cc" strokeWidth="2" />
-                                        <rect x="42" y="12" width="96" height="28" rx="9" stroke="#7090cc" strokeWidth="2" />
-                                        <circle cx="42" cy="66" r="11" stroke="#7090cc" strokeWidth="2" />
-                                        <circle cx="138" cy="66" r="11" stroke="#7090cc" strokeWidth="2" />
-                                    </svg>
-                                    <p className="text-[8px] uppercase tracking-widest font-mono mt-1" style={{ color: 'rgba(120,140,180,0.45)' }}>
-                                        {t("player_waiting.waiting_player")}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Bottom action bar */}
-                            <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(14,18,30,0.8)' }}>
-                                <button onClick={() => router.push('/')} className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#1a0a12] border border-red-500/50 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all flex-shrink-0">
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => setIsSelectingCharacter(true)} className="flex-1 h-11 flex items-center justify-center rounded-xl border border-[#00ff9d]/60 text-[#00ff9d] font-display text-xs uppercase tracking-widest hover:bg-[#00ff9d]/10 active:scale-95 transition-all">
-                                    {t("player_waiting.choose_character")}
-                                </button>
-                            </div>
-                        </motion.div>
-
-                        {/* ===== DESKTOP — Racing Lobby ===== */}
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                            className="hidden md:block fixed inset-0 z-30"
-                            style={{
-                                background: 'linear-gradient(180deg, #1a1f2e 0%, #1c2235 40%, #161c2c 100%)',
-                            }}>
-
-                            {/* Showroom BG — right side fills the screen */}
-                            <div className="absolute inset-0 pointer-events-none">
-                                {/* Ceiling light beams */}
-                                <div className="absolute top-0 left-[38%] w-[1px] h-[40%] bg-gradient-to-b from-white/20 to-transparent" />
-                                <div className="absolute top-0 left-[52%] w-[1px] h-[50%] bg-gradient-to-b from-white/14 to-transparent" />
-                                <div className="absolute top-0 left-[66%] w-[1px] h-[40%] bg-gradient-to-b from-white/18 to-transparent" />
-                                <div className="absolute top-0 left-[80%] w-[1px] h-[35%] bg-gradient-to-b from-white/12 to-transparent" />
-                                {/* Floor gradient */}
-                                <div className="absolute bottom-0 inset-x-0 h-[35%] bg-gradient-to-t from-[#10141f] to-transparent" />
-                                {/* Car glow on floor */}
-                                <div className="absolute bottom-[22%] left-[62%] w-[380px] h-[50px] -translate-x-1/2 bg-[#3060c0]/10 blur-3xl rounded-full" />
-                            </div>
-
-                            {/* ── Top bar ── */}
-                            <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-6 py-3"
-                                style={{ background: 'rgba(14,18,30,0.75)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                <div className="flex flex-col leading-none">
-                                    <img src="/assets/logo/logo1.png" alt="Logo" className="h-10 object-contain" />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-display text-[11px] text-gray-300 uppercase tracking-[0.22em]">
-                                        {t("player_waiting.waiting_host_desktop")}
-                                    </span>
-                                    <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />
-                                </div>
-                                <div className="flex flex-col leading-none">
-                                    <img src="/assets/logo/logo2.png" alt="NitroQuiz" className="h-10 object-contain" />
-                                </div>
-                            </div>
-
-                            {/* ── Left panel — floats over the showroom ── */}
-                            <div className="absolute top-[85px] left-6 bottom-[85px] z-10 flex flex-col min-h-0 w-[320px] lg:w-[480px] xl:w-[680px]">
-                                {/* Outer panel */}
-                                <div className="flex-1 flex flex-col min-h-0 rounded-2xl overflow-hidden shadow-2xl"
-                                    style={{
-                                        background: 'rgba(30,38,62,0.72)',
-                                        border: '1px solid rgba(80,110,180,0.3)',
-                                        backdropFilter: 'blur(16px)',
-                                        boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
-                                    }}>
-
-                                    {/* Header row */}
-                                    <div className="flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
-                                        style={{ borderBottom: '1px solid rgba(80,110,180,0.2)' }}>
-                                        {/* Grid icon (dots) */}
-                                        <div className="grid grid-cols-3 gap-0.5 flex-shrink-0">
-                                            {Array.from({ length: 9 }).map((_, i) => (
-                                                <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#4a7cdc]" />
-                                            ))}
-                                        </div>
-                                        <div className="flex flex-col text-left justify-center">
-                                            <span className="font-display text-white text-sm font-bold tracking-widest leading-none block">
-                                                {t("player_waiting.player", { count: participantCount })}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Scrollable cards */}
-                                    <div className="flex-1 overflow-y-auto p-4 md:p-5 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max"
-                                        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(45,106,242,0.25) transparent' }}>
-
-                                        {/* YOU card */}
-                                        <div className="relative rounded-xl overflow-hidden h-[190px] w-full"
-                                            style={{
-                                                background: 'linear-gradient(160deg, rgba(28,42,80,0.95), rgba(22,34,68,0.98))',
-                                                border: '1.5px solid rgba(60,110,220,0.6)',
-                                                boxShadow: 'inset 0 0 24px rgba(40,80,180,0.1)',
-                                            }}>
-                                            {/* Profile avatar */}
-                                            <div className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full border border-white/20 overflow-hidden bg-black/40">
-                                                {userAvatar ? (
-                                                    <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <InitialsAvatar name={username} size="sm" />
-                                                )}
-                                            </div>
-                                            {/* YOU badge */}
-                                            <div className="absolute top-2 right-2 z-10 font-display font-black text-[10px] tracking-widest px-2 py-0.5 rounded"
-                                                style={{ background: '#00d4ff', color: '#000' }}>
-                                                {t("player_waiting.you")}
-                                            </div>
-                                            {/* Car image */}
-                                            <div className="flex items-center justify-center px-6 py-5"
-                                                style={{ minHeight: '150px' }}>
-                                                <img src={assignedChar.imageSrc} alt="car"
-                                                    className="w-full max-h-[110px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
-                                            </div>
-                                            {/* Name */}
-                                            <div className="text-center pb-3 px-3">
-                                                <p className="font-display text-white text-xs font-bold tracking-[0.18em] truncate" title={username}>{username}</p>
-                                                <p className="font-display text-[#00ff9d] text-[9px] tracking-widest mt-1 opacity-80">{assignedChar.name}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Other players */}
-                                        {allParticipants.filter(p => p.nickname !== username).map((p, i) => {
-                                            const charObj = PLAYER_CHARACTERS.find(c => c.id === p.car_character) || PLAYER_CHARACTERS[0];
-                                            const pCarName = charObj.name;
-                                            const carSrc = charObj.imageSrc;
-                                            return (
-                                                <div key={i} className="relative rounded-xl overflow-hidden h-[190px] w-full"
-                                                    style={{
-                                                        background: 'linear-gradient(160deg, rgba(24,34,62,0.92), rgba(18,26,50,0.95))',
-                                                        border: '1px solid rgba(50,80,160,0.45)',
-                                                    }}>
-                                                    {/* Profile avatar */}
-                                                    <div className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full border border-white/20 overflow-hidden bg-black/40">
-                                                        {p.avatar_url ? (
-                                                            <img src={p.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <InitialsAvatar name={p.nickname} size="sm" />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-center px-6 py-5" style={{ minHeight: '150px' }}>
-                                                        <img src={carSrc} alt="car" className="w-full max-h-[110px] object-contain drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)]" />
-                                                    </div>
-                                                    <div className="text-center pb-3 px-3">
-                                                        <p className="font-display text-white text-xs font-bold tracking-[0.18em] truncate" title={p.nickname}>{p.nickname}</p>
-                                                        <p className="font-display text-[#00d4ff] text-[9px] tracking-widest mt-1 opacity-80">{pCarName}</p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-
-                                        {/* Empty slot */}
-                                        <div className="relative rounded-xl overflow-hidden h-[190px] w-full"
-                                            style={{
-                                                background: 'rgba(18,26,50,0.5)',
-                                                border: '1px dashed rgba(50,80,160,0.3)',
-                                            }}>
-                                            <div className="flex items-center justify-center px-6 py-5" style={{ minHeight: '150px' }}>
-                                                {/* Ghost car SVG */}
-                                                <svg viewBox="0 0 180 80" className="w-[160px] h-[70px] opacity-15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <rect x="8" y="28" width="164" height="34" rx="12" stroke="#7090cc" strokeWidth="2" />
-                                                    <rect x="42" y="12" width="96" height="28" rx="9" stroke="#7090cc" strokeWidth="2" />
-                                                    <circle cx="42" cy="66" r="11" stroke="#7090cc" strokeWidth="2" />
-                                                    <circle cx="138" cy="66" r="11" stroke="#7090cc" strokeWidth="2" />
-                                                    <line x1="8" y1="42" x2="172" y2="42" stroke="#7090cc" strokeWidth="1" strokeDasharray="6 4" />
-                                                </svg>
-                                            </div>
-                                            <div className="text-center pb-3 px-3">
-                                                <p className="text-[10px] uppercase tracking-widest font-mono" style={{ color: 'rgba(120,140,180,0.45)' }}>
-                                                    {t("player_waiting.waiting_player")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ── Right Panel Area ── */}
-                            {isSelectingCharacter ? (
-                                <div className="absolute z-10 flex flex-col items-center justify-center right-0 md:left-[340px] lg:left-[500px] xl:left-[700px]" style={{ top: '60px', bottom: '64px', right: '20px' }}>
-                                    <h2 className="font-display text-2xl font-black text-white uppercase tracking-wider mb-8 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-                                        {t("player_waiting.choose_racer")}
-                                    </h2>
-                                    <div className="flex items-center gap-6 w-full justify-center px-4 overflow-hidden relative">
-                                        {/* Left Arrow */}
-                                        <button className="z-20 w-10 h-10 flex items-center justify-center bg-[#151f38] rounded-xl hover:bg-[#1c294a] transition-colors shadow-lg flex-shrink-0">
-                                            <ChevronLeft className="w-5 h-5 text-white" />
-                                        </button>
-
-                                        {/* Cards Container */}
-                                        <div className="flex justify-center gap-5 items-center overflow-x-auto no-scrollbar py-6 px-4">
-                                            {PLAYER_CHARACTERS.map((c) => {
-                                                const isSel = pendingCharacterId === c.id;
-                                                return (
-                                                    <div key={c.id} onClick={() => setPendingCharacterId(c.id)}
-                                                        className={`relative flex flex-col items-center justify-center p-4 rounded-[16px] transition-all cursor-pointer ${isSel ? 'bg-[#182136] border-2 border-[#e6fdff]' : 'bg-[#111726] border border-[#2d4060]'}`}
-                                                        style={{
-                                                            width: '240px',
-                                                            height: '240px',
-                                                            boxShadow: isSel ? '0 0 25px rgba(120,240,255,0.4), inset 0 0 20px rgba(120,240,255,0.15)' : 'none'
-                                                        }}>
-
-                                                        {/* Car Image */}
-                                                        <div className="w-full mb-3 relative flex items-center justify-center" style={{ height: '120px' }}>
-                                                            <img src={c.imageSrc} alt={c.name}
-                                                                className="w-full h-full object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)]" />
-                                                        </div>
-
-                                                        {/* Name */}
-                                                        <h3 className="font-display text-[15px] font-bold text-white uppercase tracking-[0.1em] text-center mt-auto mb-2">
-                                                            {c.name}
-                                                        </h3>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {/* Right Arrow */}
-                                        <button className="z-20 w-10 h-10 flex items-center justify-center bg-[#151f38] rounded-xl hover:bg-[#1c294a] transition-colors shadow-lg flex-shrink-0">
-                                            <ChevronRight className="w-5 h-5 text-white" />
-                                        </button>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-6 mt-8">
-                                        <button onClick={() => { setIsSelectingCharacter(false); setPendingCharacterId(assignedCarId); }}
-                                            className="w-[160px] py-3.5 rounded-full font-display text-[14px] font-bold uppercase tracking-widest text-white bg-[#22b7ca] hover:bg-[#1fa1b2] transition-colors shadow-[0_4px_15px_rgba(34,183,202,0.4)]">
-                                            {t("player_waiting.back")}
-                                        </button>
-                                        <button onClick={handleSelectCharacter}
-                                            className="w-[160px] py-3.5 rounded-full font-display text-[14px] font-bold uppercase tracking-widest text-white bg-[#22b7ca] hover:bg-[#1fa1b2] transition-colors shadow-[0_4px_15px_rgba(34,183,202,0.4)]">
-                                            {t("player_waiting.select")}
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="absolute z-10 text-left md:left-[360px] lg:left-[520px] xl:left-[720px]"
-                                        style={{ top: '85px' }}>
-                                        <h2 className="font-display text-2xl font-black text-white uppercase tracking-wider leading-none">
-                                            {assignedChar.name}
-                                        </h2>
-                                    </div>
-
-                                    <div className="absolute z-10 flex flex-col gap-6 items-center justify-center right-0 md:left-[340px] lg:left-[500px] xl:left-[700px]"
-                                        style={{ top: '60px', bottom: '64px' }}>
-                                        <motion.div className="relative flex items-center justify-center"
-                                            style={{ width: 'clamp(300px, 45vw, 560px)', height: '52vh' }}
-                                            animate={{ y: [0, -14, 0] }}
-                                            transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}>
-                                            <img src={displayVisual} alt="Your Car"
-                                                className="object-contain drop-shadow-[0_28px_60px_rgba(40,70,200,0.22)] relative z-10"
-                                                style={{ width: '100%', maxHeight: '100%' }}
-                                            />
-                                            {/* Ground shadow */}
-                                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-3/4 h-3 bg-black/40 blur-xl rounded-full" />
-                                        </motion.div>
-
-                                        <button onClick={() => { setPendingCharacterId(assignedCarId); setIsSelectingCharacter(true); }}
-                                            className="flex items-center gap-2 px-10 py-3 rounded-full font-display text-[13px] font-bold uppercase tracking-[0.2em] text-white active:scale-95 transition-all outline-none"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #0fa8c4, #0880b8)',
-                                                boxShadow: '0 0 22px rgba(15,168,196,0.4)',
-                                                border: '1px solid rgba(0,255,255,0.2)',
-                                            }}>
-                                            {t("player_waiting.choose_character")}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* ── Bottom bar ── */}
-                            <div className="absolute bottom-0 inset-x-0 z-20 flex items-center px-6 py-3"
-                                style={{ background: 'rgba(14,18,30,0.8)', backdropFilter: 'blur(14px)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                {/* Back — rounded square icon, bottom-left */}
-                                <button onClick={() => router.push('/')}
-                                    className="w-11 h-11 flex items-center justify-center rounded-xl active:scale-95 transition-all flex-shrink-0"
-                                    style={{
-                                        background: 'rgba(180,30,50,0.15)',
-                                        border: '1px solid rgba(200,40,60,0.35)',
-                                        color: '#f87171',
-                                    }}>
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </motion.div>
+                        <DesktopWaitingView
+                            participantCount={participantCount}
+                            username={username}
+                            userAvatar={userAvatar}
+                            allParticipants={allParticipants}
+                            assignedChar={assignedChar}
+                            activeTooltip={activeTooltip}
+                            setActiveTooltip={setActiveTooltip}
+                            setIsExiting={setIsExiting}
+                            setIsSelectingCharacter={setIsSelectingCharacter}
+                            t={t}
+                            PLAYER_CHARACTERS={PLAYER_CHARACTERS}
+                            isSelectingCharacter={isSelectingCharacter}
+                            setPendingCharacterId={setPendingCharacterId}
+                            assignedCarId={assignedCarId}
+                            handleSelectCharacter={handleSelectCharacter}
+                            pendingCharacterId={pendingCharacterId}
+                            displayVisual={displayVisual}
+                        />
                     </>
                 )}
 
                 {/* ── MOBILE CHARACTER SELECTOR OVERLAY ── */}
                 {isSelectingCharacter && status === "waiting" && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="md:hidden fixed inset-0 z-[100] bg-[#070d1c]/98 backdrop-blur-md flex flex-col items-center justify-center p-4"
-                    >
-                        <h2 className="font-display text-lg font-black text-white uppercase tracking-wider mb-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-                            {t("player_waiting.choose_racer")}
-                        </h2>
-                        <div className="flex gap-3 w-full max-w-[380px] justify-center">
-                            {PLAYER_CHARACTERS.map((c) => {
-                                const isSel = pendingCharacterId === c.id;
-                                return (
-                                    <div key={c.id} onClick={() => setPendingCharacterId(c.id)}
-                                        className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition-all cursor-pointer flex-1 ${isSel ? 'bg-[#182136] border-2 border-[#e6fdff]' : 'bg-[#111726] border border-[#2d4060]'}`}
-                                        style={{
-                                            boxShadow: isSel ? '0 0 20px rgba(120,240,255,0.3), inset 0 0 15px rgba(120,240,255,0.1)' : 'none'
-                                        }}>
-                                        <div className="w-full mb-2 relative flex items-center justify-center" style={{ height: '80px' }}>
-                                            <img src={c.imageSrc} alt={c.name}
-                                                className="w-full h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]" />
-                                        </div>
-                                        <h3 className="font-display text-[10px] font-bold text-white uppercase tracking-[0.1em] text-center">
-                                            {c.name}
-                                        </h3>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <div className="flex gap-4 mt-6 w-full max-w-[320px]">
-                            <button onClick={() => { setIsSelectingCharacter(false); setPendingCharacterId(assignedCarId); }}
-                                className="flex-1 py-3 rounded-xl font-display text-xs font-bold uppercase tracking-widest text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-colors">
-                                {t("player_waiting.back")}
-                            </button>
-                            <button onClick={handleSelectCharacter}
-                                className="flex-1 py-3 rounded-xl font-display text-xs font-bold uppercase tracking-widest text-white bg-[#0fa8c4] hover:bg-[#0880b8] transition-colors shadow-[0_0_15px_rgba(15,168,196,0.4)]">
-                                {t("player_waiting.select")}
-                            </button>
-                        </div>
-                    </motion.div>
+                    <MobileCharacterSelector
+                        PLAYER_CHARACTERS={PLAYER_CHARACTERS}
+                        pendingCharacterId={pendingCharacterId}
+                        setPendingCharacterId={setPendingCharacterId}
+                        assignedCarId={assignedCarId}
+                        setIsSelectingCharacter={setIsSelectingCharacter}
+                        handleSelectCharacter={handleSelectCharacter}
+                        t={t}
+                    />
                 )}
 
-                {/* COUNTDOWN */}
+                {/* ── STATUS: COUNTDOWN ── */}
                 {status === "countdown" && (
-                    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
-                        style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                        {/* 3 traffic light dots */}
-                        <div className="flex gap-4 mb-8">
-                            {[
-                                { color: "#ef4444", activeAt: 3 },
-                                { color: "#facc15", activeAt: 2 },
-                                { color: "#00ff9d", activeAt: 1 },
-                            ].map((light, i) => {
-                                const isGo = countdownValue <= 0;
-                                const isLit = isGo || countdownValue <= light.activeAt;
-                                const displayColor = isGo ? "#00ff9d" : light.color;
-                                return (
-                                    <div key={i} className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2" style={{
-                                        borderColor: isLit ? displayColor : '#374151',
-                                        backgroundColor: isLit ? displayColor : 'rgba(55,65,81,0.3)',
-                                        boxShadow: isLit ? `0 0 25px ${displayColor}` : 'none',
-                                        transform: isLit ? 'scale(1.15)' : 'scale(1)',
-                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    }} />
-                                );
-                            })}
-                        </div>
-                        <span key={countdownValue}
-                            className={`font-display font-black py-4 ${getCountdownColor(countdownValue)} drop-shadow-[0_0_40px_currentColor]`}
-                            style={{ animation: 'countdown-pop 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)', willChange: 'transform, opacity', display: 'block', fontSize: 'clamp(80px, 16vw, 150px)', lineHeight: '1.2' }}>
-                            {countdownValue > 0 ? countdownValue : t("player_waiting.go")}
-                        </span>
-                        <p className="font-display text-lg text-gray-400 mt-6" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
-                            {getCountdownLabel(countdownValue)}
-                        </p>
-
-                        {/* Mobile Orientation Picker during countdown */}
-                        <div className="md:hidden mt-6 flex gap-3 w-full max-w-[320px] px-4">
-                            <button
-                                onClick={() => localStorage.setItem('nitroquiz_orientation', 'portrait')}
-                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${(typeof window !== 'undefined' && localStorage.getItem('nitroquiz_orientation') === 'portrait')
-                                    ? 'border-[#2d6af2] bg-[#2d6af2]/15'
-                                    : 'border-white/10 bg-white/5'
-                                    }`}
-                            >
-                                <span style={{ fontSize: '1.5rem' }}>📱</span>
-                                <span className="font-display text-[9px] text-white font-bold uppercase tracking-widest">{t('player_game.portrait')}</span>
-                            </button>
-                            <button
-                                onClick={() => localStorage.setItem('nitroquiz_orientation', 'landscape')}
-                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${(typeof window !== 'undefined' && localStorage.getItem('nitroquiz_orientation') === 'landscape')
-                                    ? 'border-[#00ff9d] bg-[#00ff9d]/10'
-                                    : 'border-white/10 bg-white/5'
-                                    }`}
-                            >
-                                <span style={{ fontSize: '1.5rem', transform: 'rotate(90deg)', display: 'inline-block' }}>📱</span>
-                                <span className="font-display text-[9px] text-white font-bold uppercase tracking-widest">{t('player_game.landscape')}</span>
-                            </button>
-                        </div>
-
-                        <div className="absolute w-64 h-64 rounded-full border border-[#2d6af2]/20" style={{ animation: 'pulseRing 2s ease-in-out infinite' }} />
-                        <style>{`
-                            @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-                            @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-                            @keyframes countdown-pop{0%{transform:scale(1.5) translateY(-30px);opacity:0}60%{transform:scale(0.95) translateY(5px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
-                            @keyframes pulseRing{0%{transform:scale(1);opacity:0.3}50%{transform:scale(1.5);opacity:0}100%{transform:scale(1);opacity:0.3}}
-                        `}</style>
-                    </div>
+                    <CountdownOverlay
+                        countdownValue={countdownValue}
+                        t={t}
+                    />
                 )}
 
-                {/* GO! */}
+                {/* ── STATUS: GO ── */}
                 {status === "go" && (
                     <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
                         <motion.h1 animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 0.5 }}
@@ -963,10 +162,24 @@ export default function PlayerWaitingPage() {
                             style={{ fontSize: 'clamp(60px, 14vw, 120px)' }}>
                             {t("player_waiting.go")}
                         </motion.h1>
-                        <p className="font-display text-[#00ff9d] text-sm mt-4 animate-pulse">{t("player_waiting.launching")}</p>
+                        <p className="font-display text-[#00ff9d] text-sm mt-4 animate-pulse">
+                            {/* {t("player_waiting.launching")} */}
+                            Loading...
+                        </p>
                     </motion.div>
                 )}
             </div>
+
+            {/* ── EXIT CONFIRMATION DIALOG ── */}
+            <AnimatePresence>
+                {isExiting && (
+                    <LogoutConfirmDialog
+                        onConfirm={handleConfirmExit}
+                        onCancel={() => setIsExiting(false)}
+                        t={t}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

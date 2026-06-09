@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase"
+import { supabaseGame } from "./supabase/game-client"
 
 let serverTimeOffset: number | null = null
 let lastSyncTime = 0
@@ -7,7 +7,7 @@ const SYNC_INTERVAL = 10000
 export async function getServerTime(): Promise<number> {
     try {
         const start = Date.now()
-        const { data, error } = await supabase.rpc("get_server_time")
+        const { data, error } = await supabaseGame.rpc("get_server_time")
         if (error) throw error
         const end = Date.now()
         const latency = (end - start) / 2

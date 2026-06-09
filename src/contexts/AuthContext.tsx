@@ -1,7 +1,7 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
-import { supabaseCentral, syncSessionCookie, getSessionFromCookie } from "@/lib/supabase"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { createGFSClient } from "@/lib/supabase/gfs-client"
 
 interface Profile {
   id: string
@@ -20,6 +20,7 @@ interface AuthContextType {
   loading: boolean
 }
 
+const supabase = createGFSClient()
 const AuthContext = createContext<AuthContextType | null>(null)
 
 // Retry helper dengan exponential backoff
@@ -30,39 +31,34 @@ async function ensureProfileWithRetry(
   maxRetries = 3
 ) {
   let retryCount = 0
-  const baseDelay = 500 // 500ms
+  const baseDelay = 500
 
   const attempt = async (): Promise<void> => {
     try {
-      // First, check if exists (quick select)
-      const { data: existing, error: selectError } = await supabaseCentral
-        .from('profiles')
-        .select('*')
-        .eq('auth_user_id', currentUser.id)
+      const { data: existing, error: selectError } = await supabase
+        .from("profiles")
+        .select("id, username, email, nickname, fullname, avatar_url, auth_user_id, role")
+        .eq("auth_user_id", currentUser.id)
         .single()
 
-      if (selectError && selectError.code !== 'PGRST116') {
-        // PGRST116 = not found, yang normal. Error lain = retry
-        throw selectError
-      }
+      if (selectError && selectError.code !== "PGRST116") throw selectError
 
       if (existing) {
         onSuccess(existing)
-        return // Done
+        return
       }
 
-      // Create new if not exists
       const profileData = {
         auth_user_id: currentUser.id,
-        username: currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'user',
-        email: currentUser.email || '',
-        fullname: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '',
-        avatar_url: currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || '',
-        updated_at: new Date().toISOString()
+        username: currentUser.user_metadata?.username || currentUser.email?.split("@")[0] || "user",
+        email: currentUser.email || "",
+        fullname: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || "",
+        avatar_url: currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || "",
+        updated_at: new Date().toISOString(),
       }
 
-      const { data, error: insertError } = await supabaseCentral
-        .from('profiles')
+      const { data, error: insertError } = await supabase
+        .from("profiles")
         .insert(profileData)
         .select()
         .single()
@@ -72,28 +68,21 @@ async function ensureProfileWithRetry(
       onSuccess(data)
     } catch (error: any) {
       retryCount++
-
-      // Jika masih ada retry tersisa, tunggu dan coba lagi
       if (retryCount < maxRetries) {
-        const delay = baseDelay * Math.pow(2, retryCount - 1) // 500ms, 1s, 2s
-        console.warn(
-          `⚠️ Profile fetch attempt ${retryCount} failed, retrying in ${delay}ms...`,
-          error.message
-        )
-        await new Promise(resolve => setTimeout(resolve, delay))
-        return attempt() // Recursive retry
+        const delay = baseDelay * Math.pow(2, retryCount - 1)
+        console.warn(`⚠️ Profile fetch attempt ${retryCount} failed, retrying in ${delay}ms...`, error.message)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        return attempt()
       }
-
-      // Semua retry gagal, gunakan fallback
-      console.error('❌ Profile fetch failed after retries, using fallback:', error)
+      console.error("❌ Profile fetch failed after retries, using fallback:", error)
       onFallback({
-        id: 'fallback-' + currentUser.id,
-        username: currentUser.email?.split('@')[0] || 'user',
-        email: currentUser.email || '',
-        nickname: '',
-        fullname: '',
-        avatar_url: '',
-        auth_user_id: currentUser.id
+        id: "fallback-" + currentUser.id,
+        username: currentUser.email?.split("@")[0] || "user",
+        email: currentUser.email || "",
+        nickname: "",
+        fullname: "",
+        avatar_url: "",
+        auth_user_id: currentUser.id,
       })
     }
   }
@@ -101,7 +90,6 @@ async function ensureProfileWithRetry(
   return attempt()
 }
 
-// Helper: fetch profile lalu set state
 async function loadProfile(
   currentUser: any,
   setProfile: (p: Profile | null) => void,
@@ -128,125 +116,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isProfileFetching, setIsProfileFetching] = useState(false)
+  const lastSyncRef = useRef<number>(0)
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        // 1. Coba ambil sesi dari localStorage (cara normal)
-        let { data: { session } } = await supabaseCentral.auth.getSession()
-
-        // 2. Jika tidak ada sesi di localStorage, coba pulihkan dari shared cookie
-        //    Ini terjadi saat user buka subdomain baru yang belum pernah login
-        //    tapi sudah login di subdomain lain (SSO)
-        if (!session) {
-          const cookieSession = getSessionFromCookie()
-          if (cookieSession) {
-            console.log('[SSO] Mencoba pulihkan sesi dari shared cookie (setSession)...')
-            // PENTING: Pakai setSession(), BUKAN refreshSession()!
-            // setSession() tidak merotasi token → semua app tetap sinkron
-            const { data, error } = await supabaseCentral.auth.setSession(cookieSession)
-            if (!error && data.session) {
-              session = data.session
-              console.log('[SSO] Sesi berhasil dipulihkan!')
-            } else {
-              // Token sudah expired/invalid, hapus cookie
-              console.warn('[SSO] Token expired, menghapus cookie')
-              syncSessionCookie(null)
-            }
-          }
-        }
-
+    // ✅ Hapus init() — cukup andalkan INITIAL_SESSION dari onAuthStateChange
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event: any, session: any) => {
         const currentUser = session?.user ?? null
         setUser(currentUser)
 
-        if (currentUser && session) {
-          // Sync tokens ke shared cookie
-          syncSessionCookie({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token
-          })
-          await loadProfile(currentUser, setProfile, setIsProfileFetching, setLoading)
-        } else {
+        // ✅ INITIAL_SESSION fire saat pertama mount — handle di sini
+        if (event === "INITIAL_SESSION") {
+          if (currentUser) {
+            await loadProfile(currentUser, setProfile, () => {}, setLoading)
+          } else {
+            setLoading(false)
+          }
+          return
+        }
+
+        if (event === "SIGNED_IN" && currentUser) {
+          loadProfile(currentUser, setProfile, () => { setLoading(false) })
+          return
+        }
+
+        if (event === "SIGNED_OUT") {
           setProfile(null)
           setLoading(false)
+          return
         }
-      } catch (error) {
-        console.error('Session error:', error)
-        setUser(null)
-        setProfile(null)
-        setLoading(false)
-      }
-    }
-    getUser()
 
-    const { data: listener } = supabaseCentral.auth.onAuthStateChange(
-      async (event, session) => {
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-
-        if (event === 'SIGNED_IN' && currentUser && session) {
-          // Sync tokens ke shared cookie saat login berhasil
-          syncSessionCookie({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token
-          })
-          loadProfile(currentUser, setProfile, setIsProfileFetching).catch(console.error)
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          // Update cookie saat token di-refresh (token baru untuk semua app)
-          syncSessionCookie({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token
-          })
-        } else if (!currentUser) {
-          // Hapus shared cookie saat logout → semua app ikut logout
-          syncSessionCookie(null)
-          setProfile(null)
-          setIsProfileFetching(false)
+        if (event === "USER_UPDATED" && currentUser) {
+          loadProfile(currentUser, setProfile, () => {})
+          return
         }
       }
     )
 
-    // SINKRONISASI ANTAR-TAB: Cek cookie saat user kembali ke tab ini
-    const syncFromCookie = async () => {
-      const cookieSession = getSessionFromCookie()
+    // ✅ Hanya visibilitychange, hapus focus — + throttle 10 detik
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== "visible") return
 
-      // Logout sync: cookie kosong tapi kita masih login
-      if (!cookieSession) {
-        const { data: { session: localSession } } = await supabaseCentral.auth.getSession()
-        if (localSession) {
-          console.log('[SSO] Logout terdeteksi di app lain, sinkronisasi...')
-          await supabaseCentral.auth.signOut()
-          window.location.reload()
-        }
-        return
-      }
+      const now = Date.now()
+      if (now - lastSyncRef.current < 10_000) return // max 1x per 10 detik
+      lastSyncRef.current = now
 
-      // Token sync: cookie ada dan berbeda dari lokal kita
-      const { data: { session: localSession } } = await supabaseCentral.auth.getSession()
-      if (!localSession) {
-        // Kita belum login tapi cookie ada → login sync
-        console.log('[SSO] Login terdeteksi di app lain, sinkronisasi...')
-        await supabaseCentral.auth.setSession(cookieSession)
-        window.location.reload()
-      } else if (localSession.access_token !== cookieSession.access_token) {
-        // Token berbeda → update tanpa reload
-        console.log('[SSO] Token baru terdeteksi, mengupdate session lokal...')
-        await supabaseCentral.auth.setSession(cookieSession)
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+
+        setUser((prev: any) => {
+          if (currentUser?.id !== prev?.id) {
+            if (currentUser) {
+              loadProfile(currentUser, setProfile, () => {})
+            } else {
+              setProfile(null)
+            }
+            return currentUser
+          }
+          return prev
+        })
+      } catch (err) {
+        console.error("Auth sync error:", err)
       }
     }
 
-    // Event-based: langsung sinkron saat user kembali ke tab
-    window.addEventListener('focus', syncFromCookie)
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') syncFromCookie()
-    }
-    window.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       listener.subscription.unsubscribe()
-      window.removeEventListener('focus', syncFromCookie)
-      window.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [])
 
@@ -260,7 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
 }

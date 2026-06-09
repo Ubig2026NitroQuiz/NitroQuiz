@@ -146,6 +146,8 @@
     "min": "دقيقة",
     "questions": "الأسئلة",
     "sound": "الصوت",
+    "sound_mute": "كتم الصوت",
+    "sound_unmute": "إلغاء كتم الصوت",
     "difficulty": {
       "title": "الصعوبة",
       "easy": "سهل",
@@ -196,11 +198,13 @@
     "share_link": "مشاركة الرابط",
     "exit_dialog_title": "الخروج من الغرفة؟",
     "exit_dialog_desc": "هل أنت متأكد من الخروج؟",
-    "confirm_exit": "خروج"
+    "confirm_exit": "خروج",
+    "enter_fullscreen": "ملء الشاشة",
+    "exit_fullscreen": "خروج من ملء الشاشة"
   },
   "host_monitor": {
     "new": "جديد",
-    "racing": "سباق",
+    "game": "لعبة",
     "finish": "نهاية",
     "crashed": "تحطم",
     "quiz": "اختبار",
@@ -247,7 +251,7 @@
     "go": "انطلق!",
     "launching": "إطلاق السباق...",
     "exit_title": "خروج؟",
-    "exit_description": "سيضيع التقدم.",
+    "exit_description": "هل أنت متأكد من رغبتك في مغادرة الغرفة؟",
     "exit_confirm": "خروج",
     "exit_cancel": "إلغاء"
   },
@@ -278,7 +282,7 @@
     "waiting": "في الانتظار",
     "champion": "بطل",
     "finished": "اكتمل",
-    "wait_for_host": "انتظر المضيف"
+    "wait_for_host": "قيد الانتظار..."
   },
   "player_game": {
     "establishing_signal": "جاري إنشاء الإشارة...",
@@ -296,5 +300,15 @@
     "nos": "نيترو",
     "lap": "جولة",
     "pov_hint": "تغيير (T)"
+  },
+  "pwa": {
+    "installTitle": "تثبيت NitroQuiz!",
+    "install": "تثبيت",
+    "later": "لاحقاً",
+    "appInstalled": "تم تثبيت التطبيق",
+    "installApp": "تثبيت التطبيق"
+  },
+  "host": {
+    "verify": "جاري التحقق من الوصول..."
   }
 }

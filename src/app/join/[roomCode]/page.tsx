@@ -1,180 +1,204 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * HALAMAN: AutoJoinPage (Bergabung ke Room Game)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Halaman yang otomatis menggabungkan pemain ke room game berdasarkan
+ * kode room di URL (contoh: /join/696660).
+ *
+ * Alur halaman:
+ * 1. Tampilkan loading spinner saat proses join berlangsung
+ * 2. Jika gagal → tampilkan alert error dengan gaya HUD cyberpunk
+ * 3. Jika berhasil → redirect otomatis ke waiting room
+ *
+ * Struktur file:
+ * ┌─ page.tsx               → Orkestrator utama (file ini)
+ * ├─ constants.ts            → Peta pesan error
+ * ├─ layout.tsx              → Layout metadata
+ * └─ hooks/
+ *    └── useAutoJoin.ts      → Custom hook untuk logika auto-join
+ *
+ * CATATAN: File ini hanya mengatur tampilan (loading & alert).
+ * Semua logika bisnis (autentikasi, RPC, localStorage) ada di useAutoJoin.
+ */
+
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "react-i18next";
 import { LogIn } from "lucide-react";
+import { TFunction } from "i18next";
+import { useAutoJoin } from "./hooks/useAutoJoin";
+import { ERROR_MESSAGES } from "./constants";
 
-// Error messages mapping
-const ERROR_MESSAGES = {
-    duplicate: {
-        title: "Duplicate Nickname",
-        message: "This nickname is already taken in this room. Please change your profile nickname."
-    },
-    roomNotFound: {
-        title: "Room Not Found",
-        message: "The game code you entered does not exist. Please check the code."
-    },
-    sessionLocked: {
-        title: "Session Locked",
-        message: "This game session has already started or ended."
-    },
-    roomFull: {
-        title: "Room Full",
-        message: "This room has reached its maximum capacity."
-    },
-    general: {
-        title: "Join Error",
-        message: "Failed to join the game. Please try again later."
-    }
-};
+// ═══════════════════════════════════════════════════════════════════════════
+// KOMPONEN UTAMA
+// ═══════════════════════════════════════════════════════════════════════════
 
 export default function AutoJoinPage() {
-    const router = useRouter();
-    const params = useParams();
-    const { t } = useTranslation();
-    const roomCode = (params.roomCode as string)?.toUpperCase();
-    const { user, profile, loading: authLoading } = useAuth();
+  // ── Ambil state dan handler dari custom hook ──
+  const { t, isLoading, showAlert, alertReason, closeAlert } = useAutoJoin();
 
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertReason, setAlertReason] = useState<keyof typeof ERROR_MESSAGES | "">("");
-    const [isLoading, setIsLoading] = useState(true);
-    const hasAttempted = useRef(false);
+  // Tentukan detail error berdasarkan alertReason
+  const errorDetails = alertReason
+    ? ERROR_MESSAGES[alertReason]
+    : ERROR_MESSAGES.general;
 
-    const closeAlert = () => {
-        setShowAlert(false);
-        setAlertReason("");
-        setIsLoading(false);
-        router.replace("/");
-    };
+  return (
+    <div className="min-h-screen bg-[#04060f] text-white flex items-center justify-center p-4 relative overflow-hidden font-display">
+      {/* ═══ Lapisan Latar Belakang ═══ */}
+      <BackgroundLayers />
 
-    useEffect(() => {
-        if (!roomCode || authLoading || hasAttempted.current) return;
+      {/* ═══ Area Konten Utama ═══ */}
+      <div className="relative z-10 w-full max-w-md">
+        {/* Tampilan loading saat proses join */}
+        {isLoading && <JoiningSpinner t={t} />}
 
-        // If not logged in, redirect to login with pending code
-        if (!user) {
-            localStorage.setItem("nitroquiz_pendingRoomCode", roomCode);
-            setIsLoading(false);
-            router.replace("/login");
-            return;
-        }
+        {/* Dialog alert error jika gagal join */}
+        {showAlert && (
+          <ErrorAlert
+            title={errorDetails.title}
+            message={errorDetails.message}
+            onClose={closeAlert}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
-        // Wait for profile to load
-        if (!profile?.id) return;
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-KOMPONEN: Lapisan Latar Belakang
+// ═══════════════════════════════════════════════════════════════════════════
 
-        hasAttempted.current = true;
+/**
+ * Lapisan dekoratif latar belakang halaman join.
+ * Termasuk: racing stripe, gambar background, overlay gradient,
+ * grid pattern, dan efek ambient glow.
+ */
+function BackgroundLayers() {
+  return (
+    <>
+      {/* Garis balap dekoratif di atas */}
+      <div className="racing-stripe z-50 pointer-events-none absolute top-0 inset-x-0 h-1" />
 
-        const autoJoin = async () => {
-            try {
-                // Generate nickname: priority nickname > fullname > username > email
-                const nickname =
-                    profile.nickname?.trim() ||
-                    profile.fullname?.trim() ||
-                    profile.username?.trim() ||
-                    user.email?.split("@")[0] ||
-                    "Player";
+      {/* Gambar latar belakang */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-30"
+        style={{
+          backgroundImage: 'url("/assets/backgorund/homepage_bg.webp")',
+          backgroundAttachment: "fixed",
+        }}
+      />
 
-                // Call join_game RPC for NitroQuiz
-                const { data, error } = await supabase.rpc("join_game", {
-                    p_room_code: roomCode,
-                    p_user_id: profile.id,
-                    p_nickname: nickname,
-                });
+      {/* Overlay gradient untuk keterbacaan */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-t from-[#04060f] via-[#04060f]/85 to-[#2d6af2]/10 pointer-events-none" />
 
-                if (error) {
-                    console.error("Join RPC error:", error);
-                    setAlertReason("general");
-                    setShowAlert(true);
-                    setIsLoading(false);
-                    return;
-                }
+      {/* Pola grid halus */}
+      <div className="fixed inset-0 z-0 bg-[linear-gradient(rgba(45,106,242,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(45,106,242,0.04)_1px,transparent_1px)] bg-[length:35px_35px] pointer-events-none" />
 
-                // Handle specific errors from RPC
-                if (data.error) {
-                    switch (data.error) {
-                        case "duplicate_nickname":
-                            setAlertReason("duplicate");
-                            break;
-                        case "room_not_found":
-                        case "room_not_exist":
-                            setAlertReason("roomNotFound");
-                            break;
-                        case "session_locked":
-                            setAlertReason("sessionLocked");
-                            break;
-                        case "room_full":
-                            setAlertReason("roomFull");
-                            break;
-                        default:
-                            setAlertReason("general");
-                    }
-                    setShowAlert(true);
-                    setIsLoading(false);
-                    return;
-                }
+      {/* Efek ambient glow kiri atas */}
+      <div className="fixed top-0 left-1/3 w-[500px] h-[500px] bg-[#2d6af2]/8 blur-[140px] rounded-full pointer-events-none" />
 
-                // Success! Save avatar to participants table for host visibility
-                if (profile?.avatar_url) {
-                    await supabase.from("participants").update({ avatar_url: profile.avatar_url }).eq("id", data.participant_id);
-                }
+      {/* Efek ambient glow kanan bawah */}
+      <div className="fixed bottom-0 right-1/4 w-[400px] h-[400px] bg-[#7C3AED]/8 blur-[120px] rounded-full pointer-events-none" />
+    </>
+  );
+}
 
-                // Success! Save data and redirect to lobby/waiting
-                localStorage.setItem("nitroquiz_game_playerName", data.nickname);
-                localStorage.setItem("nitroquiz_game_participantId", data.participant_id);
-                localStorage.setItem("nitroquiz_game_roomCode", roomCode);
-                localStorage.setItem('nitroquiz_game_sessionId', data.session_id);
-                localStorage.setItem('nitroquiz_game_carCharacter', data.car_character || '');
-                localStorage.removeItem("nitroquiz_pendingRoomCode");
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-KOMPONEN: Spinner Saat Bergabung
+// ═══════════════════════════════════════════════════════════════════════════
 
-                // Navigate to waiting room (lobby)
-                router.replace(`/player/${roomCode}/waiting`);
-            } catch (err) {
-                console.error("Auto-join error:", err);
-                setAlertReason("general");
-                setShowAlert(true);
-                setIsLoading(false);
-            }
-        };
+/**
+ * Tampilan loading yang ditampilkan saat proses join sedang berlangsung.
+ * Menampilkan logo NitroQuiz, spinner berputar, dan teks "JOINING ROOM...".
+ */
+function JoiningSpinner({ t }: { t: TFunction }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-6">
+      {/* Logo NitroQuiz */}
+      <img
+        src="/assets/logo/logo1.png"
+        alt="NitroQuiz"
+        className="h-16 object-contain drop-shadow-[0_0_30px_rgba(45,106,242,0.6)] mb-2"
+      />
 
-        autoJoin();
-    }, [roomCode, user, profile, authLoading, router]);
+      {/* Spinner dengan ikon login di tengah */}
+      <div className="relative">
+        <div className="w-14 h-14 border-[3px] border-[#2d6af2]/15 border-t-[#2d6af2] rounded-full animate-spin" />
+        <LogIn className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 text-[#2d6af2]/50" />
+      </div>
 
-    const errorDetails = alertReason ? ERROR_MESSAGES[alertReason] : ERROR_MESSAGES.general;
+      {/* Teks status bergabung */}
+      <h2 className="font-display text-sm font-bold tracking-[0.3em] text-[#5a9cff] uppercase animate-pulse">
+        {/* {t("joining_room", "JOINING ROOM...")} */}
+        Loading...
+      </h2>
+    </div>
+  );
+}
 
-    return (
-        <div className="min-h-screen bg-[#07091a] text-white flex items-center justify-center p-4 relative overflow-hidden font-rajdhani">
-            <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-[#07091a] to-[#050508] pointer-events-none" />
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-KOMPONEN: Dialog Alert Error
+// ═══════════════════════════════════════════════════════════════════════════
 
-            <div className="relative z-10 w-full max-w-md">
-                {isLoading && (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                        <div className="w-12 h-12 border-4 border-[#2d6af2] border-t-transparent rounded-full animate-spin"></div>
-                        <h2 className="text-xl font-bold tracking-widest text-[#2d6af2] animate-pulse">
-                            {t("joining_room", "JOINING ROOM...")}
-                        </h2>
-                    </div>
-                )}
+/**
+ * Dialog error bergaya HUD cyberpunk yang ditampilkan saat pemain
+ * gagal bergabung ke room. Menampilkan judul error, pesan deskripsi,
+ * dan tombol "Return to Home" untuk kembali ke halaman utama.
+ *
+ * Fitur visual:
+ * - ClipPath polygon untuk efek potongan sudut kanan bawah
+ * - Laser merah di bagian atas
+ * - Efek hover sweep pada tombol
+ */
+function ErrorAlert({
+  title,
+  message,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="bg-[#0a0e1a]/95 backdrop-blur-2xl border border-red-500/30 overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.15)]"
+      style={{
+        clipPath:
+          "polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)",
+      }}
+    >
+      {/* Aksen laser merah di atas */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-red-500 to-transparent" />
 
-                {/* Alert Modal */}
-                {showAlert && (
-                    <div className="bg-[#0c1225]/80 backdrop-blur-xl border border-red-500/20 rounded-2xl p-8 text-center shadow-[0_0_30px_rgba(239,68,68,0.1)]">
-                        <h2 className="text-2xl font-black text-red-500 mb-2 uppercase tracking-wide">
-                            {errorDetails.title}
-                        </h2>
-                        <p className="text-gray-300 font-semibold mb-8 text-lg leading-snug">
-                            {errorDetails.message}
-                        </p>
-                        <button
-                            onClick={closeAlert}
-                            className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 border border-white/20 active:scale-95"
-                        >
-                            Return to Home
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+      <div className="p-8 text-center">
+        {/* Judul error */}
+        <h2 className="font-display text-xl font-black text-red-500 mb-2 uppercase tracking-[0.15em] drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+          {title}
+        </h2>
+
+        {/* Pesan deskripsi error */}
+        <p className="text-gray-400 font-semibold mb-8 text-base leading-relaxed">
+          {message}
+        </p>
+
+        {/* Tombol kembali ke home */}
+        <button
+          onClick={onClose}
+          className="group/btn relative h-12 px-8 font-display text-sm font-bold uppercase tracking-[0.2em] text-white active:scale-95 transition-all transform -skew-x-[12deg] overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.08))",
+            border: "1px solid rgba(239,68,68,0.4)",
+          }}
+        >
+          {/* Efek sweep saat hover */}
+          <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+          <span className="relative z-10 transform skew-x-[12deg]">
+            Return to Home
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 }
