@@ -73,7 +73,7 @@ export default function HomeClient() {
 
     // ── Tampilan Utama ───────────────────────────────────────────────────
     return (
-        <div className="bg-[#04060f] text-white h-[100dvh] relative overflow-hidden font-body selection:bg-[#7C3AED]/30 selection:text-white flex flex-col">
+        <div className="bg-[#04060f] text-white h-[100dvh] relative overflow-y-auto overflow-x-hidden font-body selection:bg-[#7C3AED]/30 selection:text-white flex flex-col">
 
             {/* Efek Visual Latar Belakang */}
             <BackgroundEffects speedLines={speedLines} />
