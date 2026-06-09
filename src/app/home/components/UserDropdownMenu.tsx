@@ -101,7 +101,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.96 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute top-14 right-0 w-72 bg-[#0c1020]/97 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col font-body z-[101]"
+                        className="absolute top-14 right-0 w-72 bg-[#0c1020]/97 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-y-auto flex flex-col font-body z-[101] max-h-[75dvh]"
                     >
                         {/* Header Profil Pengguna */}
                         <div className="p-5 bg-gradient-to-br from-white/[0.03] to-transparent border-b border-white/[0.05]">

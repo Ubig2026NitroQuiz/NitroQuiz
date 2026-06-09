@@ -128,10 +128,11 @@ export const MainContent: React.FC<MainContentProps> = ({
                                     boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                                 }}
                                 onClick={handleHost}
-                                className="w-full xl:w-auto px-6 py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#5b21b6] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap"
+                                style={{ height: '48px', minHeight: '48px' }}
+                                className="w-full xl:w-auto px-6 bg-gradient-to-r from-[#7C3AED] to-[#5b21b6] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
-                                <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
+                                <div className="relative z-10 h-full flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
                                     <span className="text-lg font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                                         {t('homepage.host.button')}
                                     </span>
@@ -168,9 +169,9 @@ export const MainContent: React.FC<MainContentProps> = ({
                         </div>
 
                         {/* Input Kode Room + Tombol Join */}
-                        <div className="flex flex-row items-end gap-2 sm:gap-4">
+                        <div className="flex flex-col lg:flex-row items-stretch lg:items-end gap-3 lg:gap-4">
                             {/* Field input kode room */}
-                            <div className="flex-1 relative h-[58px] transform -skew-x-[15deg] bg-white/[0.03] border border-white/20 focus-within:border-[#2d6af2] focus-within:bg-[#2d6af2]/10 transition-all duration-300 flex items-center mb-0.5 rounded-sm">
+                            <div style={{ height: '48px', minHeight: '48px' }} className="flex-1 relative transform -skew-x-[15deg] bg-white/[0.03] border border-white/20 focus-within:border-[#2d6af2] focus-within:bg-[#2d6af2]/10 transition-all duration-300 flex items-center rounded-sm">
                                 <input
                                     className="w-full h-full bg-transparent text-white font-bold text-lg pl-4 pr-12 sm:pr-16 focus:outline-none placeholder:text-[9px] sm:placeholder:text-[10px] placeholder:font-bold uppercase tracking-[0.3em] placeholder:text-white/20 text-center transform skew-x-[15deg]"
                                     maxLength={6}
@@ -203,10 +204,11 @@ export const MainContent: React.FC<MainContentProps> = ({
                                     boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                                 }}
                                 onClick={handleJoin}
-                                className="w-auto px-5 sm:px-8 py-3 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap h-[58px] mb-0.5"
+                                style={{ height: '48px', minHeight: '48px' }}
+                                className="w-full lg:w-auto px-5 lg:px-8 bg-gradient-to-r from-[#2d6af2] to-[#1e40af] border border-white/20 rounded-sm transform -skew-x-[15deg] transition-all duration-300 relative group/btn overflow-hidden whitespace-nowrap"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
-                                <div className="relative z-10 flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
+                                <div className="relative z-10 h-full flex items-center justify-center transform skew-x-[15deg] transition-transform duration-300">
                                     <span className="text-base font-black text-white uppercase tracking-[0.15em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                                         {t('homepage.join.button')}
                                     </span>
