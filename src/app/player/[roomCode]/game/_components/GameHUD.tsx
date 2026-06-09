@@ -207,7 +207,7 @@ function TimerDisplay({ globalTimeLeft, isMobilePortrait, isMobile, usePCLayout 
             backgroundColor: (globalTimeLeft !== null && globalTimeLeft <= 30) ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
             padding: isMobilePortrait ? '0.2rem 0.6rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1.25rem'),
-            borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
+            borderRadius: usePCLayout ? '0.75rem' : '0.5rem',
             border: (globalTimeLeft !== null && globalTimeLeft <= 30) ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
             boxShadow: (globalTimeLeft !== null && globalTimeLeft <= 30) ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 10px 30px rgba(0,0,0,0.3)',
             display: 'flex',
@@ -242,8 +242,8 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
         <div style={{
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
-            padding: isMobilePortrait ? '0.6rem 0.8rem' : (isMobileLandscape ? '0.2rem 0.5rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.8rem 1.2rem')),
-            borderRadius: usePCLayout ? '2rem' : '1rem',
+            padding: isMobilePortrait ? '0.6rem 0.8rem' : (isMobileLandscape ? '0.5rem 1rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.8rem 1.2rem')),
+            borderRadius: usePCLayout ? '0.75rem' : '0.5rem',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             flex: 'none',
             textAlign: 'left',
@@ -252,7 +252,7 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
             justifyContent: 'center'
         }}>
             <div style={{ 
-                fontSize: isMobilePortrait ? '0.55rem' : (isMobileLandscape ? '5px' : (usePCLayout ? '10px' : '0.6rem')), 
+                fontSize: isMobilePortrait ? '0.55rem' : (isMobileLandscape ? '0.5rem' : (usePCLayout ? '10px' : '0.6rem')), 
                 color: 'rgba(255, 255, 255, 0.5)', 
                 textTransform: 'uppercase', 
                 letterSpacing: '0.15em', 
@@ -263,7 +263,7 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', justifyContent: 'flex-start' }}>
                 <span style={{
-                    fontSize: isMobilePortrait ? '2.5rem' : (isMobileLandscape ? '1rem' : (usePCLayout ? '4.5rem' : '2.5rem')),
+                    fontSize: isMobilePortrait ? '2.5rem' : (isMobileLandscape ? '2rem' : (usePCLayout ? '4.5rem' : '2.5rem')),
                     fontWeight: 900,
                     fontFamily: 'var(--font-rajdhani)',
                     color: '#fff',
@@ -274,7 +274,7 @@ function SpeedometerCard({ stats, t, isMobilePortrait, isMobileLandscape, usePCL
                     {stats.speed}
                 </span>
                 <span style={{ 
-                    fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '0.55rem' : (usePCLayout ? '1rem' : '0.8rem')), 
+                    fontSize: isMobilePortrait ? '0.8rem' : (isMobileLandscape ? '0.7rem' : (usePCLayout ? '1rem' : '0.8rem')), 
                     color: '#60a5fa', 
                     fontWeight: 800,
                     marginLeft: '0.2rem'
@@ -364,7 +364,7 @@ function NOSBar({ stats, t, isMobilePortrait, isMobileLandscape, usePCLayout }: 
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
             padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.2rem 0.5rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem')),
-            borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
+            borderRadius: usePCLayout ? '0.75rem' : '0.5rem',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
             alignItems: 'center',
@@ -389,7 +389,7 @@ function LapCounter({ stats, t, lapRace, isMobilePortrait, isMobileLandscape, us
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
             backdropFilter: 'blur(15px)',
             padding: isMobilePortrait ? '0.2rem 0.5rem' : (isMobileLandscape ? '0.2rem 0.5rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem')),
-            borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
+            borderRadius: usePCLayout ? '0.75rem' : '0.5rem',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
             alignItems: 'center',
