@@ -49,7 +49,7 @@ export function FinishOverlay({ gameState, isMobile }: FinishOverlayProps): Reac
             </div>
 
             {/* Spinner dan teks redirect */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{
                     width: '20px', height: '20px',
                     border: '3px solid rgba(0,255,157,0.2)',
@@ -64,10 +64,10 @@ export function FinishOverlay({ gameState, isMobile }: FinishOverlayProps): Reac
                     letterSpacing: '0.2em',
                     textTransform: 'uppercase'
                 }}>
-                    {/* {t('player_game.redirecting')}... */}
+                    {t('player_game.redirecting')}... 
                     Loading...
                 </span>
-            </div>
+            </div> */}
 
             <style>{`
                 @keyframes finish-glow {

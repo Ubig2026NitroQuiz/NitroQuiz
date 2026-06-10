@@ -29,7 +29,7 @@ import { updateGame } from './_engine/physics';
 import { drawMiniMap } from './_engine/minimap';
 
 // --- Komponen UI ---
-import { AssetLoadingOverlay, MainLoadingOverlay } from './_components/LoadingOverlay';
+import { MainLoadingOverlay } from './_components/LoadingOverlay';
 import { OrientationPicker } from './_components/OrientationPicker';
 import { GameHUD } from './_components/GameHUD';
 import { FinishOverlay } from './_components/FinishOverlay';
@@ -406,9 +406,6 @@ export default function GameSpeedPage() {
         }}>
             {/* Canvas Game Utama */}
             <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
-
-            {/* Overlay Loading Aset */}
-            {mounted && !assetsLoaded && <AssetLoadingOverlay />}
 
             {/* Overlay Pilihan Orientasi Mobile */}
             {mounted && isMobile && assetsLoaded && !mobileOrientationChoice && (
