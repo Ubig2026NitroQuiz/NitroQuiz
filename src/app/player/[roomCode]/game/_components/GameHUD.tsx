@@ -410,18 +410,16 @@ function MiniMapContainer({ miniMapRef, miniMapMinimized, setMiniMapMinimized, i
 }): React.ReactElement {
     return (
         <div
-            onClick={() => isMobile && setMiniMapMinimized(!miniMapMinimized)}
             style={{
                 position: 'absolute',
                 top: 0,
                 right: 0,
-                pointerEvents: 'auto',
-                zIndex: 300,
-                transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
-                cursor: 'pointer'
+                zIndex: 300
             }}
         >
-            <div style={{
+            <div
+                onClick={() => isMobile && setMiniMapMinimized(!miniMapMinimized)}
+                style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                 backdropFilter: 'blur(10px)',
                 padding: isMobile ? '0.25rem' : '0.4rem',
@@ -429,7 +427,10 @@ function MiniMapContainer({ miniMapRef, miniMapMinimized, setMiniMapMinimized, i
                 transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobileLandscape ? 'scale(0.35)' : (isMobilePortrait ? 'scale(0.55)' : (isMobile ? 'scale(0.85)' : 'none'))),
                 transformOrigin: 'top right',
                 position: 'relative',
-                border: isMobile ? '2px solid rgba(255,255,255,0.2)' : 'none'
+                border: isMobile ? '2px solid rgba(255,255,255,0.2)' : 'none',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
             }}>
                 <canvas
                     ref={miniMapRef}
