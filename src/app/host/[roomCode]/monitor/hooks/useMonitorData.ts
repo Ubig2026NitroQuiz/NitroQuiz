@@ -404,6 +404,45 @@ export function useMonitorData() {
   }, [participants, sessionId, isEnding, handleEndRace]);
 
   // ═══════════════════════════════════════════════════════════════════════
+  // FALLBACK POLLING: Menjaga data tetap realtime jika socket tersendat
+  // ═══════════════════════════════════════════════════════════════════════
+
+  useEffect(() => {
+    if (!sessionId || isEnding) return;
+
+    const pollingInterval = setInterval(async () => {
+      try {
+        const { data, error } = await supabaseGame
+          .from("participants")
+          .select("*")
+          .eq("session_id", sessionId);
+
+        if (!error && data) {
+          setParticipants((prev) => {
+            // Gabungkan data untuk mencegah kedipan pada state lokal bot
+            const updated = [...prev];
+            data.forEach((newP: any) => {
+              const idx = updated.findIndex((p) => String(p.id) === String(newP.id));
+              if (idx !== -1) {
+                // Update only if DB data is different (simplified approach)
+                updated[idx] = { ...updated[idx], ...newP };
+              } else {
+                updated.push(newP);
+              }
+            });
+            // Hapus yang tidak ada di DB
+            return updated.filter((p) => data.some((newP: any) => String(newP.id) === String(p.id)));
+          });
+        }
+      } catch (err) {
+        // Abaikan error polling
+      }
+    }, 5000);
+
+    return () => clearInterval(pollingInterval);
+  }, [sessionId, isEnding]);
+
+  // ═══════════════════════════════════════════════════════════════════════
   // LOGIKA BOT: Simulasi jawaban otomatis untuk pemain bot
   // ═══════════════════════════════════════════════════════════════════════
 
