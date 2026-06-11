@@ -330,7 +330,7 @@ export default function GameSpeedPage() {
             if (pos > trackLength - pZ && gameState !== 'finished' && !state.current.hasFinishedLine) {
                 const questions = state.current.allQuizQuestions;
                 const hasQuizRemaining = questions.length > 0 && state.current.quizQuestionIndex < questions.length;
-                if (questions.length === 0) { console.warn("[NitroQuiz] Finish line hit but no questions loaded yet."); state.current.speed = 0; return; }
+                
                 state.current.hasFinishedLine = true;
                 isFinishingRef.current = true; setIsFinishingOverlay(true); state.current.speed = 0;
                 const currentRound = lapRace + 1;
